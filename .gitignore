@@ -1,0 +1,17 @@
+# Roblox build output
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+*.rbxlx.lock
+
+# Toolchain
+sourcemap.json
+roblox.yml
+globalTypes.d.luau
+Packages/
+ServerPackages/
+DevPackages/
+wally.lock
+
+.DS_Store
+Thumbs.db

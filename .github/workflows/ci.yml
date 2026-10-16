@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install toolchain
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check formatting
+        run: stylua --check src tests
+
+      - name: Lint
+        run: selene src
+
+      - name: Type check (strict Luau)
+        run: |
+          rojo sourcemap default.project.json -o sourcemap.json
+          curl -sSfL -o globalTypes.d.luau https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau
+          luau-lsp analyze --sourcemap=sourcemap.json --definitions=globalTypes.d.luau --no-strict-dm-types src
+
+      - name: Automated tests
+        run: lune run tests/run.luau
+
+      - name: Build place file
+        run: rojo build default.project.json -o CoinFlick.rbxlx
+
+      - name: Upload place file
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoinFlick-place
+          path: CoinFlick.rbxlx
