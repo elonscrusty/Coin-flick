@@ -60,6 +60,8 @@ describe("Friend chip and Multi Flip badge", function()
 		expect(HudText.cashMult(true, true, true)).toBe(
 			Config.PASS_CASH_MULT * Config.MEGA_BOOST_MULT * Config.FRIEND_CASH_MULT
 		)
+		expect(HudText.cashMult(false, false, false, Config.Events.RAIN_MULT)).toBe(Config.Events.RAIN_MULT)
+		expect(HudText.cashMult(false, false, false, 1)).toBe(1)
 		expect(HudText.info(2, 0.5, HudText.cashMult(false, true, true), 1)).toBe(
 			`Heads = ${HudText.pay(2 * Config.MEGA_BOOST_MULT * Config.FRIEND_CASH_MULT)}\nLuck 50%`
 		)

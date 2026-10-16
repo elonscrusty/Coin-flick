@@ -22,8 +22,9 @@ function HudText.pay(cashPerHeads: number): string
 end
 
 -- The same extra cash multiplier the server applies to every heads
--- (Boosts.cashMult): 2x pass, server-wide mega boost, friend bonus.
-function HudText.cashMult(doublePass: boolean, megaBoost: boolean, friendHere: boolean): number
+-- (Boosts.cashMult): 2x pass, server-wide mega boost, friend bonus, and the
+-- weekend coin rain.
+function HudText.cashMult(doublePass: boolean, megaBoost: boolean, friendHere: boolean, eventMult: number?): number
 	local mult = 1
 	if doublePass then
 		mult *= Config.PASS_CASH_MULT
@@ -34,7 +35,7 @@ function HudText.cashMult(doublePass: boolean, megaBoost: boolean, friendHere: b
 	if friendHere then
 		mult *= Config.FRIEND_CASH_MULT
 	end
-	return mult
+	return mult * math.max(1, eventMult or 1)
 end
 
 -- Two short labelled lines (the info card is narrow). The coin count lives in

@@ -104,10 +104,11 @@ end
 -- The Heads / Luck card: pay includes the 2x pass, the mega boost and the
 -- friend bonus (what the server really pays) and the Multi Flip badge.
 local friendHere = false
+local eventMult = 1
 local function refreshInfo()
 	local s = State.get()
 	if s then
-		local mult = HudText.cashMult(s.passes.doubleCash == true, boostEnds > os.clock(), friendHere)
+		local mult = HudText.cashMult(s.passes.doubleCash == true, boostEnds > os.clock(), friendHere, eventMult)
 		setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance, mult, s.flipsPerTap))
 	end
 end
@@ -544,6 +545,26 @@ function Hud.start()
 		end
 		local snap = State.get()
 		HudPopups.onFlipped(ev, if snap then snap.streakGoal else Config.STREAK_GOAL)
+	end)
+	ClientNet.event("EventState").OnClientEvent:Connect(function(view: Types.EventView)
+		eventMult = view.cashMult
+		HudPopups.setEvent(view)
+		refreshInfo()
+	end)
+	ClientNet.event("PlayGiftState").OnClientEvent:Connect(function(view: Types.PlayGiftView)
+		HudPopups.setGifts(view)
+	end)
+	HudPopups.onAlertTap(function(kind: string)
+		if kind == "gift" then
+			Panels.open("shop")
+			Panels.openShopTab("daily")
+		end
+	end)
+	task.spawn(function()
+		while true do
+			HudPopups.tick()
+			task.wait(1)
+		end
 	end)
 	ClientNet.event("Notice").OnClientEvent:Connect(function(notice: Types.Notice)
 		if notice.kind == "friend" then

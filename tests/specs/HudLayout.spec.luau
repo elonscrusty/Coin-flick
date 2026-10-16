@@ -28,7 +28,7 @@ local function pieces(l)
 		top = l.top,
 		info = l.info,
 		streak = l.streak,
-		friend = l.friend,
+		alert = l.alert,
 		mega = l.mega,
 		boost = l.boost,
 		side = l.side,
@@ -206,17 +206,19 @@ describe("HUD layout", function()
 		end
 	end)
 
-	it("streak counter and friend chip sit side by side in the top middle, readable", function()
+	it("streak counter and alert chip sit side by side in the top middle, readable", function()
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
-			expect(HudLayout.overlaps(l.streak, l.friend)).toBeFalsy()
+			expect(HudLayout.overlaps(l.streak, l.alert)).toBeFalsy()
 			expect(l.streak.h).toBeAtLeast(28)
-			expect(l.friend.h).toBeAtLeast(28)
+			expect(l.alert.h).toBeAtLeast(28)
 			-- centered between Roblox's menu and its right buttons
-			local mid = (l.streak.x + l.friend.x + l.friend.w) / 2
+			local mid = (l.streak.x + l.alert.x + l.alert.w) / 2
 			expect(math.abs(mid - sc.w / 2)).toBeAtMost(sc.w * 0.1)
 			expect(fittedTextSize(l.streak, "🔥 10/10 HEADS", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
-			expect(fittedTextSize(l.friend, "👫 2x cash", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			for _, text in { "🌧 RAIN 2x 59:59", "🍀 2x LUCK 1d 22h", "🎁 9 READY!", "👫 2x cash" } do
+				expect(fittedTextSize(l.alert, text, 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			end
 			-- the 'ONE MORE!' hint hangs 2px under the streak chip and stays above the table
 			expect(l.streak.y + l.streak.h + 2 + 26).toBeAtMost(HudLayout.tableZone(sc.w, sc.h).y + 1)
 		end
