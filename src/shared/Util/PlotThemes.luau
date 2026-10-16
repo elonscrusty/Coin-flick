@@ -4,6 +4,8 @@
 -- tests can check it offline. The server's Builders/PlotDecor turns a theme into parts.
 -- Themes only change how the yard LOOKS. No theme changes cash, odds or anything else.
 
+export type Sky = { atmosphere: Color3, decay: Color3, tint: Color3 }
+
 export type Theme = {
 	id: string,
 	name: string,
@@ -21,6 +23,7 @@ export type Theme = {
 	trunk: Color3,
 	stone: { Color3 }, -- rocks
 	props: { string }, -- which small pieces fill the corners, in order
+	sky: Sky, -- how the sky feels while you stand in this yard (client tints the haze)
 	tableLook: string, -- name of the Config.TableLooks entry the table wears in this yard
 	tree: string, -- big corner piece: "oak" | "palm" | "lolly" | "tower" | "crystal"
 }
@@ -48,6 +51,11 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(120, 80, 45),
 		stone = { Color3.fromRGB(170, 176, 184), Color3.fromRGB(196, 190, 176) },
 		props = { "bench", "boulder", "crate", "bush" },
+		sky = {
+			atmosphere = Color3.fromRGB(150, 210, 255),
+			decay = Color3.fromRGB(95, 175, 255),
+			tint = Color3.fromRGB(255, 255, 255),
+		},
 		tableLook = "Picnic Wood",
 		tree = "oak",
 	},
@@ -73,6 +81,11 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(190, 140, 80),
 		stone = { Color3.fromRGB(226, 208, 170), Color3.fromRGB(240, 220, 190) },
 		props = { "umbrella", "shell", "bucket", "boulder" },
+		sky = {
+			atmosphere = Color3.fromRGB(140, 228, 255),
+			decay = Color3.fromRGB(60, 205, 255),
+			tint = Color3.fromRGB(255, 250, 235),
+		},
 		tableLook = "Ocean Splash",
 		tree = "palm",
 	},
@@ -98,6 +111,11 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(255, 255, 255),
 		stone = { Color3.fromRGB(255, 170, 210), Color3.fromRGB(190, 160, 255) },
 		props = { "cupcake", "gumdrop", "candycane", "boulder" },
+		sky = {
+			atmosphere = Color3.fromRGB(255, 192, 232),
+			decay = Color3.fromRGB(255, 140, 212),
+			tint = Color3.fromRGB(255, 238, 250),
+		},
 		tableLook = "Bubblegum",
 		tree = "lolly",
 	},
@@ -123,6 +141,11 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(190, 192, 210),
 		stone = { Color3.fromRGB(190, 194, 212), Color3.fromRGB(214, 216, 232) },
 		props = { "barrel", "crate", "torch", "boulder" },
+		sky = {
+			atmosphere = Color3.fromRGB(190, 200, 255),
+			decay = Color3.fromRGB(140, 150, 238),
+			tint = Color3.fromRGB(244, 244, 255),
+		},
 		tableLook = "Royal Purple",
 		tree = "tower",
 	},
@@ -148,6 +171,11 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(220, 224, 245),
 		stone = { Color3.fromRGB(180, 160, 240), Color3.fromRGB(210, 190, 255) },
 		props = { "orb", "boulder", "antenna", "crate" },
+		sky = {
+			atmosphere = Color3.fromRGB(172, 150, 255),
+			decay = Color3.fromRGB(120, 100, 238),
+			tint = Color3.fromRGB(240, 234, 255),
+		},
 		tableLook = "Star Station",
 		tree = "crystal",
 	},

@@ -76,6 +76,18 @@ function YardLayout.tall(half: number): { Spot }
 	}
 end
 
+-- Pieces OUTSIDE the back fence (the theme's tall piece again, so each yard reads as its theme from
+-- the plaza too): the two back corners and the back middle, in the ground ring. Same camera rule:
+-- tallScale caps them under the top HUD.
+function YardLayout.outer(half: number): { Spot }
+	local d = half + YardLayout.PostHalf + YardLayout.FenceGap + YardLayout.TallRadius
+	return {
+		{ x = -d, z = d },
+		{ x = d, z = d },
+		{ x = 0, z = d + 1 },
+	}
+end
+
 -- Small props: two behind the table's shoulders, one at the back middle.
 function YardLayout.low(half: number): { Spot }
 	local back = half - YardLayout.margin(YardLayout.LowRadius)

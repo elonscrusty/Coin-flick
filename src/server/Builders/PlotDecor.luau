@@ -667,6 +667,12 @@ function PlotDecor.yard(make: PartMaker, parent: Instance, plotCFrame: CFrame, t
 		treePiece(make, folder, standing(plotCFrame, spot.x, spot.z), scale, theme)
 	end
 
+	-- the theme's tall piece again outside the back fence, so the yard reads as its theme from the plaza
+	for i, spot in YardLayout.outer(half) do
+		local scale = YardLayout.tallScale(theme.tree, spot.x, spot.z, 1 + (i % 2) * 0.1)
+		treePiece(make, folder, standing(plotCFrame, spot.x, spot.z), scale, theme)
+	end
+
 	local low = YardLayout.low(half)
 	for i = 1, math.min(#low, 1 + resets) do
 		local kind = pick(theme.props, i)

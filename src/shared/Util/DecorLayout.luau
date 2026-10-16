@@ -43,6 +43,7 @@ export type Params = {
 local DecorLayout = {}
 
 DecorLayout.Clear = 3 -- studs of free space around every yard and path
+DecorLayout.YardExtra = 9 -- outer-zone props also keep off every yard's ground ring and outside corner pieces
 
 -- footprint radius (at scale 1) and share of the outer zone
 local OUTER: { Def } = {
@@ -120,8 +121,8 @@ DecorLayout.ViewHalfWidth = 18
 DecorLayout.TallExtra = 6
 
 -- Smallest gap between a circle (x, z, radius) and every yard (treated as its circumscribed circle).
-function DecorLayout.yardGap(p: Params, x: number, z: number, radius: number): number
-	local yardR = p.plotSize / 2 * math.sqrt(2)
+function DecorLayout.yardGap(p: Params, x: number, z: number, radius: number, extra: number?): number
+	local yardR = p.plotSize / 2 * math.sqrt(2) + (extra or 0)
 	local best = math.huge
 	for slot = 1, p.maxPlots do
 		local a = (slot - 1) / p.maxPlots * math.pi * 2
@@ -133,7 +134,7 @@ end
 
 -- Is a circle (x, z, radius) free of the yards, paths, plaza, spawn and the world edge?
 -- `tall` pieces also keep out of the wide view corridor in front of every gate.
-function DecorLayout.isFree(p: Params, x: number, z: number, radius: number, tall: boolean?): boolean
+function DecorLayout.isFree(p: Params, x: number, z: number, radius: number, tall: boolean?, extra: number?): boolean
 	local d = math.sqrt(x * x + z * z)
 	if d + radius > p.extent then
 		return false
@@ -144,7 +145,7 @@ function DecorLayout.isFree(p: Params, x: number, z: number, radius: number, tal
 	if math.sqrt(x * x + (z - p.spawnZ) ^ 2) - radius < 7 + DecorLayout.Clear then
 		return false
 	end
-	if DecorLayout.yardGap(p, x, z, radius) < DecorLayout.Clear then
+	if DecorLayout.yardGap(p, x, z, radius, extra) < DecorLayout.Clear then
 		return false
 	end
 	if DecorLayout.pathDistance(p, x, z) - radius < p.pathWidth / 2 + DecorLayout.Clear then
@@ -193,7 +194,10 @@ function DecorLayout.spots(params: Params?): { Spot }
 			local d = math.sqrt(rMin * rMin + (rMax * rMax - rMin * rMin) * rand())
 			local a = rand() * math.pi * 2
 			local x, z = math.cos(a) * d, math.sin(a) * d
-			if DecorLayout.isFree(p, x, z, radius, def.tall) and room(x, z, radius) then
+			if
+				DecorLayout.isFree(p, x, z, radius, def.tall, if zone == "outer" then DecorLayout.YardExtra else 0)
+				and room(x, z, radius)
+			then
 				table.insert(out, {
 					x = x,
 					z = z,

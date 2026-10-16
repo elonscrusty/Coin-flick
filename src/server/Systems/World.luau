@@ -139,9 +139,44 @@ local function buildFreeMarker(slot: number, parent: Instance): Model
 			)
 		end
 	end
+	-- a gold coin statue on a pedestal in the middle, so a free yard shines from far away
+	part("Pedestal", Vector3.new(4, 1.4, 4), CFrame.new(0, 0.9, 0), Color3.fromRGB(255, 250, 240), true)
+	local statue = makePart({
+		Name = "CoinStatue",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.8, 4.2, 4.2),
+		CFrame = base * CFrame.new(0, 3.6, 0) * CFrame.Angles(0, math.pi / 2, 0),
+		Color = Color3.fromRGB(255, 205, 40),
+		Material = Enum.Material.SmoothPlastic,
+		CanCollide = false,
+		CanQuery = false,
+	})
+	statue.Parent = model
+	local balloonColors = {
+		Color3.fromRGB(255, 90, 120),
+		Color3.fromRGB(70, 170, 255),
+		Color3.fromRGB(255, 210, 50),
+		Color3.fromRGB(110, 220, 90),
+	}
+	local index = 0
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			index += 1
+			local ball = makePart({
+				Name = "Balloon",
+				Shape = Enum.PartType.Ball,
+				Size = Vector3.one * 3.2,
+				CFrame = base * CFrame.new(sx * (half - 1), 6, sz * (half - 1)),
+				Color = balloonColors[index],
+				CanCollide = false,
+				CanQuery = false,
+				CastShadow = false,
+			})
+			ball.Parent = model
+		end
+	end
 	part("SignPole", Vector3.new(0.6, 4.2, 0.6), CFrame.new(-11.5, 2.1, -half - 3), Color3.fromRGB(150, 100, 60), true)
-	local board =
-		part("Sign", Vector3.new(7, 2.4, 0.5), CFrame.new(-11.5, 4.6, -half - 3), Color3.fromRGB(255, 200, 40))
+	local board = part("Sign", Vector3.new(9, 3, 0.5), CFrame.new(-11.5, 4.9, -half - 3), Color3.fromRGB(255, 200, 40))
 	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
 		local gui = Instance.new("SurfaceGui")
 		gui.Face = face
@@ -205,21 +240,15 @@ function World.decorate()
 	-- Trees, rocks, bushes, logs, mushrooms and flower beds around the yards.
 	local PlotDecor = require(script.Parent.Parent.Builders.PlotDecor) -- here, not at the top: it reads Enum values the offline tests lack
 	PlotDecor.world(makePart, folder)
-	-- Rolling green hills all round the edge close off the horizon.
-	for i = 1, 26 do
-		local angle = (i / 26) * math.pi * 2 + rng:NextNumber(-0.08, 0.08)
-		local radius = rng:NextNumber(205, 235)
-		local size = rng:NextNumber(60, 95)
-		local hill = makePart({
-			Name = "Hill",
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.one * size,
-			CFrame = CFrame.new(math.cos(angle) * radius, -size * 0.3, math.sin(angle) * radius),
-			Color = if i % 2 == 0 then Color3.fromRGB(95, 200, 85) else Color3.fromRGB(125, 215, 80),
-			CastShadow = false,
-		})
-		hill.Parent = folder
+	-- Big cartoon scenery: coloured hills, fountain plaza, striped paths, flowers, sky clouds,
+	-- balloons and floating islands (WorldArt, lazy for the same reason as PlotDecor).
+	local WorldArt = require(script.Parent.Parent.Builders.WorldArt)
+	WorldArt.hills(makePart, folder)
+	WorldArt.plaza(makePart, folder)
+	for slot = 1, Config.MAX_PLOTS do
+		WorldArt.path(makePart, folder, slot, inner, outer)
 	end
+	WorldArt.sky(makePart, folder)
 	folder.Parent = workspace
 	parkFolder = folder
 end
