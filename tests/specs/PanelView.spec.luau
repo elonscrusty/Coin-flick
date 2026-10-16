@@ -183,7 +183,7 @@ describe("Top 10 board (runner problems 13-15)", function()
 		expect(rows[1].empty).toBe(false)
 		expect(rows[2].empty).toBe(false)
 		expect(rows[3].empty).toBe(true) -- open seats are styled placeholders
-		expect(#rows).toBe(PanelView.MIN_BOARD_ROWS)
+		expect(#rows).toBe(PanelView.OPEN_SEATS + (if rows[2] and not rows[2].empty then 2 else 0))
 		expect(rows[1].medal).toBe("gold")
 		expect(rows[2].medal).toBe("silver")
 		expect(rows[2].me).toBe(true)
@@ -206,7 +206,7 @@ describe("Top 10 board (runner problems 13-15)", function()
 
 	it("no one yet = invite on row 1, then open seats", function()
 		local rows = PanelView.boardRows("resets", nil, "Me")
-		expect(#rows).toBe(PanelView.MIN_BOARD_ROWS)
+		expect(#rows).toBe(PanelView.OPEN_SEATS + (if rows[2] and not rows[2].empty then 2 else 0))
 		expect(rows[1].name).toBe("Be the first!")
 		expect(rows[2].name).toBe("Open seat")
 	end)
@@ -318,5 +318,35 @@ describe("Round 5", function()
 		expect(PanelView.shoutText("MrCarter flipped a RAINBOW coin! +$5", "MrCarter", false)).toBe(
 			"MrCarter flipped a RAINBOW coin! +$5"
 		)
+	end)
+end)
+
+describe("Round 6", function()
+	it("shop/top rows fill every list window exactly, on every screen", function()
+		local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
+		for _, screen in HudLayout.SCREENS do
+			local l = HudLayout.compute(screen.w, screen.h, screen.touch)
+			local fit = math.clamp(math.min(l.panel.w / 600, l.panel.h / 470), 1, 2)
+			local boxH = l.panel.h / fit
+			local window = boxH - 62 - 44 - 20 - 4 -- body, list top, arrow strip, spare
+			for _, header in { 0, 26 } do
+				for _, count in { 3, 4, 8, 9 } do
+					local avail = window - header
+					local fits, h, content = PanelView.fitRows(avail, count, 50, 88, 8, 8)
+					expect(content).toBeAtMost(avail) -- last shown row is never cut
+					if count > fits then
+						-- the rest scrolls; the window holds exactly `fits` whole rows
+						expect(8 + fits * h + (fits - 1) * 8).toBeAtMost(avail)
+					end
+				end
+			end
+		end
+	end)
+
+	it("top 10: real players plus two open seats", function()
+		local rows = PanelView.boardRows("flips", { { name = "Me", value = 4 } }, "Me")
+		expect(#rows).toBe(1 + PanelView.OPEN_SEATS)
+		expect(rows[2].empty).toBe(true)
+		expect(PanelView.boardRows("flips", nil, "Me")[1].name).toBe("Be the first!")
 	end)
 end)

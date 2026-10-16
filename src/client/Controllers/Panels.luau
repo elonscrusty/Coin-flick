@@ -38,6 +38,7 @@ local CARD_MIN, CARD_MAX = 50, 88
 local lastBoxH = 300 -- panel height in panel units (before its UIScale), from setLayout
 local SCROLLBAR = 10
 local ICON_TILE = Color3.fromRGB(150, 200, 250) -- light blue: white chef hat and yellow duck both show
+local HEADER_H = 26 -- caption row above the CREW and HATS lists
 local ARROW_STRIP = 20 -- empty strip under a list that holds the "more below" arrow
 local TAB_COLORS: { [string]: Color3 } = {
 	upgrades = Kit.GOLD,
@@ -92,6 +93,7 @@ local shopTabs: { [string]: TextButton } = {}
 local shopLists: { [string]: ScrollingFrame } = {}
 local shopTab = "upgrades"
 local helperHeader: TextLabel
+local shopHeaders: { [string]: TextLabel } = {} -- one-line captions above the CREW and HATS lists
 local lastPressed: CardUi? = nil
 
 local boards: Types.Leaderboards = {}
@@ -100,6 +102,7 @@ local boardTabs: { [string]: TextButton } = {}
 local boardRows: { { frame: Frame, medal: TextLabel, name: TextLabel, value: TextLabel } } = {}
 local myRow: TextLabel
 local boardList: ScrollingFrame
+local boardInvite: Frame
 
 local resetLines: { TextLabel } = {}
 local resetYes: TextButton
@@ -282,11 +285,15 @@ local function showBanner(
 		child:Destroy()
 	end
 	bannerIconHost.Visible = icon ~= nil
-	local left = if icon then 0.3 else 0.05
-	bannerTitle.Position = UDim2.fromScale(left, 0.06)
-	bannerTitle.Size = UDim2.fromScale(0.95 - left, 0.44)
-	bannerText.Position = UDim2.fromScale(left, 0.52)
-	bannerText.Size = UDim2.fromScale(0.95 - left, 0.42)
+	-- The picture is a square tile at the left; the words start right after it.
+	local h = banner.Size.Y.Offset
+	local tile = math.max(0, h - 16)
+	local left = if icon then tile + 16 else 10
+	bannerIconHost.Size = UDim2.fromOffset(tile, tile)
+	bannerTitle.Position = UDim2.new(0, left, 0.06, 0)
+	bannerTitle.Size = UDim2.new(1, -left - 8, 0.44, 0)
+	bannerText.Position = UDim2.new(0, left, 0.52, 0)
+	bannerText.Size = UDim2.new(1, -left - 8, 0.42, 0)
 	if icon then
 		icon.Size = UDim2.fromScale(1, 1)
 		icon.ZIndex = 27
@@ -449,7 +456,7 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 	listLayout.Parent = list
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(0, 8)
-	pad.PaddingBottom = UDim.new(0, 8)
+	pad.PaddingBottom = UDim.new(0, 0) -- rows end flush, so nothing scrolls when they all fit
 	pad.PaddingLeft = UDim.new(0, 4)
 	pad.PaddingRight = UDim.new(0, 6)
 	pad.Parent = list
@@ -489,7 +496,7 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 	arrow.Parent = parent
 	local function update()
 		local maxY = list.AbsoluteCanvasSize.Y - list.AbsoluteWindowSize.Y
-		local shown = list.Visible and maxY > 4
+		local shown = list.Visible and maxY > 6
 		fadeTop.Visible = shown and list.CanvasPosition.Y > 4
 		fadeBottom.Visible = shown and list.CanvasPosition.Y < maxY - 4
 		arrow.Visible = fadeBottom.Visible
@@ -802,6 +809,9 @@ local function pickShopTab(key: string)
 	for k, list in shopLists do
 		list.Visible = k == key
 	end
+	for k, header in shopHeaders do
+		header.Visible = k == key
+	end
 end
 
 local function buildShop()
@@ -828,18 +838,19 @@ local function buildShop()
 	end
 
 	-- CREW: unlock with cash, level up, put to work.
-	local crewList = scrollList(body, 44)
+	local crewList = scrollList(body, 44 + HEADER_H)
 	shopLists.helpers = crewList
 	helperHeader = Kit.label({
 		Name = "Header",
-		LayoutOrder = 0,
-		Size = UDim2.new(1, 0, 0, 22),
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, -SCROLLBAR, 0, 22),
 		TextColor3 = Kit.INK,
 		TextStrokeTransparency = 1,
 		ZIndex = 7,
 	})
 	Kit.textLimit(helperHeader, 20)
-	helperHeader.Parent = crewList
+	helperHeader.Parent = body
+	shopHeaders.helpers = helperHeader
 	local unlockRemote = ClientNet.event("BuyHelper")
 	local levelRemote = ClientNet.event("LevelHelper")
 	local teamRemote = ClientNet.event("TeamHelper")
@@ -865,19 +876,20 @@ local function buildShop()
 	end
 
 	-- HATS: buy with 🎩, tap again to wear or take off.
-	local hatList = scrollList(body, 44)
+	local hatList = scrollList(body, 44 + HEADER_H)
 	shopLists.hats = hatList
 	local hatHeader = Kit.label({
 		Name = "Header",
-		LayoutOrder = 0,
-		Size = UDim2.new(1, 0, 0, 22),
+		Position = UDim2.fromOffset(0, 44),
+		Size = UDim2.new(1, -SCROLLBAR, 0, 22),
 		Text = PanelView.HAT_HEADER,
 		TextColor3 = Kit.INK,
 		TextStrokeTransparency = 1,
 		ZIndex = 7,
 	})
 	Kit.textLimit(hatHeader, 20)
-	hatHeader.Parent = hatList
+	hatHeader.Parent = body
+	shopHeaders.hats = hatHeader
 	local buyHat = ClientNet.event("BuyHat")
 	local wearHat = ClientNet.event("WearHat")
 	for _, def in Config.Hats do
@@ -1018,6 +1030,38 @@ local function buildTop()
 		frame.Parent = list
 		boardRows[i] = { frame = frame, medal = medal, name = name, value = value }
 	end
+	boardInvite = Instance.new("Frame")
+	boardInvite.Name = "Invite"
+	boardInvite.LayoutOrder = 99
+	boardInvite.Size = UDim2.new(1, 0, 0, 90)
+	boardInvite.BackgroundColor3 = Color3.fromRGB(235, 225, 255)
+	boardInvite.ZIndex = 7
+	Kit.corner(boardInvite, 0.15)
+	Kit.stroke(boardInvite, 2, Kit.PURPLE)
+	local inviteTitle = Kit.label({
+		Name = "Title",
+		Text = "Invite friends!",
+		Position = UDim2.fromScale(0.05, 0.1),
+		Size = UDim2.fromScale(0.9, 0.42),
+		TextColor3 = Kit.INK,
+		TextStrokeTransparency = 1,
+		ZIndex = 8,
+	})
+	Kit.textLimit(inviteTitle, 26)
+	inviteTitle.Parent = boardInvite
+	local inviteText = Kit.label({
+		Name = "Text",
+		Text = "Play together and race to the top!",
+		Position = UDim2.fromScale(0.05, 0.54),
+		Size = UDim2.fromScale(0.9, 0.34),
+		TextColor3 = Kit.MUTED,
+		TextStrokeTransparency = 1,
+		ZIndex = 8,
+	})
+	Kit.textLimit(inviteText, 20)
+	inviteText.Parent = boardInvite
+	boardInvite.Parent = list
+
 	myRow = Kit.label({
 		Name = "You",
 		AnchorPoint = Vector2.new(0, 0),
@@ -1054,10 +1098,11 @@ local function buildReset()
 			LayoutOrder = i,
 			Size = UDim2.fromScale(1, 0.21),
 			BackgroundTransparency = 0,
+			TextColor3 = Kit.INK,
+			TextStrokeTransparency = 1,
 			ZIndex = 7,
 		})
-		Kit.corner(line, 0.35)
-		Kit.outline(line, 2)
+		Kit.corner(line, 0.12)
 		Kit.padding(line, UDim.new(0, 10), UDim.new(0.12, 0))
 		Kit.textLimit(line, 22)
 		line.Parent = holder
@@ -1065,7 +1110,7 @@ local function buildReset()
 	end
 	holder.Parent = body
 
-	resetYes = Kit.button("YES!", Kit.GREEN, function()
+	resetYes = Kit.button("RESET!", Kit.GREEN, function()
 		ClientNet.event("ResetTable"):FireServer()
 		Panels.closeAll()
 	end)
@@ -1110,7 +1155,7 @@ function Panels.render(s: Snapshot)
 		line.Visible = view ~= nil
 		if view then
 			line.Text = view.text
-			line.BackgroundColor3 = RESET_COLORS[view.kind]
+			line.BackgroundColor3 = RESET_COLORS[view.kind]:Lerp(Kit.WHITE, 0.72) -- flat tint: info, not a button
 		end
 	end
 	Kit.applyLook(resetYes, if s.tableFull then "buy" else "poor")
@@ -1140,10 +1185,9 @@ local function fitCards()
 		for _ in byId do
 			count += 1
 		end
-		local header = if group == "helpers" or group == "hats" then 30 else 0
-		local avail = bodyH - 44 - ARROW_STRIP - header
-		local fits = math.clamp(math.floor(avail / (CARD_MIN + 8)), 1, math.max(1, count))
-		local h = math.clamp(math.floor(avail / fits - 8), CARD_MIN, CARD_MAX)
+		local header = if group == "helpers" or group == "hats" then HEADER_H else 0
+		local avail = bodyH - 44 - header - ARROW_STRIP - 4 -- a few px spare so no row is ever clipped
+		local _, h = PanelView.fitRows(avail, count, CARD_MIN, CARD_MAX, 8, 8)
 		for _, ui in byId do
 			layoutCard(ui, h)
 		end
@@ -1163,19 +1207,20 @@ function fitBoard()
 			rowsShown += 1
 		end
 	end
-	local full = lastBoxH - 62 - 44 - 34 - ARROW_STRIP
-	local fits = math.clamp(math.floor(full / 42), 1, math.max(1, rowsShown))
-	local rowH = math.clamp(math.floor(full / fits - 8), 34, 62)
+	local full = lastBoxH - 62 - 44 - 34 - ARROW_STRIP - 4
+	local _, rowH, content = PanelView.fitRows(full, rowsShown, 34, 62, 8, 8)
 	for _, ui in boardRows do
 		ui.frame.Size = UDim2.new(1, 0, 0, rowH)
 		ui.medal.Size = UDim2.fromOffset(rowH - 6, rowH - 6)
 		ui.name.Position = UDim2.fromOffset(rowH + 6, 5)
 		ui.name.Size = UDim2.new(0.65, -(rowH + 10), 1, -10)
 	end
-	local content = 8 + rowsShown * rowH + math.max(0, rowsShown - 1) * 8 + 8
-	local listH = math.min(full, content)
-	boardList.Size = UDim2.new(1, 0, 0, listH)
-	myRow.Position = UDim2.fromOffset(0, 44 + listH + ARROW_STRIP + 4)
+	-- Friendly card in the space the rows leave (fewer players than the list is tall).
+	local spare = full - content - 8
+	boardInvite.Visible = spare >= 52
+	boardInvite.Size = UDim2.new(1, 0, 0, math.min(spare, 130))
+	boardList.Size = UDim2.fromOffset(0, full) + UDim2.fromScale(1, 0)
+	myRow.Position = UDim2.fromOffset(0, 44 + full + ARROW_STRIP + 4)
 end
 
 function Panels.setLayout(l: HudLayout.Layout)
@@ -1277,9 +1322,8 @@ function Panels.init()
 	bannerScale.Parent = banner
 	bannerIconHost = Instance.new("Frame")
 	bannerIconHost.Name = "Icon"
-	bannerIconHost.Position = UDim2.fromScale(0.04, 0.12)
-	bannerIconHost.Size = UDim2.fromScale(0.76, 0.76)
-	bannerIconHost.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	bannerIconHost.Position = UDim2.fromOffset(8, 8)
+	bannerIconHost.Size = UDim2.fromOffset(60, 60)
 	bannerIconHost.BackgroundColor3 = ICON_TILE
 	bannerIconHost.Visible = false
 	bannerIconHost.ZIndex = 26
@@ -1292,9 +1336,10 @@ function Panels.init()
 		ZIndex = 26,
 	})
 	bannerTitle.TextYAlignment = Enum.TextYAlignment.Bottom
+	bannerTitle.TextWrapped = false
 	Kit.outline(bannerTitle, 3)
 	Kit.textLimit(bannerTitle, 30)
-	bannerTitle.TextWrapped = true
+	bannerTitle.TextWrapped = false
 	bannerTitle.Parent = banner
 	bannerText = Kit.label({
 		Name = "Text",

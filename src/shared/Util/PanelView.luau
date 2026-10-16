@@ -53,7 +53,7 @@ local PanelView = {}
 -- Longest card line we allow (characters). Longer text gets squeezed tiny on
 -- phones, so the tests hold every line to this.
 PanelView.MAX_LINE = 28
-PanelView.MIN_BOARD_ROWS = 5 -- the top 10 always shows at least this many rows
+PanelView.OPEN_SEATS = 2 -- placeholder rows shown under the real players
 
 PanelView.TAB_ORDER = { "upgrades", "helpers", "hats", "robux" }
 PanelView.TAB_LABEL = {
@@ -306,6 +306,24 @@ function PanelView.needsConfirm(card: Card, s: Snapshot): boolean
 	return card.price >= s.cash * 0.5
 end
 
+-- Rows that fill a list window exactly. `avail` is the window height (after any
+-- header row), rows have `gap` between them and `pad` above the first. Picks how
+-- many rows fit, then stretches them (up to `maxH`) so none is cut off at the bottom.
+function PanelView.fitRows(
+	avail: number,
+	count: number,
+	minH: number,
+	maxH: number,
+	gap: number,
+	pad: number
+): (number, number, number)
+	local fits = math.clamp(math.floor((avail - pad + gap) / (minH + gap)), 1, math.max(1, count))
+	local h = math.clamp(math.floor((avail - pad - (fits - 1) * gap) / fits), minH, maxH)
+	local shown = math.min(fits, count)
+	local content = pad + shown * h + math.max(0, shown - 1) * gap
+	return fits, h, content
+end
+
 -- Top 10 --------------------------------------------------------------------
 
 PanelView.BOARD_TABS = { { "flips", "FLIPS" }, { "biggestFlip", "BIGGEST" }, { "resets", "RESETS" } }
@@ -336,11 +354,12 @@ function PanelView.boardRows(key: string, rows: { Types.LeaderRow }?, myName: st
 			empty = false,
 		})
 	end
-	-- Open seats stay as styled placeholders (never a blank cream panel).
-	for i = #out + 1, PanelView.MIN_BOARD_ROWS do
+	-- A couple of open seats under the real players (never a blank panel).
+	local real = #out
+	for i = real + 1, math.min(Config.LEADERBOARD_SIZE, real + PanelView.OPEN_SEATS) do
 		table.insert(out, {
 			rank = tostring(i),
-			name = if #out == 0 then "Be the first!" else "Open seat",
+			name = if real == 0 and i == 1 then "Be the first!" else "Open seat",
 			value = "",
 			medal = MEDALS[i] or "none",
 			me = false,
