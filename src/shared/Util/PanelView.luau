@@ -65,7 +65,7 @@ PanelView.TAB_LABEL = {
 
 local SHORT_DESC: { [string]: string } = {
 	moreCoins = "+1 coin on your table",
-	bigCoins = "+50% cash each heads",
+	bigCoins = "More cash each heads!",
 	luck = "+3% heads chance",
 	speed = "Coins land faster",
 }
