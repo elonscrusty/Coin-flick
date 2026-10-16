@@ -36,7 +36,7 @@ Kit.BRONZE = Color3.fromRGB(215, 140, 80)
 -- they never look buyable.
 Kit.LOOKS = {
 	buy = { bg = Color3.fromRGB(70, 210, 110), text = Color3.fromRGB(255, 255, 255) },
-	poor = { bg = Color3.fromRGB(110, 150, 125), text = Color3.fromRGB(255, 255, 255) },
+	poor = { bg = Color3.fromRGB(125, 130, 142), text = Color3.fromRGB(255, 255, 255) },
 	max = { bg = UiStyle.GOLD, text = Color3.fromRGB(255, 255, 255) },
 	locked = { bg = Color3.fromRGB(88, 90, 108), text = Color3.fromRGB(200, 202, 215) },
 	owned = { bg = Color3.fromRGB(60, 170, 255), text = Color3.fromRGB(255, 255, 255) },

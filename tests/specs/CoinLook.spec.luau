@@ -158,6 +158,13 @@ describe("CoinLook fixes from the runner pictures", function()
 		expect(giant ~= nil and giant.everyone).toBe(true)
 		expect(GameLogic.shoutNotice("C", 7, { result = "heads", cash = 1, hats = 0, rarity = "normal" })).toBeNil()
 	end)
+
+	it("the welcome-back notice never says $0", function()
+		expect(GameLogic.offlineNotice(0)).toBeNil()
+		expect(GameLogic.offlineNotice(0.4)).toBeNil()
+		local n = GameLogic.offlineNotice(12.6)
+		expect(n ~= nil and string.find(n.text, "$12", 1, true) ~= nil).toBe(true)
+	end)
 end)
 
 describe("CoinLook round 3: coins stand out on the table, GIANT is a shiny coin", function()

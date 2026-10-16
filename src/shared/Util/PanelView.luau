@@ -364,6 +364,18 @@ function PanelView.megaBody(text: string): string
 	return body
 end
 
+-- The server writes "<name> flipped a ..." for everyone; your own flip says "You flipped".
+function PanelView.shoutText(text: string, ownerName: string, isMe: boolean): string
+	if not isMe then
+		return text
+	end
+	local prefix = ownerName .. " flipped"
+	if string.sub(text, 1, #prefix) == prefix then
+		return "You flipped" .. string.sub(text, #prefix + 1)
+	end
+	return text
+end
+
 -- One banner shape for every message: a short title row and one text row.
 PanelView.BANNER_TITLE_MAX = 18
 
