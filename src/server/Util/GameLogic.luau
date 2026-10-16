@@ -28,10 +28,10 @@ function GameLogic.validateCoinIndex(index: unknown, coinCount: number): number?
 	return index
 end
 
-export type FlipOutcome = { result: FlipResult, cash: number, hats: number }
+export type FlipOutcome = { result: FlipResult, cash: number, hats: number, rarity: Types.Rarity }
 
-function GameLogic.applyFlip(profile: Profile, roll: number): FlipOutcome
-	local result, cash, hats = Economy.resolveFlip(profile, roll)
+function GameLogic.applyFlip(profile: Profile, roll: number, rarityRoll: number?): FlipOutcome
+	local result, cash, hats, rarity = Economy.resolveFlip(profile, roll, rarityRoll)
 	profile.cash += cash
 	profile.hatPoints += hats
 	profile.stats.flips += 1
@@ -43,7 +43,7 @@ function GameLogic.applyFlip(profile: Profile, roll: number): FlipOutcome
 	if cash > profile.stats.biggestFlip then
 		profile.stats.biggestFlip = cash
 	end
-	local outcome: FlipOutcome = { result = result :: FlipResult, cash = cash, hats = hats }
+	local outcome: FlipOutcome = { result = result :: FlipResult, cash = cash, hats = hats, rarity = rarity }
 	return outcome
 end
 

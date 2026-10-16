@@ -19,6 +19,17 @@ export type TableLook = {
 	legs: Color3,
 }
 
+-- A rare coin multiplies whatever the flip gives (cash on heads, hats on skull).
+export type RarityDef = {
+	id: string,
+	name: string,
+	chance: number, -- odds per flip, e.g. 1/100
+	mult: number,
+	color: Color3,
+	grow: number, -- how much bigger the coin gets in the air
+	shout: boolean, -- tell the whole server
+}
+
 local Upgrades: { [string]: UpgradeDef } = {
 	moreCoins = {
 		name = "More Coins",
@@ -87,6 +98,46 @@ local TableLooks: { TableLook } = {
 	},
 }
 
+-- Rarest first. Anything that isn't one of these is a normal coin.
+local Rarities: { RarityDef } = {
+	{
+		id = "giant",
+		name = "GIANT",
+		chance = 1 / 10000,
+		mult = 500,
+		color = Color3.fromRGB(255, 120, 30),
+		grow = 2.5,
+		shout = true,
+	},
+	{
+		id = "rainbow",
+		name = "RAINBOW",
+		chance = 1 / 1000,
+		mult = 50,
+		color = Color3.fromRGB(255, 80, 200),
+		grow = 1.6,
+		shout = true,
+	},
+	{
+		id = "gold",
+		name = "GOLD",
+		chance = 1 / 100,
+		mult = 10,
+		color = Color3.fromRGB(255, 225, 60),
+		grow = 1.3,
+		shout = false,
+	},
+	{
+		id = "silver",
+		name = "SILVER",
+		chance = 1 / 20,
+		mult = 3,
+		color = Color3.fromRGB(215, 225, 240),
+		grow = 1.1,
+		shout = false,
+	},
+}
+
 return table.freeze({
 	-- World
 	MAX_PLOTS = 8,
@@ -138,6 +189,7 @@ return table.freeze({
 	Upgrades = table.freeze(Upgrades),
 	UPGRADE_ORDER = table.freeze({ "moreCoins", "bigCoins", "luck", "speed" }),
 	TableLooks = table.freeze(TableLooks),
+	Rarities = table.freeze(Rarities),
 
 	-- Built-in Roblox sounds (ship with every client). Swap for nicer ones any time.
 	Sounds = table.freeze({
@@ -148,6 +200,7 @@ return table.freeze({
 		Skull = "rbxasset://sounds/uuhhh.mp3",
 		Buy = "rbxasset://sounds/button.wav",
 		Reset = "rbxasset://sounds/snap.wav",
+		Rare = "rbxasset://sounds/victory.wav",
 	} :: { [string]: string }),
 
 	-- Robux shop (built in step 2). Ids come from carter; 0 means "not set yet".

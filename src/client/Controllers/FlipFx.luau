@@ -7,9 +7,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
+local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 local ClientNet = require(script.Parent.Parent.ClientNet)
+local CameraView = require(script.Parent.CameraView)
 local Sounds = require(script.Parent.Sounds)
 
 type FlipEvent = Types.FlipEvent
@@ -25,6 +28,11 @@ type Anim = {
 	event: FlipEvent,
 	landed: boolean,
 	mine: boolean,
+	rare: Config.RarityDef?,
+	-- How the coin looks at rest, so a rare flip can put it back.
+	restSize: Vector3,
+	restColor: Color3,
+	restMaterial: Enum.Material,
 }
 
 local FlipFx = {}
@@ -46,7 +54,7 @@ end
 local function popText(coin: BasePart, text: string, color: Color3)
 	local gui = Instance.new("BillboardGui")
 	gui.Adornee = coin
-	gui.Size = UDim2.fromScale(5, 1.8)
+	gui.Size = UDim2.fromScale(math.max(5, #text * 0.6), 1.8)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, 1, 0)
 	gui.AlwaysOnTop = true
 	gui.LightInfluence = 0
@@ -75,6 +83,18 @@ local function onLanded(anim: Anim)
 		return
 	end
 	Sounds.play("Land", 0.5)
+	local rare = anim.rare
+	if rare then
+		Sounds.play("Rare", if rare.shout then 0.9 else 0.5)
+		CameraView.shake(if rare.id == "giant" then 0.9 else 0.25, if rare.shout then 0.8 else 0.3)
+		local prize = if ev.result == "heads" then `+${Format.short(ev.cash)}` else `+{ev.hats} 🎩`
+		popText(anim.coin, `{rare.name}! {prize}`, rare.color)
+		local sparkle = anim.coin:FindFirstChild("Sparkle")
+		if sparkle and sparkle:IsA("ParticleEmitter") then
+			sparkle:Emit(if rare.shout then 80 else 30)
+		end
+		return
+	end
 	if ev.result == "heads" then
 		Sounds.play("Heads", 0.7)
 		popText(anim.coin, `+${Format.short(ev.cash)}`, Color3.fromRGB(120, 255, 120))
@@ -103,6 +123,9 @@ local function onFlipped(ev: FlipEvent)
 	end
 	local old = active[coin]
 	local base = if old then old.base else coin.Position
+	local restSize = if old then old.restSize else coin.Size
+	local restColor = if old then old.restColor else coin.Color
+	local restMaterial = if old then old.restMaterial else coin.Material
 	local fromRoll = rollFor(coin:GetAttribute("Face"))
 	local spins = 2 + math.floor(ev.duration * 2)
 	local toRoll = rollFor(ev.result)
@@ -113,13 +136,42 @@ local function onFlipped(ev: FlipEvent)
 		duration = ev.duration,
 		fromRoll = fromRoll,
 		totalRoll = (toRoll - fromRoll) + spins * math.pi * 2,
-		height = 3 + ev.duration * 3,
+		height = 2 + ev.duration * 1.5, -- low arc keeps the coin in view in ZOOM
 		event = ev,
 		landed = false,
 		mine = mine,
+		rare = Economy.rarityDef(ev.rarity),
+		restSize = restSize,
+		restColor = restColor,
+		restMaterial = restMaterial,
 	}
 	if mine then
 		Sounds.play("Flip", 0.45)
+	end
+end
+
+-- Rare coins change color (rainbow cycles) and puff up while in the air.
+local function dressRare(anim: Anim, now: number, t: number)
+	local rare = anim.rare
+	if not rare then
+		return
+	end
+	local coin = anim.coin
+	if rare.id == "rainbow" or rare.id == "giant" then
+		coin.Material = Enum.Material.Neon
+	end
+	coin.Color = if rare.id == "rainbow" then Color3.fromHSV((now * 1.5) % 1, 0.75, 1) else rare.color
+	-- Grow fast, stay big, shrink back during the bounce.
+	local puff = if t < 0.15 then t / 0.15 elseif t < MAIN then 1 else math.max(0, 1 - (t - MAIN) / (1 - MAIN))
+	local scale = 1 + (rare.grow - 1) * puff
+	coin.Size = Vector3.new(anim.restSize.X * math.sqrt(scale), anim.restSize.Y * scale, anim.restSize.Z * scale)
+end
+
+local function undressRare(anim: Anim)
+	if anim.rare then
+		anim.coin.Size = anim.restSize
+		anim.coin.Color = anim.restColor
+		anim.coin.Material = anim.restMaterial
 	end
 end
 
@@ -146,8 +198,10 @@ local function step()
 			height = anim.height * 0.12 * 4 * u * (1 - u) -- little bounce
 			roll = anim.fromRoll + anim.totalRoll
 		end
+		dressRare(anim, now, t)
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0)) * CFrame.Angles(0, 0, roll)
 		if t >= 1 then
+			undressRare(anim)
 			coin.CFrame = CFrame.new(anim.base) * CFrame.Angles(0, 0, rollFor(anim.event.result))
 			active[coin] = nil
 		end

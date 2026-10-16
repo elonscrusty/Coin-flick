@@ -7,6 +7,7 @@ local Types = require(script.Parent.Parent.Types)
 
 type Profile = Types.Profile
 type FlipResult = Types.FlipResult
+type Rarity = Types.Rarity
 
 local Economy = {}
 
@@ -61,14 +62,55 @@ function Economy.cashPerHeads(profile: Profile): number
 	return math.max(1, math.floor(value + 0.5))
 end
 
--- `roll` is a number in [0, 1) from the server's random generator.
-function Economy.resolveFlip(profile: Profile, roll: number): (FlipResult, number, number)
+-- `rarityRoll` in [0, 1) -> which rare coin (rarest gets the lowest numbers).
+function Economy.rollRarity(rarityRoll: number): Rarity
+	local edge = 0
+	for _, def in Config.Rarities do
+		edge += def.chance
+		if rarityRoll < edge then
+			return def.id :: Rarity
+		end
+	end
+	return "normal"
+end
+
+-- The smallest roll that lands on `rarity` (Studio test button only).
+function Economy.rarityRollFor(rarity: string): number
+	local edge = 0
+	for _, def in Config.Rarities do
+		if def.id == rarity then
+			return edge
+		end
+		edge += def.chance
+	end
+	return 1
+end
+
+function Economy.rarityDef(rarity: string): Config.RarityDef?
+	for _, def in Config.Rarities do
+		if def.id == rarity then
+			return def
+		end
+	end
+	return nil
+end
+
+function Economy.rarityMult(rarity: string): number
+	local def = Economy.rarityDef(rarity)
+	return if def then def.mult else 1
+end
+
+-- `roll` and `rarityRoll` are numbers in [0, 1) from the server's random generator.
+-- Returns result, cash, hat points, rarity.
+function Economy.resolveFlip(profile: Profile, roll: number, rarityRoll: number?): (FlipResult, number, number, Rarity)
 	local heads: FlipResult = "heads"
 	local skull: FlipResult = "skull"
+	local rarity = Economy.rollRarity(rarityRoll or 1)
+	local mult = Economy.rarityMult(rarity)
 	if roll < Economy.headsChance(profile.upgrades.luck) then
-		return heads, Economy.cashPerHeads(profile), 0
+		return heads, Economy.cashPerHeads(profile) * mult, 0, rarity
 	end
-	return skull, 0, 1
+	return skull, 0, mult, rarity
 end
 
 -- Average cash per second all helpers make together.

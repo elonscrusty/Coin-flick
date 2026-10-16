@@ -123,6 +123,9 @@ local hatLabel: TextLabel
 local hatScale: UIScale
 local infoLabel: TextLabel
 local toastLabel: TextLabel
+local shoutLabel: TextLabel
+local shoutScale: UIScale
+local shoutToken = 0
 local shopPanel: Frame
 local resetPanel: Frame
 local resetBody: TextLabel
@@ -140,10 +143,10 @@ local function toast(text: string, color: Color3?)
 	toastLabel.Text = text
 	toastLabel.TextColor3 = color or WHITE
 	toastLabel.Visible = true
-	toastLabel.Position = UDim2.fromScale(0.5, 0.12)
+	toastLabel.Position = UDim2.fromScale(0.5, 0.79)
 	toastLabel.TextTransparency = 0
 	toastLabel.TextStrokeTransparency = 0.2
-	TweenService:Create(toastLabel, BOUNCY, { Position = UDim2.fromScale(0.5, 0.17) }):Play()
+	TweenService:Create(toastLabel, BOUNCY, { Position = UDim2.fromScale(0.5, 0.82) }):Play()
 	task.delay(2.6, function()
 		if token ~= toastToken then
 			return
@@ -153,6 +156,41 @@ local function toast(text: string, color: Color3?)
 		fade.Completed:Wait()
 		if token == toastToken then
 			toastLabel.Visible = false
+		end
+	end)
+end
+
+-- Big banner everyone sees when someone flips a super rare coin.
+local function shout(notice: Types.Notice)
+	shoutToken += 1
+	local token = shoutToken
+	local def = notice.rarity and Economy.rarityDef(notice.rarity)
+	shoutLabel.Text = `⭐ {notice.text} ⭐`
+	shoutLabel.TextColor3 = if def then def.color else ORANGE
+	shoutLabel.TextTransparency = 0
+	shoutLabel.TextStrokeTransparency = 0
+	shoutLabel.Visible = true
+	shoutScale.Scale = 0.2
+	TweenService:Create(shoutScale, BOUNCY, { Scale = 1 }):Play()
+	if notice.ownerId ~= player.UserId then
+		Sounds.play("Rare", 0.5) -- the flipper already hears it from their coin
+	end
+	task.spawn(function()
+		local started = os.clock()
+		while token == shoutToken and os.clock() - started < 4 do
+			if notice.rarity == "rainbow" then
+				shoutLabel.TextColor3 = Color3.fromHSV((os.clock() * 0.8) % 1, 0.7, 1)
+			end
+			task.wait()
+		end
+		if token ~= shoutToken then
+			return
+		end
+		local fade = TweenService:Create(shoutLabel, COUNT, { TextTransparency = 1, TextStrokeTransparency = 1 })
+		fade:Play()
+		fade.Completed:Wait()
+		if token == shoutToken then
+			shoutLabel.Visible = false
 		end
 	end)
 end
@@ -361,11 +399,11 @@ local function buildCheats(parent: ScreenGui)
 	frame.Name = "StudioCheats"
 	frame.BackgroundTransparency = 1
 	frame.Position = UDim2.new(0, 8, 0.2, 0)
-	frame.Size = UDim2.fromOffset(90, 150)
+	frame.Size = UDim2.fromOffset(90, 200)
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 6)
 	layout.Parent = frame
-	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "WIPE", "wipe" } } do
+	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "WIPE", "wipe" } } do
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)
@@ -504,6 +542,19 @@ function Hud.init()
 	textLimit(toastLabel, 30)
 	toastLabel.Parent = gui
 
+	shoutLabel = label({
+		Name = "Shout",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.69),
+		Size = UDim2.fromScale(0.8, 0.09),
+		Visible = false,
+		ZIndex = 11,
+	})
+	textLimit(shoutLabel, 40)
+	shoutScale = Instance.new("UIScale")
+	shoutScale.Parent = shoutLabel
+	shoutLabel.Parent = gui
+
 	-- Right side: big buttons, above the phone jump button.
 	local side = Instance.new("Frame")
 	side.Name = "Side"
@@ -561,6 +612,8 @@ function Hud.start()
 			Sounds.play("Reset", 0.8)
 			CameraView.shake(0.35, 0.5)
 			toast(notice.text, ORANGE)
+		elseif notice.kind == "shout" then
+			shout(notice)
 		elseif notice.kind == "bought" then
 			Sounds.play("Buy", 0.6)
 			toast(notice.text, Color3.fromRGB(150, 255, 150))

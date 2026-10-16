@@ -31,6 +31,8 @@ export type Profile = {
 
 export type FlipResult = "heads" | "skull"
 
+export type Rarity = "normal" | "silver" | "gold" | "rainbow" | "giant"
+
 -- Server -> all clients when any coin flips.
 export type FlipEvent = {
 	ownerId: number,
@@ -40,6 +42,7 @@ export type FlipEvent = {
 	hats: number,
 	duration: number,
 	byHelper: boolean,
+	rarity: Rarity,
 }
 
 -- Server -> one client: everything the HUD needs.
@@ -62,6 +65,8 @@ export type Snapshot = {
 export type Notice = {
 	kind: string,
 	text: string,
+	rarity: Rarity?, -- set on "shout"
+	ownerId: number?, -- who flipped it, on "shout"
 }
 
 return {}

@@ -47,7 +47,8 @@ local function update()
 			camera.CameraType = Enum.CameraType.Scriptable
 			camera.FieldOfView = 55
 			local eye = center - outward * (10 * back) + Vector3.new(0, 13 * back, 0)
-			camera.CFrame = CFrame.lookAt(eye, center - outward * 1.5)
+			-- Aim past the middle so flying coins and pop numbers stay below the top bar.
+			camera.CFrame = CFrame.lookAt(eye, center + outward * 1.5)
 		end
 	end
 	if os.clock() < shakeUntil then

@@ -123,3 +123,68 @@ describe("Economy", function()
 		expect(Economy.helperCost(1)).toBeNil()
 	end)
 end)
+
+describe("Rare coins", function()
+	it("each rare coin has its exact odds", function()
+		local chances = {}
+		for _, def in Config.Rarities do
+			chances[def.id] = def.chance
+		end
+		expect(chances.giant).toBe(1 / 10000)
+		expect(chances.rainbow).toBe(1 / 1000)
+		expect(chances.gold).toBe(1 / 100)
+		expect(chances.silver).toBe(1 / 20)
+	end)
+
+	it("rolls map to the right coin, rarest at the bottom", function()
+		expect(Economy.rollRarity(0)).toBe("giant")
+		expect(Economy.rollRarity(0.00009)).toBe("giant")
+		expect(Economy.rollRarity(0.0002)).toBe("rainbow")
+		expect(Economy.rollRarity(0.005)).toBe("gold")
+		expect(Economy.rollRarity(0.03)).toBe("silver")
+		expect(Economy.rollRarity(0.5)).toBe("normal")
+		expect(Economy.rollRarity(0.9999)).toBe("normal")
+	end)
+
+	it("rarityRollFor lands exactly on that coin", function()
+		for _, def in Config.Rarities do
+			expect(Economy.rollRarity(Economy.rarityRollFor(def.id))).toBe(def.id)
+		end
+		expect(Economy.rollRarity(Economy.rarityRollFor("normal"))).toBe("normal")
+	end)
+
+	it("rare heads multiply cash, rare skulls multiply hats", function()
+		local p = ProfileSchema.default()
+		local base = Economy.cashPerHeads(p)
+		local _, cash, hats, rarity = Economy.resolveFlip(p, 0, 0)
+		expect(rarity).toBe("giant")
+		expect(cash).toBe(base * 500)
+		expect(hats).toBe(0)
+		local result, cash2, hats2, rarity2 = Economy.resolveFlip(p, 0.99, Economy.rarityRollFor("gold"))
+		expect(result).toBe("skull")
+		expect(rarity2).toBe("gold")
+		expect(cash2).toBe(0)
+		expect(hats2).toBe(10)
+	end)
+
+	it("no rarity roll means a normal coin", function()
+		local p = ProfileSchema.default()
+		local _, cash, _, rarity = Economy.resolveFlip(p, 0)
+		expect(rarity).toBe("normal")
+		expect(cash).toBe(Economy.cashPerHeads(p))
+	end)
+
+	it("spread evenly over every roll, the odds come out exact", function()
+		local counts = { normal = 0, silver = 0, gold = 0, rainbow = 0, giant = 0 }
+		local n = 100000
+		for i = 0, n - 1 do
+			local r = Economy.rollRarity((i + 0.5) / n)
+			counts[r] += 1
+		end
+		expect(counts.giant).toBe(10)
+		expect(counts.rainbow).toBe(100)
+		expect(counts.gold).toBe(1000)
+		expect(counts.silver).toBe(5000)
+		expect(counts.normal).toBe(n - 6110)
+	end)
+end)

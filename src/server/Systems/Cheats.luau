@@ -12,6 +12,8 @@ local GameLogic = require(script.Parent.Parent.Util.GameLogic)
 local ProfileSchema = require(ReplicatedStorage.Shared.Util.ProfileSchema)
 
 local Cheats = {}
+local RARE_CYCLE = { "silver", "gold", "rainbow", "giant" }
+local nextRare: { [Player]: number } = {}
 
 -- Studio test players have UserId <= 0; in Team Test only the game's creator.
 local function allowed(player: Player): boolean
@@ -31,6 +33,12 @@ local function onCheat(player: Player, command: unknown)
 	elseif command == "fill" then
 		GameLogic.fillTable(profile)
 		Tables.refresh(player)
+	elseif command == "rare" then
+		-- Next flip is the next rare coin in the list, so each look can be checked.
+		local i = (nextRare[player] or 0) % #RARE_CYCLE + 1
+		nextRare[player] = i
+		Tables.forceNextRarity(player, RARE_CYCLE[i])
+		return
 	elseif command == "wipe" then
 		local fresh = ProfileSchema.default()
 		for key, value in fresh :: any do

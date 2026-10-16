@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
@@ -38,6 +39,7 @@ local states: { [Player]: TableState } = {}
 local rng = Random.new()
 local tapLimiter = RateLimiter.new(Config.TAP_RATE, Config.TAP_BURST, os.clock)
 local waitingForPlot: { Player } = {}
+local forcedRarity: { [Player]: string } = {} -- Studio test button only
 local SEE_FLIPS_DISTANCE = 220
 local HEADS: FlipResult = "heads"
 
@@ -245,11 +247,30 @@ end
 
 local flipRemote: RemoteEvent
 
+-- Super rare coins get shouted to the whole server when they land.
+local function shoutIfRare(player: Player, outcome: GameLogic.FlipOutcome)
+	local def = Economy.rarityDef(outcome.rarity)
+	if not def or not def.shout then
+		return
+	end
+	local prize = if outcome.cash > 0 then `+${Format.short(outcome.cash)}` else `+{outcome.hats} 🎩`
+	local notice: Types.Notice = {
+		kind = "shout",
+		text = `{player.DisplayName} flipped a {def.name} coin! {prize}`,
+		rarity = outcome.rarity,
+		ownerId = player.UserId,
+	}
+	Net.event("Notice"):FireAllClients(notice)
+end
+
 local function flip(player: Player, state: TableState, profile: Profile, index: number, byHelper: boolean)
 	local now = os.clock()
 	local duration = Economy.flipTime(profile.upgrades.speed)
 	state.busyUntil[index] = now + duration
-	local outcome = GameLogic.applyFlip(profile, rng:NextNumber())
+	local forced = forcedRarity[player]
+	forcedRarity[player] = nil
+	local rarityRoll = if forced then Economy.rarityRollFor(forced) else rng:NextNumber()
+	local outcome = GameLogic.applyFlip(profile, rng:NextNumber(), rarityRoll)
 
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,
@@ -259,6 +280,7 @@ local function flip(player: Player, state: TableState, profile: Profile, index: 
 		hats = outcome.hats,
 		duration = duration,
 		byHelper = byHelper,
+		rarity = outcome.rarity,
 	}
 	-- Only players who can actually see this table get the event.
 	local tablePos = state.center
@@ -281,6 +303,7 @@ local function flip(player: Player, state: TableState, profile: Profile, index: 
 			current:SetAttribute("Face", outcome.result)
 		end
 		PlayerData.changed(player)
+		shoutIfRare(player, outcome)
 	end)
 end
 
@@ -364,6 +387,11 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 	PlayerData.changed(player)
 end
 
+-- Studio QA: make this player's next flip a given rare coin.
+function Tables.forceNextRarity(player: Player, rarity: string)
+	forcedRarity[player] = rarity
+end
+
 -- Rebuild a player's table after buying coins/bigger coins/a helper, or a reset.
 function Tables.refresh(player: Player)
 	local state = states[player]
@@ -380,6 +408,7 @@ function Tables.init()
 	Players.PlayerRemoving:Connect(function(player: Player)
 		local state = states[player]
 		states[player] = nil
+		forcedRarity[player] = nil
 		tapLimiter:remove(player)
 		local waitIndex = table.find(waitingForPlot, player)
 		if waitIndex then
