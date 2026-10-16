@@ -14,6 +14,7 @@ local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
 local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+local WeekendEvents = require(ReplicatedStorage.Shared.Util.WeekendEvents)
 local Boosts = require(script.Parent.Boosts)
 local Daily = require(script.Parent.Daily)
 local Net = require(script.Parent.Net)
@@ -367,7 +368,9 @@ local function flip(
 	state.busyUntil[index] = now + duration
 	local forced = forcedRarity[player]
 	forcedRarity[player] = nil
-	local rarityRoll = if forced then Economy.rarityRollFor(forced) else rng:NextNumber()
+	local rarityRoll = if forced
+		then Economy.rarityRollFor(forced)
+		else WeekendEvents.luckRoll(rng:NextNumber(), Boosts.eventLuck())
 	-- The Studio RARE button always lands heads, so the rare look and the $ banner match.
 	local outcome = GameLogic.applyFlip(
 		profile,

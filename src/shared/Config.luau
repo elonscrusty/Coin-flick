@@ -402,6 +402,39 @@ return table.freeze({
 		}),
 	}),
 
+	-- Play-time gifts: stay in the game, a gift becomes ready. Nothing is ever taken away:
+	-- a gift you did not claim before midnight (UTC) stays waiting for you.
+	-- Rewards are "flips" (heads worth of cash) and hat points, like the daily gift.
+	PlayGifts = table.freeze({
+		MAX_STEP = 60, -- most seconds one server tick may add (stops clock jumps)
+		Gifts = table.freeze({
+			table.freeze({ minutes = 5, flips = 15, hats = 0 }),
+			table.freeze({ minutes = 15, flips = 40, hats = 1 }),
+			table.freeze({ minutes = 30, flips = 90, hats = 2 }),
+			table.freeze({ minutes = 60, flips = 200, hats = 4 }),
+		}),
+	}),
+
+	-- Badges. badgeId = the Roblox badge id. carter makes the badges in Creator Hub and gives
+	-- the ids, so every id stays 0 (= not awarded on Roblox, still shown in the game) until then.
+	Badges = table.freeze({
+		table.freeze({ id = "streak10", name = "10 Heads!", text = "Get 10 heads in a row", badgeId = 0 }),
+		table.freeze({ id = "flips1m", name = "Million Flipper", text = "Flip 1,000,000 coins", badgeId = 0 }),
+		table.freeze({ id = "firstReset", name = "Fresh Start", text = "Reset your table once", badgeId = 0 }),
+		table.freeze({ id = "allHelpers", name = "Full Crew", text = "Own every helper", badgeId = 0 }),
+	}),
+	BADGE_STREAK = 10,
+	BADGE_FLIPS = 1000000,
+
+	-- Weekend events (UTC Saturday and Sunday). Luck x2 makes every rare coin twice as likely.
+	-- Coin rain: for RAIN_SECONDS of every RAIN_EVERY seconds, heads pay RAIN_MULT x cash.
+	Events = table.freeze({
+		LUCK_MULT = 2,
+		RAIN_MULT = 2,
+		RAIN_EVERY = 600,
+		RAIN_SECONDS = 45,
+	}),
+
 	-- Reset (prestige)
 	RESET_CASH_BONUS = 0.5, -- each reset = +50% cash forever
 
@@ -427,6 +460,8 @@ return table.freeze({
 	Hats = table.freeze(Hats),
 	Skins = table.freeze(Skins),
 	LEADERBOARDS = table.freeze({ "flips", "biggestFlip", "resets" }),
+	-- Weekly boards: score = flips since Monday 00:00 UTC. A new board starts every Monday.
+	WEEKLY_LEADERBOARDS = table.freeze({ "weekFlips" }),
 
 	-- Built-in Roblox sounds (ship with every client). Swap for nicer ones any time.
 	Sounds = table.freeze({
