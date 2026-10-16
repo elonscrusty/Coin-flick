@@ -53,15 +53,14 @@ describe("HUD layout", function()
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
 			local list = {}
 			for name, r in pieces(l) do
-				-- Messages (shout, toast) take the info + boost spot and those two
-				-- hide while a message shows, so they may share it with each other.
+				-- The rare banner and toasts share one message spot (a new one
+				-- replaces the old), but never sit on anything else.
 				table.insert(list, { name, r })
 			end
 			for i = 1, #list do
 				for j = i + 1, #list do
 					local a, b = list[i][1], list[j][1]
-					local sharedSpot = (a == "shout" or a == "toast" or a == "info" or a == "boost")
-						and (b == "shout" or b == "toast" or b == "info" or b == "boost")
+					local sharedSpot = (a == "shout" or a == "toast") and (b == "shout" or b == "toast")
 					if not sharedSpot and HudLayout.overlaps(list[i][2], list[j][2]) then
 						error(`{sc.name}: {list[i][1]} covers {list[j][1]}`)
 					end
@@ -90,10 +89,47 @@ describe("HUD layout", function()
 		end
 	end)
 
-	it("a panel leaves the pills visible above the dim", function()
+	it("a panel (even at its 1.1x pop-in peak) stays between the side bands", function()
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
-			expect(HudLayout.overlaps(l.panel, l.top)).toBeFalsy()
+			local p = l.panel
+			-- UIScale 1.1 at the peak of the bounce
+			local pop = { x = p.x - p.w * 0.05, y = p.y - p.h * 0.05, w = p.w * 1.1, h = p.h * 1.1 }
+			for _, other in { "top", "info", "boost", "combo", "side" } do
+				if HudLayout.overlaps(pop, l[other]) then
+					error(`{sc.name}: panel pop-in touches {other}`)
+				end
+			end
+			for _, button in l.sideButtons do
+				expect(HudLayout.overlaps(pop, button)).toBeFalsy()
+			end
+			expect(pop.y).toBeAtLeast(l.reserved.menu.y + l.reserved.menu.h)
+		end
+	end)
+
+	it("messages have their own spot: never on a pill, card, chip or button", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			for _, msg in { l.shout, l.toast } do
+				expect(msg.h).toBeAtLeast(56)
+				for _, other in { "top", "info", "boost", "combo", "side" } do
+					if HudLayout.overlaps(msg, l[other]) then
+						error(`{sc.name}: message spot sits on {other}`)
+					end
+				end
+			end
+		end
+	end)
+
+	it("pills have a gap, and the combo card is big enough to read", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			-- Hud.init: two pills (48% + 44% of the row) with an 8 px gap between
+			expect(l.top.w * (1 - 0.48 - 0.44)).toBeAtLeast(8)
+			expect(l.combo.h).toBeAtLeast(48)
+			expect(l.combo.w).toBeAtLeast(90)
+			local size = fittedLines(l.combo, "🔥 x99\nCOMBO", 0.05)
+			expect(size).toBeAtLeast(HudLayout.MIN_TEXT)
 		end
 	end)
 
@@ -134,8 +170,8 @@ describe("HUD layout", function()
 			end
 			expect(HudLayout.overlaps(l.panel, l.side)).toBeFalsy()
 			expect(HudLayout.overlaps(l.panel, l.toastLow)).toBeFalsy()
-			expect(l.panel.h).toBeAtLeast(210)
-			expect(l.panel.w).toBeAtLeast(300)
+			expect(l.panel.h).toBeAtLeast(190)
+			expect(l.panel.w).toBeAtLeast(270)
 			expect(fittedTextSize(l.toastLow, "Reset 3 times to meet King Flip!", nil, 2)).toBeAtLeast(
 				HudLayout.MIN_TEXT
 			)
@@ -158,9 +194,9 @@ describe("HUD layout", function()
 
 	it("longest HUD text still fits big enough to read", function()
 		local longest = {
-			info = "Heads = $999K\n🍀 80%  🪙 25/25",
-			boost = "⚡ 2x CASH  9:59",
-			mega = "🌟 Mega 999/999",
+			info = "Heads = $999K\nLuck 100%",
+			boost = "⚡ 2x  9:59",
+			mega = "🌟 999/999",
 			shout = "⭐ SomeLongName20Char flipped a GIANT coin! +$999K ⭐",
 			toast = "Fill your table first! (24/25 coins)",
 		}
@@ -175,10 +211,10 @@ describe("HUD layout", function()
 					error(`{sc.name}: {key} text only {size}px`)
 				end
 			end
-			-- Cash pill is 52% of the pill row, hat pill 43% (Hud.init)
-			local cash = { w = l.top.w * 0.52, h = l.top.h }
+			-- Cash pill is 48% of the pill row, hat pill 44% (Hud.init)
+			local cash = { w = l.top.w * 0.48, h = l.top.h }
 			expect(fittedTextSize(cash, "$999.9K", 0.07)).toBeAtLeast(16)
-			local hat = { w = l.top.w * 0.43, h = l.top.h }
+			local hat = { w = l.top.w * 0.44, h = l.top.h }
 			expect(fittedTextSize(hat, "🎩 999K", 0.07)).toBeAtLeast(HudLayout.MIN_TEXT)
 		end
 	end)
