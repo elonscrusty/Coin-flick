@@ -71,22 +71,49 @@ function HudLayout.reserved(w: number, h: number, touch: boolean): { [string]: R
 	return r
 end
 
+-- The part of the screen the table's coins (and their flips and the giant
+-- coin) use: the middle half across, from just under the flip peak to just
+-- above the near coins. Nothing always-on may sit here (CameraMath.SAFE).
+function HudLayout.tableZone(w: number, h: number): Rect
+	return rect(w * 0.25, h * 0.19, w * 0.5, h * 0.74)
+end
+
+-- Everything lives in the two free bands beside the table: cash, hats, the
+-- heads info, the mega/boost timer and the message slot on the LEFT; combo
+-- and the 4 big buttons on the RIGHT. The middle stays clear for coins.
 function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local s = clamp(math.min(w, h) / 390, 0.9, 1.6)
 	local gap = HudLayout.GAP * s
 	local reserved = HudLayout.reserved(w, h, touch)
-
-	-- Side buttons: 2x2 grid on the right, under the Roblox top bar and
-	-- above the jump button.
+	local x0 = 12
+	local y0 = TOPBAR_H + 8
 	local jumpTop = if reserved.jump then reserved.jump.y else h
-	local roomH = jumpTop - (TOPBAR_H + 8) - 12
-	local btn = math.min(64 * s, 84, (roomH - gap) / 2)
+	local stickTop = if reserved.thumbstick then reserved.thumbstick.y else h
+
+	-- Left band, top to bottom: pills, heads info, boost / mega timer.
+	local colW = clamp(w * 0.25 - 14, 140, 260)
+	local pillH = clamp(34 * s, 32, 48)
+	local top = rect(x0, y0, colW, pillH)
+	local infoH = clamp(40 * s, 38, 64)
+	local info = rect(x0, top.y + top.h + gap, colW, infoH)
+	local boostH = clamp(26 * s, 26, 38)
+	local boost = rect(x0, info.y + info.h + gap, colW, boostH)
+	-- Messages (rare coin banner, toasts) use the info + boost spot: those two
+	-- hide while a message shows, so nothing ever sits on the table.
+	local msg = rect(x0, info.y, colW, boost.y + boost.h - info.y)
+	local shout = rect(msg.x, msg.y, msg.w, msg.h)
+	local toast = rect(msg.x, msg.y, msg.w, msg.h)
+
+	-- Right band: combo counter, then the 2x2 side buttons, above the jump button.
+	local availH = jumpTop - 12 - y0
+	local comboH = clamp(44 * s, 40, 64)
+	local btn = math.min(64 * s, 84, (availH - comboH - 2 * gap) / 2)
 	btn = math.max(btn, HudLayout.MIN_TOUCH)
 	local sideW = btn * 2 + gap
 	local sideH = btn * 2 + gap
 	local sideX = w - 12 - sideW
-	-- Middle of the free strip, so the thumb finds it without reaching.
-	local sideY = clamp((TOPBAR_H + 8 + jumpTop - 12 - sideH) / 2 + 10 * s, TOPBAR_H + 8, jumpTop - 12 - sideH)
+	local combo = rect(sideX, y0, sideW, comboH)
+	local sideY = combo.y + combo.h + gap
 	local side = rect(sideX, sideY, sideW, sideH)
 	local sideButtons = {
 		rect(sideX, sideY, btn, btn),
@@ -95,68 +122,36 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 		rect(sideX + btn + gap, sideY + btn + gap, btn, btn),
 	}
 
-	-- Top bar sits between Roblox's left and right top bar buttons.
-	local topW = math.min(480 * s, w - 2 * (TOPBAR_SIDE_W + 8))
-	local topH = clamp(44 * s, 40, 64)
-	local top = rect((w - topW) / 2, 8, topW, topH)
-
-	-- Center column under the top bar: must clear the side grid.
-	local colW = math.min(520 * s, w - 2 * (sideW + 16))
-	local colX = (w - colW) / 2
-	local stripH = clamp(28 * s, 26, 40)
-	-- Below the top bar and below Roblox's top bar buttons.
-	local info = rect(colX, math.max(top.y + top.h, TOPBAR_H) + gap, colW, stripH)
-	local boost = rect(colX, info.y + info.h + gap, colW, stripH)
-	local shoutH = clamp(58 * s, 52, 88) -- two lines: long names wrap
-	local shout = rect(colX, boost.y + boost.h + gap, colW, shoutH)
-	local toastH = clamp(44 * s, 40, 64) -- two lines when narrow
-	local toast = rect(colX, shout.y + shout.h + gap, colW, toastH)
-	-- Low slots that reach down beside the thumbstick or jump button get
-	-- narrower (staying centered) so they never sit on them.
-	for _, slot in { shout, toast } do
-		for _, r in reserved do
-			if HudLayout.overlaps(slot, r) then
-				local cut = if r.x + r.w / 2 < w / 2 then r.x + r.w + 8 - slot.x else slot.x + slot.w - (r.x - 8)
-				slot.x += cut
-				slot.w -= 2 * cut
-			end
-		end
-	end
-
-	-- Combo: left side under the Roblox menu, above the thumbstick.
-	local stickTop = if reserved.thumbstick then reserved.thumbstick.y else h
-	local comboW = 96 * s
-	local comboH = clamp(math.min(76 * s, stickTop - 12 - (TOPBAR_H + 8)), 40, 120)
-	local combo = rect(12, TOPBAR_H + 8, comboW, comboH)
-
-	-- Studio test buttons: a column on the left under the combo counter;
-	-- if that runs into the thumbstick, a row along the bottom middle.
+	-- Studio test buttons: a column under the boost strip if it fits above the
+	-- thumbstick, else a row along the bottom between the thumbstick and jump.
 	local cheatH = 30
-	local colTop = combo.y + combo.h + gap
-	local cheats: Rect
 	local n = HudLayout.CHEATS
+	local colTop = boost.y + boost.h + gap
+	local cheats: Rect
 	if colTop + n * cheatH + (n - 1) * gap <= stickTop - 8 then
-		cheats = rect(12, colTop, 72, n * cheatH + (n - 1) * gap)
+		cheats = rect(x0, colTop, 72, n * cheatH + (n - 1) * gap)
 	else
 		local left = if reserved.thumbstick then reserved.thumbstick.w + 8 else 12
-		local right = if reserved.jump then reserved.jump.x - 8 else w - 12
+		local right = if reserved.jump then reserved.jump.x - 8 else side.x - 12
 		local rowW = math.min(n * 64 + (n - 1) * gap, right - left)
 		cheats = rect(left + (right - left - rowW) / 2, h - 8 - cheatH, rowW, cheatH)
 	end
 
-	-- While a panel is open, toasts go low in the middle, between the
-	-- thumbstick and the jump button (and above the Studio test row).
+	-- While a panel is open, toasts go low in the middle (between the
+	-- thumbstick and the jump button, above the Studio test row).
+	local toastH = clamp(44 * s, 40, 64)
 	local lowLeft = if reserved.thumbstick then reserved.thumbstick.w + 8 else 12
 	local lowRight = if reserved.jump then reserved.jump.x - 8 else side.x - 12
 	local lowBottom = if cheats.y > h / 2 then cheats.y - gap else h - 8
-	local lowW = math.min(colW, lowRight - lowLeft)
+	local lowW = math.min(520 * s, lowRight - lowLeft)
 	local toastLow = rect(lowLeft + (lowRight - lowLeft - lowW) / 2, lowBottom - toastH, lowW, toastH)
 
-	-- Room for shop / reset / top 10 panels: under Roblox's top bar, left of
-	-- the side buttons (they stay tappable), above the low toast. Touch
-	-- controls are hidden while a panel is open, so it may reach over them.
+	-- Room for shop / reset / top 10 panels: right of the pills (which stay
+	-- above the dim), left of the side buttons, above the low toast. Touch
+	-- controls hide while a panel is open, so it may reach over them.
+	local panelLeft = top.x + top.w + 8
 	local panelTop = TOPBAR_H + gap
-	local panel = rect(12, panelTop, side.x - 12 - 12, toastLow.y - gap - panelTop)
+	local panel = rect(panelLeft, panelTop, side.x - 12 - panelLeft, toastLow.y - gap - panelTop)
 
 	return {
 		scale = s,

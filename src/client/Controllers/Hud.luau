@@ -6,7 +6,6 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TextService = game:GetService("TextService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -71,8 +70,12 @@ local hatLabel: TextLabel
 local hatScale: UIScale
 local infoLabel: TextLabel
 local resetButton: TextButton
+local resetBar: Frame
 local resetFill: Frame
+local resetCount: TextLabel
+local resetIcon: TextLabel
 local resetWord: TextLabel
+local resetSpin: Tween?
 local resetPulse: Tween?
 local boostLabel: TextLabel
 local boostEnds = 0
@@ -90,16 +93,11 @@ local function anyPanelOpen(): boolean
 	return Panels.anyOpen()
 end
 
--- Info / boost strips: as wide as their words (so they hide less of the
--- world), centered in their slot; hidden when empty or a panel is open.
+-- Info / boost cards: fixed spots in the left band (HudLayout); hidden when
+-- empty or while a panel is open.
 local function setStrip(l: TextLabel, text: string)
 	l.Text = text
-	local slot = if l == boostLabel then layout.boost else layout.info
-	local cap = l:FindFirstChildOfClass("UITextSizeConstraint")
-	local size = if cap then cap.MaxTextSize else 20
-	local textW = TextService:GetTextSize(text, size, UiStyle.FONT, Vector2.new(10000, 1000)).X
-	local w = math.min(slot.w, textW * 1.1 + 28)
-	place(l, { x = slot.x + (slot.w - w) / 2, y = slot.y, w = w, h = slot.h })
+	place(l, if l == boostLabel then layout.boost else layout.info)
 	l.Visible = text ~= "" and not anyPanelOpen()
 end
 
@@ -203,11 +201,28 @@ render = function(s: Snapshot)
 	end
 	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance, s.coinCount, Config.MAX_COINS))
 
-	-- Not full: a gold bar fills up inside the button (progress, not "off").
-	resetButton.BackgroundColor3 = if s.tableFull then ORANGE else Color3.fromRGB(120, 95, 70)
-	resetFill.Visible = not s.tableFull
-	resetFill.Size = UDim2.fromScale(math.clamp(s.coinCount / Config.MAX_COINS, 0, 1), 1)
-	resetWord.Text = HudText.reset(s.coinCount, Config.MAX_COINS, s.tableFull)
+	-- Not full: a gold progress bar fills up inside an orange button (clearly
+	-- "filling", never "broken"). Full: bar goes away, button glows.
+	local full = s.tableFull
+	resetButton.BackgroundColor3 = if full then ORANGE else Color3.fromRGB(214, 120, 40)
+	resetBar.Visible = not full
+	resetFill.Size =
+		UDim2.fromScale(if s.coinCount <= 0 then 0 else math.clamp(s.coinCount / Config.MAX_COINS, 0.12, 1), 1)
+	resetCount.Text = HudText.resetCount(s.coinCount, Config.MAX_COINS)
+	resetWord.Text = HudText.reset(full)
+	if full and not resetSpin then
+		local spin = TweenService:Create(
+			resetIcon,
+			TweenInfo.new(1.2, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1),
+			{ Rotation = 360 }
+		)
+		spin:Play()
+		resetSpin = spin
+	elseif not full and resetSpin then
+		resetSpin:Cancel()
+		resetSpin = nil
+		resetIcon.Rotation = 0
+	end
 	-- Glow the RESET button's outline when the table is full. (Pulsing the
 	-- outline, not the size, so the press-pop animation can't cancel it.)
 	local outline = resetButton:FindFirstChildOfClass("UIStroke")
@@ -230,6 +245,7 @@ render = function(s: Snapshot)
 end
 
 local topFrame: Frame
+local pillGui: ScreenGui
 local sideFrame: Frame
 local sideButtons: { TextButton } = {}
 
@@ -312,7 +328,7 @@ function Hud.init()
 	local topLayout = Instance.new("UIListLayout")
 	topLayout.FillDirection = Enum.FillDirection.Horizontal
 	topLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	topLayout.Padding = UDim.new(0.03, 0)
+	topLayout.Padding = UDim.new(0.02, 0)
 	topLayout.Parent = top
 	topFrame = top
 
@@ -330,13 +346,21 @@ function Hud.init()
 		frame.Parent = top
 		return frame, text, scale
 	end
-	local _cashFrame, cl, cs = pill(GREEN, 0.58)
+	local _cashFrame, cl, cs = pill(GREEN, 0.52)
 	cashLabel, cashScale = cl, cs
-	local _hatFrame, hl, hs = pill(PURPLE, 0.36)
+	local _hatFrame, hl, hs = pill(PURPLE, 0.43)
 	hatLabel, hatScale = hl, hs
 	cashLabel.Text = "$0"
 	hatLabel.Text = "🎩 0"
-	top.Parent = gui
+	-- The cash and hat pills sit in their own ScreenGui above the panels' dim,
+	-- so they stay bright while a shop is open.
+	pillGui = Instance.new("ScreenGui")
+	pillGui.Name = "CoinFlickPills"
+	pillGui.ResetOnSpawn = false
+	pillGui.DisplayOrder = 6
+	pillGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	pillGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
+	top.Parent = pillGui
 
 	-- Dark see-through strips so the white text reads on bright sky.
 	local function strip(name: string, text: string, color: Color3): TextLabel
@@ -378,7 +402,7 @@ function Hud.init()
 		Sounds.play("Tap", 0.4)
 		Panels.open("shop")
 	end)
-	local resetB, _resetIcon, resetW = sideButton("🔄", "RESET", GREY, function()
+	local resetB, resetI, resetW = sideButton("🔄", "RESET", ORANGE, function()
 		Sounds.play("Tap", 0.4)
 		local s = State.get()
 		if s and s.tableFull then
@@ -388,16 +412,32 @@ function Hud.init()
 			Panels.toast(`Fill your table first! ({count}/{Config.MAX_COINS} coins)`)
 		end
 	end)
-	resetButton, resetWord = resetB, resetW
-	-- Gold tank that fills with coins; the button glows when it's full.
+	resetButton, resetIcon, resetWord = resetB, resetI, resetW
+	-- Icon on top, word in the middle, a gold progress bar with the coin count
+	-- along the bottom.
+	resetIcon.Size = UDim2.fromScale(1, 0.44)
+	resetWord.Position = UDim2.fromScale(0, 0.44)
+	resetWord.Size = UDim2.fromScale(1, 0.26)
+	resetBar = Instance.new("Frame")
+	resetBar.Name = "Bar"
+	resetBar.Position = UDim2.fromScale(0.02, 0.74)
+	resetBar.Size = UDim2.fromScale(0.96, 0.24)
+	resetBar.BackgroundColor3 = INK
+	resetBar.BackgroundTransparency = 0.25
+	resetBar.ZIndex = 2
+	corner(resetBar, 0.5)
+	stroke(resetBar, 2)
+	resetBar.Parent = resetButton
 	resetFill = Instance.new("Frame")
 	resetFill.Name = "Fill"
 	resetFill.BackgroundColor3 = UiStyle.GOLD
-	resetFill.BackgroundTransparency = 0.15
 	resetFill.Size = UDim2.fromScale(0, 1)
-	resetFill.ZIndex = 2
-	corner(resetFill, 0.2)
-	resetFill.Parent = resetButton
+	resetFill.ZIndex = 3
+	corner(resetFill, 0.5)
+	resetFill.Parent = resetBar
+	resetCount = label({ Name = "Count", Size = UDim2.fromScale(1, 1), ZIndex = 4 })
+	textLimit(resetCount, 16)
+	resetCount.Parent = resetBar
 	local topButton = sideButton("🏆", "TOP", PURPLE, function()
 		Sounds.play("Tap", 0.4)
 		Panels.open("top")
@@ -437,7 +477,9 @@ function Hud.init()
 		cashLabel.Text = `${Format.short(value)}`
 	end)
 
-	gui.Parent = player:WaitForChild("PlayerGui")
+	local playerGui = player:WaitForChild("PlayerGui")
+	pillGui.Parent = playerGui
+	gui.Parent = playerGui
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyLayout)
 	applyLayout()
 end

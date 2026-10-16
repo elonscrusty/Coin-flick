@@ -6,11 +6,22 @@ local Format = require(script.Parent.Format)
 
 local HudText = {}
 
--- Heads pay is rounded the same way Economy.flip rounds it, so the strip
--- shows exactly what one heads gives you.
+-- What one heads pays. Whole amounts show whole ($2); a bonus like x1.5 shows
+-- its one decimal ($1.5) so the bar matches the "x1.5" the reset popup promised.
+function HudText.pay(cashPerHeads: number): string
+	if cashPerHeads >= 1000 then
+		return Format.short(math.floor(cashPerHeads + 0.5))
+	end
+	local tenths = math.floor(cashPerHeads * 10 + 0.5)
+	if tenths % 10 == 0 then
+		return tostring(tenths // 10)
+	end
+	return string.format("%d.%d", tenths // 10, tenths % 10)
+end
+
+-- Two short lines (the info card is narrow): pay, then luck and coin count.
 function HudText.info(cashPerHeads: number, headsChance: number, coins: number, maxCoins: number): string
-	local pay = math.floor(cashPerHeads + 0.5)
-	return `Heads = ${Format.short(pay)}  •  🍀 {Format.percent(headsChance)} luck  •  🪙 {coins}/{maxCoins}`
+	return `Heads = ${HudText.pay(cashPerHeads)}\n🍀 {Format.percent(headsChance)}  🪙 {coins}/{maxCoins}`
 end
 
 -- Boost strip: the 2x timer while it runs, the mega coin count once someone
@@ -20,14 +31,19 @@ function HudText.boost(taps: number, goal: number, boostLeft: number): string
 	if left > 0 then
 		return `⚡ 2x CASH  {left // 60}:{string.format("%02d", left % 60)}`
 	elseif taps > 0 then
-		return `🌟 Mega coin {taps}/{goal}  •  tap it together!`
+		return `🌟 Mega {taps}/{goal}`
 	end
 	return ""
 end
 
--- RESET side button word: shows how full the table is until it can reset.
-function HudText.reset(coins: number, maxCoins: number, full: boolean): string
-	return if full then "RESET!" else `{coins}/{maxCoins}`
+-- RESET button word: RESET until it is ready, then RESET!
+function HudText.reset(full: boolean): string
+	return if full then "RESET!" else "RESET"
+end
+
+-- The progress bar inside the RESET button.
+function HudText.resetCount(coins: number, maxCoins: number): string
+	return `{coins}/{maxCoins}`
 end
 
 return HudText
