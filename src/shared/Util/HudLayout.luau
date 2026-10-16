@@ -32,7 +32,9 @@ HudLayout.MIN_TEXT = 14 -- px, smallest readable text
 HudLayout.MIN_TOUCH = 44 -- px, smallest thumb-friendly button
 HudLayout.GAP = 6
 HudLayout.CHEATS = 6 -- Studio test buttons (Hud.buildCheats)
-HudLayout.CARD_GAP = 8 -- air between the combo card and the buttons
+HudLayout.CARD_GAP = 12 -- air between the combo card and the buttons
+HudLayout.COMBO_POP_MAX = 1.1 -- biggest the combo card ever grows (UIScale)
+HudLayout.RESET_BAR_MIN = 20 -- px, the RESET progress bar is never thinner
 HudLayout.MSG_MARGIN = 10 -- px of air around the message spot
 
 -- Roblox top bar: menu/chat on the left, more buttons on the right.
@@ -117,8 +119,8 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	-- card, then the 2x2 side buttons above the jump button.
 	local yr = TOPBAR_H + 4 -- the right band starts just under Roblox's top buttons
 	local availH = jumpTop - 12 - yr
-	local chipH = clamp(22 * s, 26, 28)
-	local comboH = clamp(44 * s, 48, 52)
+	local chipH = 26
+	local comboH = clamp(44 * s, 48, 50)
 	local rgap = math.max(4, gap * 0.6) -- tighter gaps in the packed right band
 	local btn = math.min(64 * s, 84, (availH - 2 * chipH - comboH - 3 * rgap - HudLayout.CARD_GAP) / 2)
 	btn = math.max(btn, HudLayout.MIN_TOUCH)
@@ -184,6 +186,16 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 		cheats = cheats,
 		reserved = reserved,
 	}
+end
+
+-- Inside the RESET button (pixels from its top-left corner, before the
+-- button's own padding): the word on top, the progress bar along the bottom.
+function HudLayout.resetParts(w: number, h: number): { word: Rect, bar: Rect }
+	local barH = math.max(HudLayout.RESET_BAR_MIN, h * 0.44)
+	local barY = h - barH - math.max(3, h * 0.06)
+	local bar = rect(w * 0.06, barY, w * 0.88, barH)
+	local word = rect(0, 2, w, math.max(12, barY - 4))
+	return { word = word, bar = bar }
 end
 
 -- Screen sizes the tests (and the runner) check. Width x height in px,

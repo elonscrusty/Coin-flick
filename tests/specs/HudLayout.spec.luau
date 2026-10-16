@@ -171,9 +171,33 @@ describe("HUD layout", function()
 	it("combo card has 8px of air above the buttons; RESET bar is big enough to read", function()
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
-			expect(l.side.y - (l.combo.y + l.combo.h)).toBeAtLeast(8)
-			-- Hud.init: the bar is half the RESET button, 18px tall at least
-			expect(l.sideButtons[2].h * 0.5).toBeAtLeast(18)
+			expect(l.side.y - (l.combo.y + l.combo.h)).toBeAtLeast(12)
+			-- the combo card at its biggest pop (UIScale) still clears every neighbour
+			local pop = HudLayout.COMBO_POP_MAX
+			local c = l.combo
+			local big = {
+				x = c.x - c.w * (pop - 1) / 2,
+				y = c.y - c.h * (pop - 1) / 2,
+				w = c.w * pop,
+				h = c.h * pop,
+			}
+			for _, other in { "mega", "boost", "side" } do
+				if HudLayout.overlaps(big, l[other]) then
+					error(`{sc.name}: popped combo touches {other}`)
+				end
+			end
+			for _, b in l.sideButtons do
+				expect(HudLayout.overlaps(big, b)).toBeFalsy()
+			end
+			-- RESET bar: at least 20px tall, inside the button, word above it
+			local rb = l.sideButtons[2]
+			local parts = HudLayout.resetParts(rb.w, rb.h)
+			expect(parts.bar.h).toBeAtLeast(20)
+			expect(parts.bar.y + parts.bar.h).toBeAtMost(rb.h)
+			expect(parts.bar.x).toBeAtLeast(0)
+			expect(parts.bar.x + parts.bar.w).toBeAtMost(rb.w)
+			expect(parts.word.y + parts.word.h).toBeAtMost(parts.bar.y)
+			expect(parts.word.h).toBeAtLeast(12)
 			-- chip text: white with a thin outline on a deep color (see Hud.strip)
 			expect(fittedTextSize(l.boost, "⚡ 2x  9:59", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
 			expect(fittedTextSize(l.mega, "🌟 999/999", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
