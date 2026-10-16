@@ -1,7 +1,7 @@
 --!strict
 -- How wide each hat is (its widest part, in hat units where a head is ~1.2),
 -- and how much to shrink the wide ones so no hat swallows your avatar.
--- HatBuilder builds the brims from these numbers; Hats scales by `fit`.
+-- Keep WIDTH in step with the brims in HatBuilder; Hats scales each hat by `fit`.
 
 local HatSizes = {}
 
