@@ -51,7 +51,7 @@ local giftButton: TextButton
 local timerLabel: TextLabel
 local dailyList: ScrollingFrame
 local petList: ScrollingFrame
-local onDot: (boolean) -> () = function() end
+local dotHook: { fn: (boolean) -> () } = { fn = function() end }
 
 local function label(props: { [string]: any }, max: number, ink: boolean): TextLabel
 	if ink then
@@ -359,11 +359,11 @@ end
 
 -- `dot(true)` when something can be claimed (the GIFTS tab shows a red dot).
 function GiftPets.start(dot: (boolean) -> ())
-	onDot = dot
+	dotHook.fn = dot
 	ClientNet.event("DailyState").OnClientEvent:Connect(function(view: Types.DailyView)
 		daily = view
 		renderDaily()
-		onDot(GiftPetView.dailyDot(view))
+		dotHook.fn(GiftPetView.dailyDot(view))
 	end)
 	ClientNet.event("PetState").OnClientEvent:Connect(function(views: { PetRules.PetView })
 		pets = views
