@@ -118,10 +118,52 @@ function Plot.build(
 
 	-- Fence: posts + two rails on each side, with a gap for the entrance.
 	local gap = GATE_HALF
+	-- Real models when uploaded (Meshes.has), the Part fence below otherwise. Required here, not at the top:
+	-- Meshes reads Enum values the offline tests lack.
+	local Meshes = require(script.Parent.Parent.Systems.Meshes)
+	local useModels = Meshes.has("CF_FenceSection") and Meshes.has("CF_FencePost")
 	local function fenceRun(from: Vector3, to: Vector3)
 		local length = (to - from).Magnitude
 		local mid = (from + to) / 2
 		local along = CFrame.lookAt(mid, to)
+		local posts = math.max(1, math.floor(length / 4))
+		if useModels then
+			-- one invisible wall keeps players in; the models are looks only
+			local wall = make({
+				Name = "FenceWall",
+				Size = Vector3.new(0.4, 3.2, length),
+				CFrame = plotCFrame * (along + Vector3.new(0, 1.6, 0)),
+				Transparency = 1,
+				CanQuery = false,
+			})
+			wall.Parent = folder
+			local dir = (to - from).Unit
+			local tints = { Wood = theme.fence }
+			local spacing = length / posts
+			local pieces = math.ceil(spacing / 4)
+			for i = 0, posts do
+				local p = from:Lerp(to, i / posts)
+				local post = Meshes.clone("CF_FencePost", plotCFrame * CFrame.new(p), tints)
+				if post then
+					post.Parent = folder
+				end
+				if i < posts then
+					for k = 0, pieces - 1 do
+						local at = p + dir * (spacing * (k + 0.5) / pieces)
+						local section = Meshes.clone(
+							"CF_FenceSection",
+							plotCFrame * CFrame.fromMatrix(at, dir, Vector3.yAxis),
+							tints,
+							spacing / pieces / 4
+						)
+						if section then
+							section.Parent = folder
+						end
+					end
+				end
+			end
+			return
+		end
 		for _, y in { 1.2, 2.4 } do
 			local rail = make({
 				Name = "Rail",
@@ -131,7 +173,6 @@ function Plot.build(
 			})
 			rail.Parent = folder
 		end
-		local posts = math.max(1, math.floor(length / 4))
 		for i = 0, posts do
 			local p = from:Lerp(to, i / posts)
 			local post = make({
@@ -151,14 +192,24 @@ function Plot.build(
 
 	-- Name arch over the entrance. Tall, so from the spawn camera (outside the gate, behind your
 	-- avatar) the sign is above the picture and the pillars stay beside the table, not in front of it.
+	local pillarModels = Meshes.has("CF_ArchPillar")
 	for _, x in { -gap, gap } do
 		local pillar = make({
 			Name = "Pillar",
 			Size = Vector3.new(PILLAR_W, ARCH_TOP, PILLAR_W),
 			CFrame = plotCFrame * CFrame.new(x, ARCH_TOP / 2, -half),
 			Color = PILLAR,
+			Transparency = if pillarModels then 1 else 0, -- the model is the look, this part stays as the solid
 		})
 		pillar.Parent = folder
+		if pillarModels then
+			local model = Meshes.clone("CF_ArchPillar", plotCFrame * CFrame.new(x, 0, -half), { Band = theme.border })
+			if model then
+				model.Parent = folder
+				continue
+			end
+			pillar.Transparency = 0
+		end
 		-- Trim bands stay below the name sign (it hangs from ARCH_TOP - 2.9 up), never across its letters.
 		for i = 1, 4 do
 			local band = make({

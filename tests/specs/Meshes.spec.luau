@@ -24,3 +24,54 @@ describe("Blender models", function()
 		end
 	end)
 end)
+
+describe("World models", function()
+	it("every model the game code asks Meshes.clone for exists in the catalog", function()
+		local used = {
+			"CF_Tree",
+			"CF_TreePalm",
+			"CF_TreeCandy",
+			"CF_Tower",
+			"CF_TreeCrystal",
+			"CF_Bench",
+			"CF_Rock",
+			"CF_Bush",
+			"CF_Umbrella",
+			"CF_Shell",
+			"CF_CandyCane",
+			"CF_Mushroom",
+			"CF_Flowers",
+			"CF_Lamp",
+			"CF_FenceSection",
+			"CF_FencePost",
+			"CF_ArchPillar",
+			"CF_Cloud",
+			"CF_Balloon",
+			"CF_Island",
+			"CF_Fountain",
+			"CF_PlazaTile",
+			"CF_FreeStatue",
+		}
+		for _, name in used do
+			expect(MeshCatalog[name] ~= nil).toBe(true)
+		end
+	end)
+
+	it("themed slots exist on the models that get tinted", function()
+		local tinted = {
+			CF_Tree = { "Bark", "Leaf", "LeafLight" },
+			CF_TreeCandy = { "Stick", "Candy", "Stripe" },
+			CF_Tower = { "Stone", "StoneLight", "Roof", "Trim", "Window" },
+			CF_FenceSection = { "Wood" },
+			CF_FencePost = { "Wood" },
+			CF_ArchPillar = { "Band" },
+			CF_Balloon = { "Envelope" },
+			CF_Bench = { "Wood", "Leg" },
+		}
+		for name, slots in tinted do
+			for _, slot in slots do
+				expect(MeshCatalog[name][slot] ~= nil).toBe(true)
+			end
+		end
+	end)
+end)

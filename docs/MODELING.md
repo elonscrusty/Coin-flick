@@ -21,3 +21,14 @@ Until a model has an id (0) every caller keeps its Part stand-in, so nothing bre
 3. Build, LOOK at `art/previews/<Name>.png`, iterate. Keep each model under about 1500 faces.
 4. In game code: `Meshes.clone("CF_Tree", cframe, { Leaf = color })` returns a Model, or nil when the model is not
    uploaded yet: keep the old Part code as the fallback. Never invent ids.
+
+## World models (blender/models_world.py)
+25 pieces: trees (oak `CF_Tree`, palm, pine, candy, crystal), castle tower, bush, rock, flowers, mushroom, lamp, bench,
+umbrella, shell, candy cane, crystals, fence post + section, gate pillar, fountain, FREE PLOT trophy, sky island,
+cloud, balloon, plaza floor. Build one: `blender/build.py --only CF_Bench`.
+- Front: models face Blender +Y (Roblox -Z, toward the gate); bench back is on the Blender -Y side. UNVERIFIED in Studio.
+- Wired with the Part code kept as fallback: `PlotDecor` (`withModels`: trees and props, tinted from the theme),
+  `Plot` (fence: models + one invisible wall; gate pillar: model + invisible solid), `WorldArt` (cloud, balloon, island,
+  fountain, plaza), `World` (FREE PLOT trophy). `Meshes.clone(name, cf, tints, scale)` scales about the model origin.
+- Sky pieces (island, cloud, balloon) are tagged `SkyBob` and bob via client SkyFx; no brown anywhere in the sky.
+- Not wired yet (built only): `CF_TreePine`, `CF_Crystals`.

@@ -139,19 +139,25 @@ local function buildFreeMarker(slot: number, parent: Instance): Model
 			)
 		end
 	end
-	-- a gold coin statue on a pedestal in the middle, so a free yard shines from far away
-	part("Pedestal", Vector3.new(4, 1.4, 4), CFrame.new(0, 0.9, 0), Color3.fromRGB(255, 250, 240), true)
-	local statue = makePart({
-		Name = "CoinStatue",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.8, 4.2, 4.2),
-		CFrame = base * CFrame.new(0, 3.6, 0) * CFrame.Angles(0, math.pi / 2, 0),
-		Color = Color3.fromRGB(255, 205, 40),
-		Material = Enum.Material.SmoothPlastic,
-		CanCollide = false,
-		CanQuery = false,
-	})
-	statue.Parent = model
+	-- a gold coin trophy on a pedestal in the middle, so a free yard shines from far away
+	local Meshes = require(script.Parent.Meshes) -- here: it reads Enum values the offline tests lack
+	local trophy = Meshes.clone("CF_FreeStatue", base)
+	if trophy then
+		trophy.Parent = model
+	else
+		part("Pedestal", Vector3.new(4, 1.4, 4), CFrame.new(0, 0.9, 0), Color3.fromRGB(255, 250, 240), true)
+		local statue = makePart({
+			Name = "CoinStatue",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.8, 4.2, 4.2),
+			CFrame = base * CFrame.new(0, 3.6, 0) * CFrame.Angles(0, math.pi / 2, 0),
+			Color = Color3.fromRGB(255, 205, 40),
+			Material = Enum.Material.SmoothPlastic,
+			CanCollide = false,
+			CanQuery = false,
+		})
+		statue.Parent = model
+	end
 	local balloonColors = {
 		Color3.fromRGB(255, 90, 120),
 		Color3.fromRGB(70, 170, 255),
