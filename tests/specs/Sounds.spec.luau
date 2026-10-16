@@ -3,6 +3,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local SoundPick = require(ReplicatedStorage.Shared.Util.SoundPick)
 
 -- carter's uploaded ids, copied from Find The Pet's SoundIds.luau (b578be3).
+-- A sound may only use the id listed for it here.
 local UPLOADED: { [string]: number } = {
 	Heads = 73948288584672, -- CoinPickup
 	Skull = 112800468947570, -- Pickup
@@ -32,9 +33,6 @@ describe("Sounds", function()
 				expect(UPLOADED[name]).toBe(def.id)
 			end
 		end
-		for name, id in UPLOADED do
-			expect(Config.Sounds[name].id).toBe(id)
-		end
 	end)
 
 	it("every sound has a built-in fallback", function()
@@ -45,8 +43,10 @@ describe("Sounds", function()
 
 	it("plays the uploaded id, and the fallback if it fails or is missing", function()
 		local def = Config.Sounds.Heads
-		expect(SoundPick.source(def, false)).toBe("rbxassetid://73948288584672")
-		expect(SoundPick.source(def, true)).toBe(def.fallback)
+		local uploaded = { id = 73948288584672, fallback = def.fallback }
+		expect(SoundPick.source(uploaded, false)).toBe("rbxassetid://73948288584672")
+		expect(SoundPick.source(uploaded, true)).toBe(def.fallback)
+		expect(SoundPick.source(def, false)).toBe(def.fallback)
 		expect(SoundPick.source(Config.Sounds.Flip, false)).toBe(Config.Sounds.Flip.fallback)
 	end)
 end)

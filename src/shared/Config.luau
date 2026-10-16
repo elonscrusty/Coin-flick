@@ -365,23 +365,24 @@ return table.freeze({
 
 	-- Built-in Roblox sounds (ship with every client). Swap for nicer ones any time.
 	Sounds = table.freeze({
-		-- id = carter's own uploaded sound (from Find The Pet). fallback = a
-		-- built-in Roblox sound used if the id will not load (for example a
-		-- place opened from a file in Studio).
-		Tap = { id = 0, fallback = "rbxasset://sounds/clickfast.wav" }, -- soft click (carter: Button was annoying)
+		-- id = carter's own uploaded sound (from Find The Pet), only after carter
+		-- says yes to it; he found them annoying all at once, so they are tried
+		-- one at a time. fallback = built-in Roblox sound, used when id is 0 or
+		-- the id will not load.
+		Tap = { id = 0, fallback = "rbxasset://sounds/clickfast.wav" },
 		Flip = { id = 0, fallback = "rbxasset://sounds/action_jump.mp3" },
 		Land = { id = 0, fallback = "rbxasset://sounds/action_jump_land.mp3" },
-		Heads = { id = 73948288584672, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- CoinPickup
-		Skull = { id = 112800468947570, fallback = "rbxasset://sounds/button.wav" }, -- Pickup, a happy sound
-		Buy = { id = 120358225055021, fallback = "rbxasset://sounds/button.wav" }, -- Purchase
-		Reset = { id = 74062661586425, fallback = "rbxasset://sounds/snap.wav" }, -- LevelUp
-		Rare = { id = 109340819460170, fallback = "rbxasset://sounds/victory.wav" }, -- RarityAccent
-		Combo = { id = 74274333382741, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- LuckyMeter
-		Mega = { id = 109965175431278, fallback = "rbxasset://sounds/victory.wav" }, -- MatchWin
-		Daily = { id = 119151410036137, fallback = "rbxasset://sounds/victory.wav" }, -- DailyClaim
-		Gift = { id = 94176845962719, fallback = "rbxasset://sounds/victory.wav" }, -- GiftOpen
-		JobDone = { id = 123258283238472, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- QuestDone
-		Denied = { id = 109439887902047, fallback = "rbxasset://sounds/button.wav" }, -- Denied
+		Heads = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: CoinPickup
+		Skull = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Pickup
+		Buy = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Purchase
+		Reset = { id = 0, fallback = "rbxasset://sounds/snap.wav" }, -- to try: LevelUp
+		Rare = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: RarityAccent
+		Combo = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: LuckyMeter
+		Mega = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: MatchWin
+		Daily = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: DailyClaim
+		Gift = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: GiftOpen
+		JobDone = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: QuestDone
+		Denied = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Denied
 	} :: { [string]: SoundDef }),
 
 	-- Robux shop. Ids come from carter; 0 means "not set yet" (shows SOON).
