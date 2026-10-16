@@ -13,8 +13,13 @@ local ProfileSchema = require(ReplicatedStorage.Shared.Util.ProfileSchema)
 
 local Cheats = {}
 
+-- Studio test players have UserId <= 0; in Team Test only the game's creator.
+local function allowed(player: Player): boolean
+	return RunService:IsStudio() and (player.UserId <= 0 or player.UserId == game.CreatorId)
+end
+
 local function onCheat(player: Player, command: unknown)
-	if not RunService:IsStudio() then
+	if not allowed(player) then
 		return
 	end
 	local profile = PlayerData.get(player)

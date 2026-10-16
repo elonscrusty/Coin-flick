@@ -13,10 +13,18 @@ local shakeUntil = 0
 local shakePower = 0
 local rng = Random.new()
 
+local tableName = `Table_{player.UserId}`
+local cachedTable: Model? = nil
+
 local function myTable(): Model?
+	if cachedTable and cachedTable.Parent then
+		return cachedTable
+	end
+	cachedTable = nil
 	local folder = workspace:FindFirstChild("Tables")
-	local model = folder and folder:FindFirstChild(`Table_{player.UserId}`)
+	local model = folder and folder:FindFirstChild(tableName)
 	if model and model:IsA("Model") then
+		cachedTable = model
 		return model
 	end
 	return nil

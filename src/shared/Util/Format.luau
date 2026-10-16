@@ -9,6 +9,9 @@ function Format.short(n: number): string
 	if n ~= n then
 		return "0"
 	end
+	if n == math.huge or n == -math.huge then
+		return if n > 0 then "∞" else "-∞"
+	end
 	local sign = if n < 0 then "-" else ""
 	n = math.abs(n)
 	if n < 1000 then

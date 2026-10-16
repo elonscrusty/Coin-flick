@@ -14,6 +14,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Net = require(script.Parent.Net)
 local GameLogic = require(script.Parent.Parent.Util.GameLogic)
+local KeyedMutex = require(script.Parent.Parent.Util.KeyedMutex)
 local MemoryStore = require(script.Parent.Parent.Util.MemoryStore)
 local SessionStore = require(script.Parent.Parent.Util.SessionStore)
 
@@ -26,8 +27,15 @@ local profiles: { [Player]: Profile } = {}
 local dirty: { [Player]: boolean } = {}
 local leaderstats: { [Player]: { cash: NumberValue, resets: IntValue } } = {}
 local loadedCallbacks: { LoadedCallback } = {}
+local loading: { [Player]: boolean } = {}
+-- Profiles whose final (releasing) save already ran. Later saves are dropped.
+local released: { [Profile]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 local pendingSaves = 0
 local session: SessionStore.SessionStore
+-- Only one DataStore call per player at a time, so saves can't land out of order.
+local keyLock = KeyedMutex.new(function(seconds: number)
+	task.wait(seconds)
+end)
 
 local function keyFor(player: Player): string
 	return `u_{player.UserId}`
@@ -61,16 +69,20 @@ local function makeLeaderstats(player: Player, profile: Profile)
 end
 
 local function saveNow(player: Player, profile: Profile, release: boolean): SessionStore.SaveResult
-	profile.lastSeen = os.time()
+	local result: SessionStore.SaveResult = "error"
 	pendingSaves += 1
-	local ok, result = pcall(function()
-		return session:save(keyFor(player), profile, release)
+	keyLock:run(player.UserId, function()
+		if released[profile] then
+			result = "ok" -- this session already handed its save back; nothing to do
+			return
+		end
+		profile.lastSeen = os.time()
+		result = session:save(keyFor(player), profile, release, player.UserId)
+		if release then
+			released[profile] = true
+		end
 	end)
 	pendingSaves -= 1
-	if not ok then
-		warn(`[Save] save crashed for {player.UserId}: {result}`)
-		return "error"
-	end
 	return result
 end
 
@@ -90,7 +102,17 @@ local function autosaveLoop(player: Player, profile: Profile)
 end
 
 local function onPlayerAdded(player: Player)
-	local profile, err = session:load(keyFor(player))
+	if loading[player] or profiles[player] then
+		return -- already loading (PlayerAdded and the startup loop can both fire)
+	end
+	loading[player] = true
+	local profile: Profile? = nil
+	local err: SessionStore.LoadError? = nil
+	-- Waits for any save of this player still running here (fast rejoin).
+	keyLock:run(player.UserId, function()
+		profile, err = session:load(keyFor(player), player.UserId)
+	end)
+	loading[player] = nil
 	if player.Parent ~= Players then
 		-- Left while loading: hand the lock straight back.
 		if profile then
@@ -150,7 +172,8 @@ function PlayerData.init()
 		warn = function(message: string)
 			warn(message)
 		end,
-		lockStaleSeconds = Config.AUTOSAVE_INTERVAL * 10,
+		lockAttempts = 8,
+		lockStaleSeconds = Config.AUTOSAVE_INTERVAL * 3, -- a crashed server frees saves after 3 min
 	})
 	game:BindToClose(onClose)
 end

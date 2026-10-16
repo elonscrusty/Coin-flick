@@ -43,7 +43,8 @@ function GameLogic.applyFlip(profile: Profile, roll: number): FlipOutcome
 	if cash > profile.stats.biggestFlip then
 		profile.stats.biggestFlip = cash
 	end
-	return { result = result, cash = cash, hats = hats }
+	local outcome: FlipOutcome = { result = result :: FlipResult, cash = cash, hats = hats }
+	return outcome
 end
 
 function GameLogic.buyUpgrade(profile: Profile, id: unknown): (boolean, string?)

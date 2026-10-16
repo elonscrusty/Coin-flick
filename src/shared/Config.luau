@@ -147,7 +147,7 @@ return table.freeze({
 		Skull = "rbxasset://sounds/uuhhh.mp3",
 		Buy = "rbxasset://sounds/button.wav",
 		Reset = "rbxasset://sounds/snap.wav",
-	}),
+	} :: { [string]: string }),
 
 	-- Robux shop (built in step 2). Ids come from carter; 0 means "not set yet".
 	-- Prices are set on the Roblox website, never in code.

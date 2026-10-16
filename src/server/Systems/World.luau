@@ -98,7 +98,7 @@ function World.claimPlot(player: Player): number?
 		end
 	end
 	for slot = 1, Config.MAX_PLOTS do
-		if plotOwners[slot] == nil then
+		if not plotOwners[slot] then
 			plotOwners[slot] = player
 			return slot
 		end

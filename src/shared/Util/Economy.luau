@@ -63,10 +63,12 @@ end
 
 -- `roll` is a number in [0, 1) from the server's random generator.
 function Economy.resolveFlip(profile: Profile, roll: number): (FlipResult, number, number)
+	local heads: FlipResult = "heads"
+	local skull: FlipResult = "skull"
 	if roll < Economy.headsChance(profile.upgrades.luck) then
-		return "heads", Economy.cashPerHeads(profile), 0
+		return heads, Economy.cashPerHeads(profile), 0
 	end
-	return "skull", 0, 1
+	return skull, 0, 1
 end
 
 -- Average cash per second all helpers make together.

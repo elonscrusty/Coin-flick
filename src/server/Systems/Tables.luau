@@ -28,6 +28,7 @@ type TableState = {
 	faces: { FlipResult },
 	busyUntil: { number },
 	nextHelperFlip: number,
+	characterConn: RBXScriptConnection?,
 }
 
 local Tables = {}
@@ -35,6 +36,9 @@ local Tables = {}
 local states: { [Player]: TableState } = {}
 local rng = Random.new()
 local tapLimiter = RateLimiter.new(Config.TAP_RATE, Config.TAP_BURST, os.clock)
+local waitingForPlot: { Player } = {}
+local SEE_FLIPS_DISTANCE = 220
+local HEADS: FlipResult = "heads"
 
 local COIN_GOLD = Color3.fromRGB(255, 200, 40)
 
@@ -64,7 +68,7 @@ end
 
 local function makeCoin(state: TableState, index: number, profile: Profile): BasePart
 	local diameter = Economy.coinDiameter(profile.upgrades.bigCoins)
-	local face = state.faces[index] or "heads"
+	local face: FlipResult = state.faces[index] or HEADS
 
 	local coin = World.makePart({
 		Name = `Coin_{index}`,
@@ -100,7 +104,7 @@ local function makeCoin(state: TableState, index: number, profile: Profile): Bas
 		Name = `Hitbox_{index}`,
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.8, diameter + Config.HITBOX_EXTRA, diameter + Config.HITBOX_EXTRA),
-		CFrame = restCFrame(state, index, "heads"),
+		CFrame = restCFrame(state, index, HEADS),
 		Transparency = 1,
 		CanCollide = false,
 		CanQuery = true,
@@ -239,8 +243,8 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	state.coins = {}
 	local count = Economy.coinCount(profile)
 	for i = 1, count do
-		state.faces[i] = state.faces[i] or "heads"
-		state.busyUntil[i] = 0
+		state.faces[i] = state.faces[i] or HEADS
+		state.busyUntil[i] = state.busyUntil[i] or 0 -- coins in the air stay in the air
 		state.coins[i] = makeCoin(state, i, profile)
 	end
 	for i = count + 1, #state.busyUntil do
@@ -260,7 +264,6 @@ local function flip(player: Player, state: TableState, profile: Profile, index: 
 	local duration = Economy.flipTime(profile.upgrades.speed)
 	state.busyUntil[index] = now + duration
 	local outcome = GameLogic.applyFlip(profile, rng:NextNumber())
-	local coin = state.coins[index]
 
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,
@@ -271,16 +274,26 @@ local function flip(player: Player, state: TableState, profile: Profile, index: 
 		duration = duration,
 		byHelper = byHelper,
 	}
-	flipRemote:FireAllClients(event)
+	-- Only players who can actually see this table get the event.
+	local tablePos = state.center
+	for _, other in Players:GetPlayers() do
+		local root = other.Character and other.Character.PrimaryPart
+		if other == player or (root and (root.Position - tablePos).Magnitude <= SEE_FLIPS_DISTANCE) then
+			flipRemote:FireClient(other, event)
+		end
+	end
 
 	task.delay(duration, function()
-		-- The table may have been rebuilt (buy/reset) while this coin was in the air.
-		if coin.Parent == nil or states[player] ~= state then
-			return
+		if states[player] ~= state then
+			return -- player left
 		end
 		state.faces[index] = outcome.result
-		coin.CFrame = restCFrame(state, index, outcome.result)
-		coin:SetAttribute("Face", outcome.result)
+		-- The table may have been rebuilt (buy/reset) while this coin was in the air.
+		local current = state.coins[index]
+		if current and current.Parent then
+			current.CFrame = restCFrame(state, index, outcome.result)
+			current:SetAttribute("Face", outcome.result)
+		end
 		PlayerData.changed(player)
 	end)
 end
@@ -319,13 +332,13 @@ end
 local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 	local slot = World.claimPlot(player)
 	if not slot then
-		Net.event("Notice"):FireClient(
-			player,
-			{
-				kind = "full",
-				text = "All tables are taken here. Try another server!",
-			} :: Types.Notice
-		)
+		-- Wait for a free table (set Max Players to 8 so this never happens).
+		table.insert(waitingForPlot, player)
+		local notice: Types.Notice = {
+			kind = "full",
+			text = "All tables are taken. You'll get one when someone leaves!",
+		}
+		Net.event("Notice"):FireClient(player, notice)
 		return
 	end
 	local center, outward = World.plotCenter(slot)
@@ -347,7 +360,7 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 	buildTable(player, state, profile)
 	model.Parent = World.tablesFolder()
 
-	player.CharacterAdded:Connect(function()
+	state.characterConn = player.CharacterAdded:Connect(function()
 		task.defer(placeCharacter, player)
 	end)
 	placeCharacter(player)
@@ -381,8 +394,22 @@ function Tables.init()
 		local state = states[player]
 		states[player] = nil
 		tapLimiter:remove(player)
+		local waitIndex = table.find(waitingForPlot, player)
+		if waitIndex then
+			table.remove(waitingForPlot, waitIndex)
+		end
 		if state then
+			if state.characterConn then
+				state.characterConn:Disconnect()
+			end
 			state.model:Destroy()
+			World.releasePlot(player)
+			-- Hand the free table to whoever is waiting.
+			local nextPlayer = table.remove(waitingForPlot, 1)
+			local nextProfile = nextPlayer and PlayerData.get(nextPlayer)
+			if nextPlayer and nextProfile then
+				task.spawn(onLoaded, nextPlayer, nextProfile, 0)
+			end
 		end
 	end)
 end

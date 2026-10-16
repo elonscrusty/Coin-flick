@@ -9,7 +9,9 @@ local folder = ReplicatedStorage:WaitForChild("Remotes")
 
 function ClientNet.event(name: string): RemoteEvent
 	local remote = folder:WaitForChild(name)
-	assert(remote:IsA("RemoteEvent"), `{name} is not a RemoteEvent`)
+	if not remote:IsA("RemoteEvent") then
+		error(`{name} is not a RemoteEvent`)
+	end
 	return remote
 end
 

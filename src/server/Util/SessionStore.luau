@@ -15,7 +15,8 @@ local deepCopy = require(ReplicatedStorage.Shared.Util.DeepCopy)
 type Profile = Types.Profile
 
 export type Store = {
-	UpdateAsync: (self: any, key: string, transform: (any) -> any) -> any,
+	-- transform returns (newValue, userIds?) like Roblox's UpdateAsync.
+	UpdateAsync: (self: any, key: string, transform: (any, any) -> (any, any)) -> any,
 }
 
 export type Deps = {
@@ -34,8 +35,8 @@ export type LoadError = "locked" | "error"
 export type SaveResult = "ok" | "error" | "lost"
 
 export type SessionStore = {
-	load: (self: SessionStore, key: string) -> (Profile?, LoadError?),
-	save: (self: SessionStore, key: string, profile: Profile, release: boolean) -> SaveResult,
+	load: (self: SessionStore, key: string, userId: number) -> (Profile?, LoadError?),
+	save: (self: SessionStore, key: string, profile: Profile, release: boolean, userId: number) -> SaveResult,
 }
 
 local SessionStore = {}
@@ -50,11 +51,11 @@ function SessionStore.new(deps: Deps): SessionStore
 	local function withRetry(label: string, fn: () -> ()): boolean
 		local delay = 1
 		for attempt = 1, attempts do
-			local ok, err = pcall(fn)
-			if ok then
+			local results = table.pack(pcall(fn))
+			if results[1] then
 				return true
 			end
-			deps.warn(`[Save] {label} try {attempt}/{attempts} failed: {err}`)
+			deps.warn(`[Save] {label} try {attempt}/{attempts} failed: {results[2]}`)
 			if attempt < attempts then
 				deps.wait(delay)
 				delay = math.min(delay * 2, 16)
@@ -65,12 +66,12 @@ function SessionStore.new(deps: Deps): SessionStore
 
 	local self = {}
 
-	function self.load(_self: SessionStore, key: string): (Profile?, LoadError?)
+	function self.load(_self: SessionStore, key: string, userId: number): (Profile?, LoadError?)
 		for _ = 1, lockAttempts do
 			local lockedByOther = false
 			local loaded: Profile? = nil
 			local ok = withRetry(`load {key}`, function()
-				deps.store:UpdateAsync(key, function(record: any): any
+				deps.store:UpdateAsync(key, function(record: any): (any, any)
 					-- This can run more than once; reset results every time.
 					lockedByOther = false
 					loaded = nil
@@ -85,11 +86,12 @@ function SessionStore.new(deps: Deps): SessionStore
 						and now - (tonumber(lock.time) or 0) < stale
 					then
 						lockedByOther = true
-						return nil -- don't write anything
+						return nil, nil -- don't write anything
 					end
 					local profile = ProfileSchema.migrate(record and record.data)
 					loaded = profile
-					return { data = profile, lock = { jobId = deps.jobId, time = now } }
+					-- Tagging the UserId lets Roblox handle data-erasure requests.
+					return { data = profile, lock = { jobId = deps.jobId, time = now } }, { userId }
 				end)
 			end)
 			if not ok then
@@ -105,17 +107,17 @@ function SessionStore.new(deps: Deps): SessionStore
 		return nil, "locked"
 	end
 
-	function self.save(_self: SessionStore, key: string, profile: Profile, release: boolean): SaveResult
+	function self.save(_self: SessionStore, key: string, profile: Profile, release: boolean, userId: number): SaveResult
 		local lost = false
 		local copy = deepCopy(profile)
 		local ok = withRetry(`save {key}`, function()
-			deps.store:UpdateAsync(key, function(record: any): any
+			deps.store:UpdateAsync(key, function(record: any): (any, any)
 				lost = false
 				if typeof(record) == "table" then
 					local lock = record.lock
 					if typeof(lock) == "table" and lock.jobId ~= deps.jobId then
 						lost = true -- another server owns this save now; don't clobber it
-						return nil
+						return nil, nil
 					end
 					local stored = record.data
 					if
@@ -124,17 +126,18 @@ function SessionStore.new(deps: Deps): SessionStore
 						and stored.version > copy.version
 					then
 						lost = true -- a newer game version saved this; never downgrade
-						return nil
+						return nil, nil
 					end
 				end
 				local newLock = if release then nil else { jobId = deps.jobId, time = deps.now() }
-				return { data = copy, lock = newLock }
+				return { data = copy, lock = newLock }, { userId }
 			end)
 		end)
 		if not ok then
 			return "error"
 		end
-		return if lost then "lost" else "ok"
+		local result: SaveResult = if lost then "lost" else "ok"
+		return result
 	end
 
 	return (self :: any) :: SessionStore

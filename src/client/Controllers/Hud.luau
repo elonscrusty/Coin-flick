@@ -417,23 +417,23 @@ local function render(s: Snapshot)
 	resetBody.Text =
 		`You LOSE: cash and upgrades\nYou KEEP: helper guys and 🎩\nYou GET: cash x{s.resetBonus} forever + a new table!`
 	resetButton.BackgroundColor3 = if s.tableFull then ORANGE else GREY
-	if s.tableFull and not resetPulse then
-		local scale = resetButton:FindFirstChildOfClass("UIScale")
-		if scale then
-			local tween = TweenService:Create(
-				scale,
-				TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-				{ Scale = 1.12 }
-			)
-			tween:Play()
-			resetPulse = tween
-		end
+	-- Glow the RESET button's outline when the table is full. (Pulsing the
+	-- outline, not the size, so the press-pop animation can't cancel it.)
+	local outline = resetButton:FindFirstChildOfClass("UIStroke")
+	if s.tableFull and not resetPulse and outline then
+		local tween = TweenService:Create(
+			outline,
+			TweenInfo.new(0.45, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ Thickness = 7, Color = Color3.fromRGB(255, 255, 120) }
+		)
+		tween:Play()
+		resetPulse = tween
 	elseif not s.tableFull and resetPulse then
 		resetPulse:Cancel()
 		resetPulse = nil
-		local scale = resetButton:FindFirstChildOfClass("UIScale")
-		if scale then
-			scale.Scale = 1
+		if outline then
+			outline.Thickness = 3
+			outline.Color = INK
 		end
 	end
 end
