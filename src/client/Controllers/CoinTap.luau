@@ -47,7 +47,7 @@ local function tapRay(ray: Ray)
 		return
 	end
 	if result.Instance:GetAttribute("Mega") then
-		Sounds.play("Tap", 0.35, 0.8)
+		Sounds.play("Tap", 0.2, 0.8)
 		MegaFx.poke()
 		megaRemote:FireServer()
 		return
@@ -56,7 +56,7 @@ local function tapRay(ray: Ray)
 	if not index or not coin or FlipFx.isFlying(coin) then
 		return
 	end
-	Sounds.play("Tap", 0.35)
+	Sounds.play("Tap", 0.2)
 	tapRemote:FireServer(index)
 end
 

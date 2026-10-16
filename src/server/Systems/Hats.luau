@@ -1,5 +1,5 @@
 --!strict
--- Silly hats: bought with hat points (🎩 from skull flips), worn on your head.
+-- Silly hats: bought with hat points (🎩 from tails flips), worn on your head.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -7,10 +7,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local HatSizes = require(ReplicatedStorage.Shared.Util.HatSizes)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
-local HatBuilder = require(script.Parent.Parent.Builders.HatBuilder)
+local MeshPaint = require(ReplicatedStorage.Shared.Util.MeshPaint)
+local Meshes = require(script.Parent.Meshes)
+local HatBuilder = require(ReplicatedStorage.Shared.Builders.HatBuilder)
 local GameLogic = require(script.Parent.Parent.Util.GameLogic)
 local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
 
@@ -51,10 +54,19 @@ local function dress(player: Player)
 	if not wearing or not head or not head:IsA("BasePart") then
 		return
 	end
-	local hat = HatBuilder.build(profile.hat, World.makePart)
+	-- The Blender hat when it is uploaded (its pivot is the head-top point, like HatBuilder's), else the Part hat.
+	local meshName = MeshPaint.HATS[profile.hat]
+	local hat = meshName and Meshes.clone(meshName, head.CFrame)
+	if hat then
+		hat.Name = "CoinFlickHat"
+	else
+		hat = HatBuilder.build(profile.hat, World.makePart)
+	end
 	if not hat then
 		return
 	end
+	-- Chunky and easy to see, sized to the head; extra-wide hats (cowboy) shrink to fit.
+	hat:ScaleTo(1.6 * head.Size.X / 1.2 * HatSizes.fit(profile.hat))
 	hat:PivotTo(head.CFrame * CFrame.new(0, head.Size.Y / 2 - 0.1, 0))
 	for _, part in hat:GetDescendants() do
 		if part:IsA("BasePart") then

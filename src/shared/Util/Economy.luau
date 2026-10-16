@@ -65,12 +65,29 @@ function Economy.coinCount(profile: Profile): number
 	return math.min(Config.MAX_COINS, Config.START_COINS + profile.upgrades.moreCoins)
 end
 
+-- Coin spots on the table that are still empty (shown as faint "+" circles).
+function Economy.emptySlots(profile: Profile): number
+	return Config.MAX_COINS - Economy.coinCount(profile)
+end
+
 function Economy.isTableFull(profile: Profile): boolean
 	return Economy.coinCount(profile) >= Config.MAX_COINS
 end
 
 function Economy.headsChance(luckLevel: number): number
 	return math.min(Config.MAX_HEADS_CHANCE, Config.BASE_HEADS_CHANCE + Config.HEADS_CHANCE_PER_LEVEL * luckLevel)
+end
+
+-- Coins one tap flips: the one you tapped plus one more per Multi Flip level.
+function Economy.flipsPerTap(profile: Profile): number
+	return 1 + math.clamp(profile.upgrades.multiFlip, 0, Config.Upgrades.multiFlip.maxLevel)
+end
+
+-- What a streak of 10 heads pays: cash (heads worth) and hat points.
+-- `boost` is the cash boost (2x pass, mega boost); it only multiplies the cash.
+function Economy.streakPrize(profile: Profile, boost: number?): (number, number)
+	local cash = Economy.cashPerHeads(profile) * Config.STREAK_PRIZE_FLIPS * math.max(1, boost or 1)
+	return math.floor(cash + 0.5), Config.STREAK_PRIZE_HATS
 end
 
 function Economy.flipTime(speedLevel: number): number
@@ -219,6 +236,16 @@ function Economy.offlineEarnings(profile: Profile, elapsedSeconds: number): numb
 end
 
 -- Which table look (1-based) a player with `resets` resets gets.
+-- Index of the table look called `name` (1 when the name is unknown).
+function Economy.tableLookNamed(name: string): number
+	for i, look in Config.TableLooks do
+		if look.name == name then
+			return i
+		end
+	end
+	return 1
+end
+
 function Economy.tableLook(resets: number): number
 	return (resets % #Config.TableLooks) + 1
 end

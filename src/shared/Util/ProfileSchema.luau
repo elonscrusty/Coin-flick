@@ -3,31 +3,56 @@
 -- Rule: a broken save is an ERROR (so it is never overwritten), never "start fresh".
 
 local Config = require(script.Parent.Parent.Config)
+local PetConfig = require(script.Parent.Parent.PetConfig)
 local Types = require(script.Parent.Parent.Types)
+local Badges = require(script.Parent.Badges)
+local Daily = require(script.Parent.Daily)
+local Goals = require(script.Parent.Goals)
 local Economy = require(script.Parent.Economy)
+local PlayGifts = require(script.Parent.PlayGifts)
+local WeeklyBoard = require(script.Parent.WeeklyBoard)
 local deepCopy = require(script.Parent.DeepCopy)
 
 type Profile = Types.Profile
 
 local ProfileSchema = {}
 
-ProfileSchema.CURRENT_VERSION = 2
+ProfileSchema.CURRENT_VERSION = 3
 
 local DEFAULT: Profile = {
-	version = 2,
+	version = 3,
 	cash = 0,
 	hatPoints = 0,
-	upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0 },
+	upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0, multiFlip = 0 },
 	crew = {},
 	team = {},
 	resets = 0,
-	stats = { flips = 0, heads = 0, skulls = 0, biggestFlip = 0, bestCombo = 0, rares = 0 },
+	stats = {
+		flips = 0,
+		heads = 0,
+		skulls = 0,
+		biggestFlip = 0,
+		bestCombo = 0,
+		rares = 0,
+		bestStreak = 0,
+		streakWins = 0,
+	},
 	lastSeen = 0,
 	hats = {},
 	hat = "",
 	skin = "",
 	helperSlots = 0,
 	receipts = {},
+	daily = Daily.empty(),
+	ladderSkin = "",
+	challenges = Goals.emptyChallenges(),
+	book = Goals.emptyBook(),
+	play = PlayGifts.empty(),
+	badges = {},
+	week = WeeklyBoard.empty(),
+	pets = { puppy = { level = 1, xp = 0 } },
+	petActive = "puppy",
+	petProgress = { megaBeats = 0 },
 }
 
 function ProfileSchema.default(): Profile
@@ -44,6 +69,10 @@ local MIGRATIONS: { [number]: (any) -> any } = {
 			data.team = { "buddy" }
 		end
 		data.helpers = nil
+		return data
+	end,
+	-- v2 -> v3 added `daily`; reconcile() fills it with a fresh one.
+	[2] = function(data)
 		return data
 	end,
 }
@@ -138,6 +167,32 @@ local function cleanReceipts(value: unknown): { string }
 	return list
 end
 
+local function isPetId(id: unknown): boolean
+	for _, def in PetConfig.Pets do
+		if def.id == id then
+			return true
+		end
+	end
+	return false
+end
+
+-- Known pets only, levels clamped. The free pet is always there (older saves get it too).
+local function cleanPets(value: unknown): { [string]: Types.PetOwned }
+	local pets: { [string]: Types.PetOwned } = {}
+	if typeof(value) == "table" then
+		for id, entry in value :: { [any]: any } do
+			if isPetId(id) and typeof(entry) == "table" then
+				local level = math.clamp(cleanInt(entry.level, 1), 1, PetConfig.MAX_LEVEL)
+				pets[id] = { level = level, xp = if level >= PetConfig.MAX_LEVEL then 0 else cleanInt(entry.xp, 0) }
+			end
+		end
+	end
+	if not pets[PetConfig.FREE_PET] then
+		pets[PetConfig.FREE_PET] = { level = 1, xp = 0 }
+	end
+	return pets
+end
+
 -- Fill any missing or bad field from the defaults (new fields appear this way too).
 local function reconcile(data: { [string]: any }): Profile
 	local d = DEFAULT
@@ -145,6 +200,8 @@ local function reconcile(data: { [string]: any }): Profile
 	local st = if typeof(data.stats) == "table" then data.stats else {}
 	local hats = cleanHats(data.hats)
 	local crew = cleanCrew(data.crew)
+	local pets = cleanPets(data.pets)
+	local pp = if typeof(data.petProgress) == "table" then data.petProgress else {}
 	local profile: Profile = {
 		version = ProfileSchema.CURRENT_VERSION,
 		cash = cleanNumber(data.cash, d.cash),
@@ -154,6 +211,7 @@ local function reconcile(data: { [string]: any }): Profile
 			bigCoins = cleanInt(up.bigCoins, 0),
 			luck = cleanInt(up.luck, 0),
 			speed = cleanInt(up.speed, 0),
+			multiFlip = math.min(Config.Upgrades.multiFlip.maxLevel, cleanInt(up.multiFlip, 0)),
 		},
 		crew = crew,
 		team = {},
@@ -165,6 +223,8 @@ local function reconcile(data: { [string]: any }): Profile
 			biggestFlip = cleanNumber(st.biggestFlip, 0),
 			bestCombo = cleanInt(st.bestCombo, 0),
 			rares = cleanInt(st.rares, 0),
+			bestStreak = cleanInt(st.bestStreak, 0),
+			streakWins = cleanInt(st.streakWins, 0),
 		},
 		lastSeen = cleanInt(data.lastSeen, d.lastSeen),
 		hats = hats,
@@ -172,7 +232,25 @@ local function reconcile(data: { [string]: any }): Profile
 		skin = if isSkinId(data.skin) then data.skin else "",
 		helperSlots = math.min(Config.MAX_EXTRA_HELPER_SLOTS, cleanInt(data.helperSlots, 0)),
 		receipts = cleanReceipts(data.receipts),
+		daily = Daily.sanitize(data.daily),
+		ladderSkin = "",
+		challenges = Goals.sanitizeChallenges(data.challenges),
+		book = Goals.sanitizeBook(data.book),
+		play = PlayGifts.sanitize(data.play),
+		badges = Badges.sanitize(data.badges),
+		week = WeeklyBoard.sanitize(data.week),
+		pets = pets,
+		petActive = if typeof(data.petActive) == "string" and (pets[data.petActive] or data.petActive == "")
+			then data.petActive
+			else PetConfig.FREE_PET,
+		petProgress = {
+			megaBeats = cleanInt(pp.megaBeats, 0),
+		},
 	}
+	-- Only a ladder look you reached can be worn (the best streak is saved in stats).
+	if typeof(data.ladderSkin) == "string" and Goals.ownsRung(profile, data.ladderSkin) then
+		profile.ladderSkin = data.ladderSkin
+	end
 	profile.team = cleanTeam(data.team, crew, Economy.maxHelpers(profile))
 	return profile
 end
@@ -208,5 +286,6 @@ end
 ProfileSchema.isHatId = isHatId
 ProfileSchema.isSkinId = isSkinId
 ProfileSchema.isHelperId = isHelperId
+ProfileSchema.isPetId = isPetId
 
 return ProfileSchema

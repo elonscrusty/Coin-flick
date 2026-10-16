@@ -7,6 +7,9 @@ local Players = game:GetService("Players")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
+local Daily = require(script.Parent.Daily)
+local Goals = require(script.Parent.Goals)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local Tables = require(script.Parent.Tables)
@@ -35,6 +38,8 @@ local function onBuyUpgrade(player: Player, rawId: unknown)
 		return
 	end
 	local id = rawId :: string -- validated by buyUpgrade
+	Daily.bump(player, "buy", 1)
+	Goals.bump(player, "buy", 1)
 	if REBUILD_ON[id] then
 		Tables.refresh(player)
 	end
@@ -101,11 +106,11 @@ local function onReset(player: Player)
 	if GameLogic.reset(profile) then
 		Tables.refresh(player)
 		PlayerData.changed(player)
-		local look = Config.TableLooks[Economy.tableLook(profile.resets)]
+		local theme = PlotThemes.resolve(profile.resets, nil)
 		notify(
 			player,
 			"reset",
-			`RESET! Cash x{Economy.resetMultiplier(profile.resets)} forever. New table: {look.name}`
+			`RESET! Cash x{Economy.resetMultiplier(profile.resets)} forever. New yard: {theme.name}`
 		)
 	end
 end

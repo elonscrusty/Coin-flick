@@ -7,6 +7,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local Format = require(ReplicatedStorage.Shared.Util.Format)
+local Goals = require(ReplicatedStorage.Shared.Util.Goals)
 local ProfileSchema = require(ReplicatedStorage.Shared.Util.ProfileSchema)
 
 type Profile = Types.Profile
@@ -70,6 +72,52 @@ function GameLogic.applyFlip(
 	local outcome: FlipOutcome =
 		{ result = result :: FlipResult, cash = cash, hats = hats, rarity = rarity :: Types.Rarity }
 	return outcome
+end
+
+export type StreakOutcome = {
+	streak: number, -- heads in a row to show after this flip
+	nextStreak: number, -- what the table remembers (0 after a win)
+	won: boolean,
+	cash: number,
+	hats: number,
+}
+
+-- Call once per flip of the player's OWN tap, in flip order, after applyFlip.
+-- Heads grows the streak, a skull breaks it. Hitting the goal pays the prize
+-- once and starts over. The server decides; nothing here is random.
+function GameLogic.applyStreak(profile: Profile, streak: number, result: FlipResult, boost: number?): StreakOutcome
+	if result ~= "heads" then
+		return { streak = 0, nextStreak = 0, won = false, cash = 0, hats = 0 }
+	end
+	local count = streak + 1
+	if count > profile.stats.bestStreak then
+		profile.stats.bestStreak = math.min(count, Config.STREAK_GOAL)
+	end
+	if count < Config.STREAK_GOAL then
+		return { streak = count, nextStreak = count, won = false, cash = 0, hats = 0 }
+	end
+	local cash, hats = Economy.streakPrize(profile, boost)
+	profile.cash += cash
+	profile.hatPoints += hats
+	profile.stats.streakWins += 1
+	return { streak = count, nextStreak = 0, won = true, cash = cash, hats = hats }
+end
+
+-- Multi Flip: which coins one tap flips. The tapped coin first, then the next
+-- idle coins in table order (wrapping), up to `count` in all.
+function GameLogic.pickTapCoins(tapped: number, busyUntil: { number }, now: number, count: number): { number }
+	local picked = { tapped }
+	local total = #busyUntil
+	for step = 1, total - 1 do
+		if #picked >= count then
+			break
+		end
+		local index = (tapped - 1 + step) % total + 1
+		if now >= busyUntil[index] then
+			table.insert(picked, index)
+		end
+	end
+	return picked
 end
 
 function GameLogic.buyUpgrade(profile: Profile, id: unknown): (boolean, string?)
@@ -165,6 +213,7 @@ function GameLogic.reset(profile: Profile): (boolean, string?)
 	profile.upgrades.bigCoins = 0
 	profile.upgrades.luck = 0
 	profile.upgrades.speed = 0
+	profile.upgrades.multiFlip = 0
 	return true, nil
 end
 
@@ -209,6 +258,18 @@ function GameLogic.wearHat(profile: Profile, id: unknown): boolean
 	return true
 end
 
+-- The colors the player's coins wear: a Robux skin they still own, else the streak-ladder
+-- look they chose (earned, never bought), else nil (the classic gold).
+function GameLogic.coinSkin(profile: Profile, passOwned: boolean): { coin: Color3, text: Color3 }?
+	if profile.skin ~= "" and passOwned then
+		local skin = Economy.skinDef(profile.skin)
+		if skin then
+			return skin
+		end
+	end
+	return Goals.rungLook(profile)
+end
+
 -- Coin skins are Robux passes: the server checks `owned` before calling this.
 function GameLogic.chooseSkin(profile: Profile, id: unknown, owned: boolean): boolean
 	if id == "" then
@@ -219,6 +280,7 @@ function GameLogic.chooseSkin(profile: Profile, id: unknown, owned: boolean): bo
 		return false
 	end
 	profile.skin = id :: string
+	profile.ladderSkin = "" -- one coin look at a time
 	return true
 end
 
@@ -276,9 +338,13 @@ function GameLogic.snapshot(profile: Profile, passes: { [string]: boolean }?): S
 		headsChance = Economy.headsChance(profile.upgrades.luck),
 		resetBonus = Economy.resetMultiplier(profile.resets + 1),
 		bestCombo = profile.stats.bestCombo,
+		bestStreak = profile.stats.bestStreak,
+		streakGoal = Config.STREAK_GOAL,
+		flipsPerTap = Economy.flipsPerTap(profile),
 		hats = owned,
 		hat = profile.hat,
 		skin = profile.skin,
+		ladderSkin = profile.ladderSkin,
 		maxHelpers = Economy.maxHelpers(profile),
 		helperSlots = profile.helperSlots,
 		passes = if passes then table.clone(passes) else {},
@@ -288,6 +354,31 @@ end
 -- Studio QA only (Cheats system): fill the table so reset can be tested fast.
 function GameLogic.fillTable(profile: Profile)
 	profile.upgrades.moreCoins = Config.MAX_COINS - Config.START_COINS
+end
+
+-- The shout for a rare flip, or nil for a normal coin. RAINBOW and GIANT go to the
+-- whole server (`everyone`); SILVER and GOLD only label the flipper's own coin.
+function GameLogic.shoutNotice(displayName: string, userId: number, outcome: FlipOutcome): Types.Notice?
+	local def = Economy.rarityDef(outcome.rarity)
+	if not def then
+		return nil
+	end
+	local prize = if outcome.cash > 0 then `+${Format.short(outcome.cash)}` else `+{outcome.hats} 🎩`
+	return {
+		kind = "shout",
+		text = `{displayName} flipped a {def.name} coin! {prize}`,
+		rarity = outcome.rarity,
+		ownerId = userId,
+		everyone = def.shout,
+	}
+end
+
+-- "Welcome back" notice for helper earnings, or nil when it would read $0.
+function GameLogic.offlineNotice(cash: number): Types.Notice?
+	if math.floor(cash) < 1 then
+		return nil
+	end
+	return { kind = "offline", text = `Your crew earned ${Format.short(math.floor(cash))} while you were away!` }
 end
 
 return GameLogic

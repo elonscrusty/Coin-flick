@@ -21,6 +21,19 @@ return table.freeze({
 		"ChooseSkin", -- client -> server: (skinId: string, "" = classic)
 		"BuyRobux", -- client -> server: (item: string) server opens the Roblox buy window
 		"Leaderboards", -- server -> client: (Leaderboards)
+		"DailyState", -- server -> client: (DailyView)
+		"ClaimGift", -- client -> server: ()
+		"ClaimJob", -- client -> server: (slot: number)
+		"GoalsState", -- server -> client: (GoalsView) ladder + weekly challenges + coin book
+		"ClaimChallenge", -- client -> server: (slot: number, 0 = the all-three bonus)
+		"WearLadder", -- client -> server: (rungId: string, "" = take it off)
+		"PlayGiftState", -- server -> client: (PlayGiftView)
+		"ClaimPlayGift", -- client -> server: (slot: number)
+		"BadgeState", -- server -> client: (BadgeView)
+		"EventState", -- server -> all: (EventView) weekend luck x2 / coin rain, sent on join and on change
+		"PetEquip", -- client -> server: (petId: string, "" = put pets away)
+		"PetState", -- server -> client: (views: { PetRules.PetView }, activeId: string)
+		"PetFlipped", -- server -> client: (petId, cash, level, leveledUp)
 	}),
 	-- Only created when running in Roblox Studio. Never exists in a live game.
 	StudioOnly = table.freeze({

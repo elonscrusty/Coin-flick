@@ -1,0 +1,926 @@
+{
+ "CF_ArchPillar": {
+  "file": "CF_ArchPillar.fbx",
+  "faces": 91,
+  "pieces": {
+   "Pillar": {
+    "color": "#fffcf5",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Base": {
+    "color": "#e4e8f2",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ffcd32",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Balloon": {
+  "file": "CF_Balloon.fbx",
+  "faces": 139,
+  "pieces": {
+   "Envelope": {
+    "color": "#ff4664",
+    "material": "SmoothPlastic"
+   },
+   "Stripe": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Knot": {
+    "color": "#b02848",
+    "material": "SmoothPlastic"
+   },
+   "String": {
+    "color": "#a0a6b8",
+    "material": "SmoothPlastic"
+   },
+   "Basket": {
+    "color": "#f2f2f8",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Bench": {
+  "file": "CF_Bench.fbx",
+  "faces": 116,
+  "pieces": {
+   "Wood": {
+    "color": "#d6965a",
+    "material": "SmoothPlastic"
+   },
+   "Leg": {
+    "color": "#6a7088",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Buddy": {
+  "file": "CF_Buddy.fbx",
+  "faces": 394,
+  "pieces": {
+   "Body": {
+    "color": "#5ac8ff",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ff5a5a",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Bush": {
+  "file": "CF_Bush.fbx",
+  "faces": 235,
+  "pieces": {
+   "Leaf": {
+    "color": "#4fc455",
+    "material": "SmoothPlastic"
+   },
+   "LeafLight": {
+    "color": "#86e060",
+    "material": "SmoothPlastic"
+   },
+   "Berry": {
+    "color": "#ff5a7a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_CandyCane": {
+  "file": "CF_CandyCane.fbx",
+  "faces": 110,
+  "pieces": {
+   "Red": {
+    "color": "#ff3d5a",
+    "material": "SmoothPlastic"
+   },
+   "White": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Chompy": {
+  "file": "CF_Chompy.fbx",
+  "faces": 516,
+  "pieces": {
+   "Body": {
+    "color": "#ff963c",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ff78be",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Mouth": {
+    "color": "#b02848",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Cloud": {
+  "file": "CF_Cloud.fbx",
+  "faces": 280,
+  "pieces": {
+   "Cloud": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "CloudShade": {
+    "color": "#e2f0ff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Coin": {
+  "file": "CF_Coin.fbx",
+  "faces": 968,
+  "pieces": {
+   "Rim": {
+    "color": "#e89a00",
+    "material": "SmoothPlastic"
+   },
+   "Face": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Mark": {
+    "color": "#8a4a00",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Crystals": {
+  "file": "CF_Crystals.fbx",
+  "faces": 85,
+  "pieces": {
+   "Crystal": {
+    "color": "#5be6ff",
+    "material": "Neon"
+   },
+   "CrystalB": {
+    "color": "#c08cff",
+    "material": "Neon"
+   },
+   "Base": {
+    "color": "#8a90b8",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_FencePost": {
+  "file": "CF_FencePost.fbx",
+  "faces": 50,
+  "pieces": {
+   "Wood": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_FenceSection": {
+  "file": "CF_FenceSection.fbx",
+  "faces": 176,
+  "pieces": {
+   "Wood": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Accent": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Flowers": {
+  "file": "CF_Flowers.fbx",
+  "faces": 257,
+  "pieces": {
+   "Bed": {
+    "color": "#a4a9bb",
+    "material": "SmoothPlastic"
+   },
+   "Soil": {
+    "color": "#6d4a35",
+    "material": "SmoothPlastic"
+   },
+   "Stem": {
+    "color": "#46b84a",
+    "material": "SmoothPlastic"
+   },
+   "Petal": {
+    "color": "#ff5a86",
+    "material": "SmoothPlastic"
+   },
+   "PetalB": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "PetalC": {
+    "color": "#b685ff",
+    "material": "SmoothPlastic"
+   },
+   "Heart": {
+    "color": "#fff2a0",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Fountain": {
+  "file": "CF_Fountain.fbx",
+  "faces": 277,
+  "pieces": {
+   "Basin": {
+    "color": "#ffbe46",
+    "material": "SmoothPlastic"
+   },
+   "Stone": {
+    "color": "#ebe8f5",
+    "material": "SmoothPlastic"
+   },
+   "Water": {
+    "color": "#46b9ff",
+    "material": "SmoothPlastic"
+   },
+   "Spray": {
+    "color": "#c8ebff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_FreeStatue": {
+  "file": "CF_FreeStatue.fbx",
+  "faces": 580,
+  "pieces": {
+   "Stone": {
+    "color": "#fffaf0",
+    "material": "SmoothPlastic"
+   },
+   "Gold": {
+    "color": "#ffcd28",
+    "material": "SmoothPlastic"
+   },
+   "GoldDark": {
+    "color": "#e89a00",
+    "material": "SmoothPlastic"
+   },
+   "Gem": {
+    "color": "#ff6fae",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_GiftBox": {
+  "file": "CF_GiftBox.fbx",
+  "faces": 148,
+  "pieces": {
+   "Box": {
+    "color": "#ff5fa8",
+    "material": "SmoothPlastic"
+   },
+   "Lid": {
+    "color": "#ff86bf",
+    "material": "SmoothPlastic"
+   },
+   "Ribbon": {
+    "color": "#ffe14a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatChef": {
+  "file": "CF_HatChef.fbx",
+  "faces": 166,
+  "pieces": {
+   "White": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#cdd7eb",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatCone": {
+  "file": "CF_HatCone.fbx",
+  "faces": 50,
+  "pieces": {
+   "Base": {
+    "color": "#e15f14",
+    "material": "SmoothPlastic"
+   },
+   "Cone": {
+    "color": "#ff821e",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatCowboy": {
+  "file": "CF_HatCowboy.fbx",
+  "faces": 162,
+  "pieces": {
+   "Felt": {
+    "color": "#96603a",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatCrown": {
+  "file": "CF_HatCrown.fbx",
+  "faces": 179,
+  "pieces": {
+   "Gold": {
+    "color": "#ffc828",
+    "material": "SmoothPlastic"
+   },
+   "Gem": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   },
+   "GemB": {
+    "color": "#46a0ff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatDuck": {
+  "file": "CF_HatDuck.fbx",
+  "faces": 136,
+  "pieces": {
+   "Body": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Beak": {
+    "color": "#ff821e",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#232330",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatParty": {
+  "file": "CF_HatParty.fbx",
+  "faces": 74,
+  "pieces": {
+   "Cone": {
+    "color": "#ff6ebe",
+    "material": "SmoothPlastic"
+   },
+   "Brim": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Stripe": {
+    "color": "#46a0ff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatPropeller": {
+  "file": "CF_HatPropeller.fbx",
+  "faces": 80,
+  "pieces": {
+   "Cap": {
+    "color": "#46a0ff",
+    "material": "SmoothPlastic"
+   },
+   "Stripe": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Pin": {
+    "color": "#232330",
+    "material": "SmoothPlastic"
+   },
+   "Blade": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   },
+   "BladeB": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatTop": {
+  "file": "CF_HatTop.fbx",
+  "faces": 188,
+  "pieces": {
+   "Felt": {
+    "color": "#232330",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Island": {
+  "file": "CF_Island.fbx",
+  "faces": 644,
+  "pieces": {
+   "Rock": {
+    "color": "#a5afc3",
+    "material": "SmoothPlastic"
+   },
+   "RockLight": {
+    "color": "#ebf0fa",
+    "material": "SmoothPlastic"
+   },
+   "Grass": {
+    "color": "#6edc5f",
+    "material": "SmoothPlastic"
+   },
+   "Trunk": {
+    "color": "#d7dce6",
+    "material": "SmoothPlastic"
+   },
+   "Leaf": {
+    "color": "#3cc864",
+    "material": "SmoothPlastic"
+   },
+   "Flower": {
+    "color": "#ff5a86",
+    "material": "SmoothPlastic"
+   },
+   "FlowerB": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Gold": {
+    "color": "#ffcd28",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_King": {
+  "file": "CF_King.fbx",
+  "faces": 392,
+  "pieces": {
+   "Body": {
+    "color": "#a064f0",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ffc828",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Cape": {
+    "color": "#e8384f",
+    "material": "SmoothPlastic"
+   },
+   "Trim": {
+    "color": "#fff5dc",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Lamp": {
+  "file": "CF_Lamp.fbx",
+  "faces": 79,
+  "pieces": {
+   "Post": {
+    "color": "#4a5068",
+    "material": "SmoothPlastic"
+   },
+   "Lamp": {
+    "color": "#fff0a0",
+    "material": "Neon"
+   },
+   "Cap": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_MegaCoin": {
+  "file": "CF_MegaCoin.fbx",
+  "faces": 1062,
+  "pieces": {
+   "Rim": {
+    "color": "#e89a00",
+    "material": "SmoothPlastic"
+   },
+   "Face": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Mark": {
+    "color": "#8a4a00",
+    "material": "SmoothPlastic"
+   },
+   "Gem": {
+    "color": "#ff5fb0",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Mushroom": {
+  "file": "CF_Mushroom.fbx",
+  "faces": 115,
+  "pieces": {
+   "Stem": {
+    "color": "#fff1d6",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ff4f5e",
+    "material": "SmoothPlastic"
+   },
+   "Spot": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_PlazaTile": {
+  "file": "CF_PlazaTile.fbx",
+  "faces": 174,
+  "pieces": {
+   "RingA": {
+    "color": "#f5dea0",
+    "material": "SmoothPlastic"
+   },
+   "RingB": {
+    "color": "#ffd0e8",
+    "material": "SmoothPlastic"
+   },
+   "RingC": {
+    "color": "#cfe9ff",
+    "material": "SmoothPlastic"
+   },
+   "RingD": {
+    "color": "#ffe27a",
+    "material": "SmoothPlastic"
+   },
+   "RingE": {
+    "color": "#d6f5c0",
+    "material": "SmoothPlastic"
+   },
+   "RingF": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Star": {
+    "color": "#ffc83c",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Rock": {
+  "file": "CF_Rock.fbx",
+  "faces": 104,
+  "pieces": {
+   "Stone": {
+    "color": "#a9afc0",
+    "material": "SmoothPlastic"
+   },
+   "StoneLight": {
+    "color": "#d3d8e6",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Shell": {
+  "file": "CF_Shell.fbx",
+  "faces": 43,
+  "pieces": {
+   "Shell": {
+    "color": "#ffb8d0",
+    "material": "SmoothPlastic"
+   },
+   "Ridge": {
+    "color": "#fff0f5",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Table": {
+  "file": "CF_Table.fbx",
+  "faces": 1116,
+  "pieces": {
+   "Top": {
+    "color": "#d6965a",
+    "material": "SmoothPlastic"
+   },
+   "Rim": {
+    "color": "#96602f",
+    "material": "SmoothPlastic"
+   },
+   "Trim": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Legs": {
+    "color": "#78502a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Tower": {
+  "file": "CF_Tower.fbx",
+  "faces": 193,
+  "pieces": {
+   "Stone": {
+    "color": "#c9ccd8",
+    "material": "SmoothPlastic"
+   },
+   "StoneLight": {
+    "color": "#eceef5",
+    "material": "SmoothPlastic"
+   },
+   "Roof": {
+    "color": "#ff6a6a",
+    "material": "SmoothPlastic"
+   },
+   "Window": {
+    "color": "#3a4e8a",
+    "material": "SmoothPlastic"
+   },
+   "Trim": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Tree": {
+  "file": "CF_Tree.fbx",
+  "faces": 567,
+  "pieces": {
+   "Bark": {
+    "color": "#8a5a30",
+    "material": "SmoothPlastic"
+   },
+   "Leaf": {
+    "color": "#58c944",
+    "material": "SmoothPlastic"
+   },
+   "LeafLight": {
+    "color": "#8fe05a",
+    "material": "SmoothPlastic"
+   },
+   "Fruit": {
+    "color": "#ff4f5e",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_TreeCandy": {
+  "file": "CF_TreeCandy.fbx",
+  "faces": 155,
+  "pieces": {
+   "Stick": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Candy": {
+    "color": "#ff6fae",
+    "material": "SmoothPlastic"
+   },
+   "Stripe": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Sprinkle": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_TreeCrystal": {
+  "file": "CF_TreeCrystal.fbx",
+  "faces": 83,
+  "pieces": {
+   "Stem": {
+    "color": "#9aa0c8",
+    "material": "SmoothPlastic"
+   },
+   "Crystal": {
+    "color": "#5be6ff",
+    "material": "Neon"
+   },
+   "CrystalB": {
+    "color": "#b98cff",
+    "material": "Neon"
+   }
+  }
+ },
+ "CF_TreePalm": {
+  "file": "CF_TreePalm.fbx",
+  "faces": 876,
+  "pieces": {
+   "Bark": {
+    "color": "#c58b52",
+    "material": "SmoothPlastic"
+   },
+   "Leaf": {
+    "color": "#3fbf57",
+    "material": "SmoothPlastic"
+   },
+   "LeafLight": {
+    "color": "#7fe06a",
+    "material": "SmoothPlastic"
+   },
+   "Nut": {
+    "color": "#7a4a2a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_TreePine": {
+  "file": "CF_TreePine.fbx",
+  "faces": 54,
+  "pieces": {
+   "Bark": {
+    "color": "#8a5a30",
+    "material": "SmoothPlastic"
+   },
+   "Leaf": {
+    "color": "#2fae5e",
+    "material": "SmoothPlastic"
+   },
+   "LeafLight": {
+    "color": "#58cf72",
+    "material": "SmoothPlastic"
+   },
+   "Snow": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Twinkle": {
+  "file": "CF_Twinkle.fbx",
+  "faces": 342,
+  "pieces": {
+   "Body": {
+    "color": "#ff82c8",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#96e1ff",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Umbrella": {
+  "file": "CF_Umbrella.fbx",
+  "faces": 63,
+  "pieces": {
+   "Pole": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Canopy": {
+    "color": "#ff5a86",
+    "material": "SmoothPlastic"
+   },
+   "Stripe": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Zippy": {
+  "file": "CF_Zippy.fbx",
+  "faces": 325,
+  "pieces": {
+   "Body": {
+    "color": "#6edc5a",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ }
+}

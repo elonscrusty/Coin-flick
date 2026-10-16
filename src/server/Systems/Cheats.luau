@@ -17,8 +17,12 @@ local RARE_CYCLE = { "silver", "gold", "rainbow", "giant" }
 local nextRare: { [Player]: number } = {}
 
 -- Studio test players have UserId <= 0; in Team Test only the game's creator.
+-- A place opened from a file has CreatorId 0, and then Play uses your real id.
 local function allowed(player: Player): boolean
-	return RunService:IsStudio() and (player.UserId <= 0 or player.UserId == game.CreatorId)
+	if not RunService:IsStudio() then
+		return false
+	end
+	return player.UserId <= 0 or game.CreatorId == 0 or player.UserId == game.CreatorId
 end
 
 local function onCheat(player: Player, command: unknown)
@@ -44,6 +48,12 @@ local function onCheat(player: Player, command: unknown)
 		nextRare[player] = i
 		Tables.forceNextRarity(player, RARE_CYCLE[i])
 		return
+	elseif command == "away" then
+		-- Pretend you were gone 3 hours, so the welcome-back money can be checked
+		-- (Studio saves are thrown away, so a real rejoin never shows it).
+		profile.lastSeen = os.time() - 3 * 60 * 60
+		local cash = GameLogic.applyOffline(profile, os.time())
+		Tables.offlineNotice(player, cash)
 	elseif command == "wipe" then
 		local fresh = ProfileSchema.default()
 		for key, value in fresh :: any do

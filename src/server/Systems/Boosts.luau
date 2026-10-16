@@ -11,6 +11,9 @@ local Boosts = {}
 
 local passes: { [Player]: { [string]: boolean } } = {}
 local megaUntil = 0
+local friendHere: { [Player]: boolean } = {}
+local eventMult = 1
+local eventLuck = 1
 
 function Boosts.setPass(player: Player, key: string, owned: boolean)
 	local owns = passes[player]
@@ -34,6 +37,33 @@ function Boosts.passes(player: Player): { [string]: boolean }
 	return passes[player] or {}
 end
 
+-- Set by Friends: true while a friend of this player is in the same server.
+function Boosts.setFriendBonus(player: Player, on: boolean)
+	if on then
+		friendHere[player] = true
+	else
+		friendHere[player] = nil
+	end
+end
+
+function Boosts.hasFriendBonus(player: Player): boolean
+	return friendHere[player] == true
+end
+
+-- Set by Events: the weekend coin rain multiplier (1 = none).
+function Boosts.setEventMult(mult: number)
+	eventMult = math.max(1, mult)
+end
+
+-- Set by Events: the weekend luck multiplier for rare coins (1 = none).
+function Boosts.setEventLuck(mult: number)
+	eventLuck = math.max(1, mult)
+end
+
+function Boosts.eventLuck(): number
+	return eventLuck
+end
+
 function Boosts.startMega(now: number)
 	megaUntil = now + Config.MEGA_BOOST_SECONDS
 end
@@ -42,7 +72,7 @@ function Boosts.megaLeft(now: number): number
 	return math.max(0, megaUntil - now)
 end
 
--- Extra cash multiplier for this player's heads (2x pass x mega boost).
+-- Extra cash multiplier for this player's heads (2x pass x mega boost x friend bonus x weekend rain).
 function Boosts.cashMult(player: Player, now: number): number
 	local mult = 1
 	if Boosts.owns(player, "doubleCash") then
@@ -51,12 +81,17 @@ function Boosts.cashMult(player: Player, now: number): number
 	if now < megaUntil then
 		mult *= Config.MEGA_BOOST_MULT
 	end
+	if friendHere[player] then
+		mult *= Config.FRIEND_CASH_MULT
+	end
+	mult *= eventMult
 	return mult
 end
 
 function Boosts.init()
 	Players.PlayerRemoving:Connect(function(player: Player)
 		passes[player] = nil
+		friendHere[player] = nil
 	end)
 end
 

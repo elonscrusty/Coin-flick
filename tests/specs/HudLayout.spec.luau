@@ -1,0 +1,343 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
+
+-- FredokaOne letters are about 0.55 of the text size wide (emoji ~1.2).
+local function fittedTextSize(r, text, padding, lines)
+	lines = lines or 1
+	local chars = 0
+	for _, c in utf8.codes(text) do
+		chars += if c > 0x2600 then 1.2 else 0.55
+	end
+	local innerW = r.w * (1 - 2 * (padding or 0.05)) * lines
+	local innerH = r.h * 0.8 / lines
+	return math.min(innerH, innerW / chars)
+end
+
+-- Text with line breaks: the longest line decides the width.
+local function fittedLines(r, text, padding)
+	local lines = string.split(text, "\n")
+	local best = math.huge
+	for _, line in lines do
+		best = math.min(best, fittedTextSize(r, line, padding, 1))
+	end
+	return math.min(best, r.h * 0.8 / #lines)
+end
+
+local function pieces(l)
+	return {
+		top = l.top,
+		info = l.info,
+		streak = l.streak,
+		alert = l.alert,
+		mega = l.mega,
+		boost = l.boost,
+		side = l.side,
+		shout = l.shout,
+		toast = l.toast,
+		combo = l.combo,
+		cheats = l.cheats,
+	}
+end
+
+describe("HUD layout", function()
+	it("every piece stays on screen", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			for name, r in pieces(l) do
+				if not HudLayout.inside(r, sc.w, sc.h) then
+					error(`{sc.name}: {name} off screen`)
+				end
+			end
+		end
+	end)
+
+	it("no two HUD pieces overlap (0 overlaps)", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			local list = {}
+			for name, r in pieces(l) do
+				-- The rare banner and toasts share one message spot (a new one
+				-- replaces the old), but never sit on anything else.
+				table.insert(list, { name, r })
+			end
+			for i = 1, #list do
+				for j = i + 1, #list do
+					local a, b = list[i][1], list[j][1]
+					local sharedSpot = (a == "shout" or a == "toast") and (b == "shout" or b == "toast")
+					if not sharedSpot and HudLayout.overlaps(list[i][2], list[j][2]) then
+						error(`{sc.name}: {list[i][1]} covers {list[j][1]}`)
+					end
+				end
+			end
+		end
+	end)
+
+	it("the table's coins, flips and giant coin have the middle to themselves", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			local zone = HudLayout.tableZone(sc.w, sc.h)
+			-- cheats are Studio-only test buttons (and may sit in a bottom row)
+			for name, r in pieces(l) do
+				if name ~= "cheats" and HudLayout.overlaps(r, zone) then
+					error(`{sc.name}: {name} sits on the table ({r.x},{r.y} {r.w}x{r.h})`)
+				end
+			end
+		end
+	end)
+
+	it("the cash and hat pills sit left, never over the top-middle yard sign", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.top.x + l.top.w).toBeAtMost(sc.w * 0.3)
+		end
+	end)
+
+	it("a panel is big: most of the screen height, fits 3+ rows on a phone", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.panel.h).toBeAtLeast(sc.h * 0.75)
+			expect(l.panel.y + l.panel.h).toBeAtMost(sc.h * 0.96 + 1)
+			expect(l.panel.w).toBeAtLeast(sc.w * 0.4)
+			-- header 54 + tabs 44 + rows of 60: at least 3 rows on a phone, 4 on a desktop
+			local rows = (l.panel.h - 54 - 44) / 60
+			expect(rows).toBeAtLeast(if sc.touch and sc.w < 1000 then 3 else 4)
+		end
+	end)
+
+	it("a panel (even at its 1.04x pop-in peak) stays between the side bands", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			local p = l.panel
+			-- UIScale 1.04 at the peak of the pop-in
+			local pop = { x = p.x - p.w * 0.02, y = p.y - p.h * 0.02, w = p.w * 1.04, h = p.h * 1.04 }
+			for _, other in { "top", "info", "mega", "boost", "combo", "side" } do
+				if HudLayout.overlaps(pop, l[other]) then
+					error(`{sc.name}: panel pop-in touches {other}`)
+				end
+			end
+			for _, button in l.sideButtons do
+				expect(HudLayout.overlaps(pop, button)).toBeFalsy()
+			end
+			expect(pop.y).toBeAtLeast(l.reserved.menu.y + l.reserved.menu.h)
+		end
+	end)
+
+	it("messages have their own spot: never on a pill, card, chip or button", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			for _, msg in { l.shout, l.toast } do
+				expect(msg.h).toBeAtLeast(56)
+				for _, other in { "top", "info", "mega", "boost", "combo", "side" } do
+					if HudLayout.overlaps(msg, l[other]) then
+						error(`{sc.name}: message spot sits on {other}`)
+					end
+				end
+			end
+		end
+	end)
+
+	it("message spot has 10px of air from the cards above and the test buttons below", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			local m = l.shout
+			expect(m.y - (l.info.y + l.info.h)).toBeAtLeast(10)
+			if l.cheats.x < m.x + m.w and l.cheats.x + l.cheats.w > m.x then
+				local gapBelow = l.cheats.y - (m.y + m.h)
+				if gapBelow > -m.h then
+					expect(gapBelow).toBeAtLeast(10)
+				end
+			end
+			expect(l.toast.y).toBe(m.y)
+		end
+	end)
+
+	it("mega count chip and boost timer chip stack without touching", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(HudLayout.overlaps(l.mega, l.boost)).toBeFalsy()
+			expect(l.boost.y).toBeAtLeast(l.mega.y + l.mega.h)
+			expect(l.combo.y).toBeAtLeast(l.boost.y + l.boost.h)
+		end
+	end)
+
+	it("info card and chips are chunky enough to read (14px text, 26px chips)", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.mega.h).toBeAtLeast(26)
+			expect(l.boost.h).toBeAtLeast(26)
+			expect(l.info.h).toBeAtLeast(38)
+			expect(fittedLines(l.info, "Heads = $999K\nLuck 100%", 0.06)).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
+	it("combo card has 8px of air above the buttons; RESET bar is big enough to read", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.side.y - (l.combo.y + l.combo.h)).toBeAtLeast(12)
+			-- the combo card at its biggest pop (UIScale) still clears every neighbour
+			local pop = HudLayout.COMBO_POP_MAX
+			local c = l.combo
+			local big = {
+				x = c.x - c.w * (pop - 1) / 2,
+				y = c.y - c.h * (pop - 1) / 2,
+				w = c.w * pop,
+				h = c.h * pop,
+			}
+			for _, other in { "mega", "boost", "side" } do
+				if HudLayout.overlaps(big, l[other]) then
+					error(`{sc.name}: popped combo touches {other}`)
+				end
+			end
+			for _, b in l.sideButtons do
+				expect(HudLayout.overlaps(big, b)).toBeFalsy()
+			end
+			-- RESET bar: at least 20px tall, inside the button, icon above it
+			local rb = l.sideButtons[2]
+			local parts = HudLayout.resetParts(rb.w, rb.h)
+			expect(parts.bar.h).toBeAtLeast(20)
+			expect(parts.bar.y + parts.bar.h).toBeAtMost(rb.h)
+			expect(parts.bar.x).toBeAtLeast(0)
+			expect(parts.bar.x + parts.bar.w).toBeAtMost(rb.w)
+			expect(parts.icon.y + parts.icon.h).toBeAtMost(parts.bar.y)
+			expect(parts.icon.h).toBeAtLeast(12)
+			-- the count (or GO!) fits inside the bar at 14px
+			for _, text in { "24", "GO!" } do
+				expect(fittedTextSize(parts.bar, text, 0.05)).toBeAtLeast(HudLayout.MIN_TEXT)
+			end
+			-- chip text: white with a thin outline on a deep color (see Hud.strip)
+			expect(fittedTextSize(l.boost, "⚡ 2x  9:59", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			expect(fittedTextSize(l.mega, "🌟 999/999", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
+	it("streak counter and alert chip sit side by side in the top middle, readable", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(HudLayout.overlaps(l.streak, l.alert)).toBeFalsy()
+			expect(l.streak.h).toBeAtLeast(28)
+			expect(l.alert.h).toBeAtLeast(28)
+			-- centered between Roblox's menu and its right buttons
+			local mid = (l.streak.x + l.alert.x + l.alert.w) / 2
+			expect(math.abs(mid - sc.w / 2)).toBeAtMost(sc.w * 0.1)
+			expect(fittedTextSize(l.streak, "🔥 10/10 HEADS", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			for _, text in { "🌧 RAIN 2x 59:59", "🍀 2x LUCK 1d 22h", "🎁 9 READY!", "👫 2x cash" } do
+				expect(fittedTextSize(l.alert, text, 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			end
+			-- the 'ONE MORE!' hint hangs 2px under the streak chip and stays above the table
+			expect(l.streak.y + l.streak.h + 2 + 26).toBeAtMost(HudLayout.tableZone(sc.w, sc.h).y + 1)
+		end
+	end)
+
+	it("Heads card with the Multi Flip badge still reads at 14px", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(fittedLines(l.info, "Heads = $999K\nLuck 100% 🌀x4", 0.06)).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
+	it("pills have a gap, and the combo card is big enough to read", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			-- Hud.init: two pills (48% + 44% of the row) with an 8 px gap between
+			expect(l.top.w * (1 - 0.48 - 0.44)).toBeAtLeast(8)
+			expect(l.combo.h).toBeAtLeast(48)
+			expect(l.combo.w).toBeAtLeast(90)
+			local size = fittedLines(l.combo, "🔥 x99\nCOMBO", 0.05)
+			expect(size).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
+	it("nothing covers Roblox's menu, jump button or thumbstick", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			for name, r in pieces(l) do
+				for rname, rr in l.reserved do
+					if HudLayout.overlaps(r, rr) then
+						error(`{sc.name}: {name} covers Roblox {rname}`)
+					end
+				end
+			end
+		end
+	end)
+
+	it("panels and the low toast fit between the controls", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			for _, key in { "panel", "toastLow" } do
+				local r = l[key]
+				if not HudLayout.inside(r, sc.w, sc.h) then
+					error(`{sc.name}: {key} off screen`)
+				end
+				for name, other in l.reserved do
+					-- Touch controls hide while a panel is open (Hud), so a
+					-- panel may reach over the thumbstick; never the top bar.
+					local hidden = key == "panel" and (name == "thumbstick" or name == "jump")
+					if not hidden and HudLayout.overlaps(r, other) then
+						error(`{sc.name}: {key} covers Roblox {name}`)
+					end
+				end
+				for _, name in { "side", "cheats", "combo" } do
+					if key == "toastLow" and HudLayout.overlaps(r, l[name]) then
+						error(`{sc.name}: toastLow covers {name}`)
+					end
+				end
+			end
+			expect(HudLayout.overlaps(l.panel, l.side)).toBeFalsy()
+			expect(HudLayout.overlaps(l.panel, l.toastLow)).toBeFalsy()
+			expect(HudLayout.overlaps(l.toastLow, l.top)).toBeFalsy()
+			expect(l.panel.w).toBeAtLeast(270)
+			expect(fittedTextSize(l.toastLow, "Reset 3 times to meet King Flip!", nil, 2)).toBeAtLeast(
+				HudLayout.MIN_TEXT
+			)
+		end
+	end)
+
+	it("side buttons are thumb sized and don't touch each other", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(#l.sideButtons).toBe(4)
+			for i, b in l.sideButtons do
+				expect(b.w).toBeAtLeast(HudLayout.MIN_TOUCH)
+				expect(b.h).toBeAtLeast(HudLayout.MIN_TOUCH)
+				for j = i + 1, 4 do
+					expect(HudLayout.overlaps(b, l.sideButtons[j])).toBeFalsy()
+				end
+			end
+		end
+	end)
+
+	it("longest HUD text still fits big enough to read", function()
+		local longest = {
+			info = "Heads = $999K\nLuck 100%",
+			boost = "⚡ 2x  9:59",
+			mega = "🌟 999/999",
+			shout = "⭐ SomeLongName20Char flipped a GIANT coin! +$999K ⭐",
+			toast = "Fill your table first! (24/25 coins)",
+		}
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			for key, text in longest do
+				local rect = if key == "mega" then l.mega else l[key]
+				local size = if key == "info"
+					then fittedLines(rect, text)
+					else fittedTextSize(rect, text, nil, if key == "shout" or key == "toast" then 3 else 1)
+				if size < HudLayout.MIN_TEXT then
+					error(`{sc.name}: {key} text only {size}px`)
+				end
+			end
+			-- Cash pill is 48% of the pill row, hat pill 44% (Hud.init)
+			local cash = { w = l.top.w * 0.48, h = l.top.h }
+			expect(fittedTextSize(cash, "$999.9K", 0.07)).toBeAtLeast(16)
+			local hat = { w = l.top.w * 0.44, h = l.top.h }
+			expect(fittedTextSize(hat, "🎩 999K", 0.07)).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
+	it("handles odd screen sizes without breaking", function()
+		for _, size in { { 568, 320 }, { 2560, 1440 }, { 800, 600 } } do
+			local l = HudLayout.compute(size[1], size[2], true)
+			expect(l.top.w).toBeAtLeast(100)
+			expect(l.sideButtons[1].w).toBeAtLeast(HudLayout.MIN_TOUCH)
+		end
+	end)
+end)

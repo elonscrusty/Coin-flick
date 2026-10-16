@@ -25,7 +25,7 @@ export type RarityDef = {
 	name: string,
 	chance: number, -- odds per flip, e.g. 1/100
 	mult: number,
-	color: Color3,
+	color: Color3, -- popup/shout text; the coin itself is dressed by Util/CoinLook
 	grow: number, -- how much bigger the coin gets in the air
 	shout: boolean, -- tell the whole server
 }
@@ -62,12 +62,18 @@ export type SkinDef = {
 	text: Color3,
 }
 
+-- id 0 = no uploaded sound yet, so the fallback always plays.
+export type SoundDef = {
+	id: number,
+	fallback: string,
+}
+
 local Upgrades: { [string]: UpgradeDef } = {
 	moreCoins = {
 		name = "More Coins",
-		icon = "🪙",
+		icon = "💰",
 		desc = "Put one more coin on your table",
-		baseCost = 10,
+		baseCost = 7,
 		growth = 1.8,
 		maxLevel = 9,
 	},
@@ -75,15 +81,15 @@ local Upgrades: { [string]: UpgradeDef } = {
 		name = "Bigger Coins",
 		icon = "🔍",
 		desc = "+50% cash every heads",
-		baseCost = 30,
+		baseCost = 20,
 		growth = 1.8,
 		maxLevel = 10,
 	},
 	luck = {
 		name = "Lucky Heads",
 		icon = "🍀",
-		desc = "+3% chance to land heads",
-		baseCost = 50,
+		desc = "+4.5% chance to land heads",
+		baseCost = 33,
 		growth = 1.9,
 		maxLevel = 10,
 	},
@@ -91,9 +97,17 @@ local Upgrades: { [string]: UpgradeDef } = {
 		name = "Faster Flips",
 		icon = "⚡",
 		desc = "Coins land faster",
-		baseCost = 40,
+		baseCost = 26,
 		growth = 1.75,
 		maxLevel = 10,
+	},
+	multiFlip = {
+		name = "Multi Flip",
+		icon = "🌀",
+		desc = "One tap flips +1 more coin",
+		baseCost = 150,
+		growth = 2.4,
+		maxLevel = 4,
 	},
 }
 
@@ -128,6 +142,12 @@ local TableLooks: { TableLook } = {
 		rim = Color3.fromRGB(100, 50, 180),
 		legs = Color3.fromRGB(255, 210, 60),
 	},
+	{
+		name = "Star Station",
+		top = Color3.fromRGB(70, 60, 170),
+		rim = Color3.fromRGB(90, 255, 230),
+		legs = Color3.fromRGB(255, 120, 230),
+	},
 }
 
 -- Rarest first. Anything that isn't one of these is a normal coin.
@@ -137,7 +157,7 @@ local Rarities: { RarityDef } = {
 		name = "GIANT",
 		chance = 1 / 10000,
 		mult = 500,
-		color = Color3.fromRGB(255, 120, 30),
+		color = Color3.fromRGB(255, 215, 120),
 		grow = 2.5,
 		shout = true,
 	},
@@ -155,7 +175,7 @@ local Rarities: { RarityDef } = {
 		name = "GOLD",
 		chance = 1 / 100,
 		mult = 10,
-		color = Color3.fromRGB(255, 225, 60),
+		color = Color3.fromRGB(255, 160, 0),
 		grow = 1.3,
 		shout = false,
 	},
@@ -164,7 +184,7 @@ local Rarities: { RarityDef } = {
 		name = "SILVER",
 		chance = 1 / 20,
 		mult = 3,
-		color = Color3.fromRGB(215, 225, 240),
+		color = Color3.fromRGB(140, 185, 235),
 		grow = 1.1,
 		shout = false,
 	},
@@ -280,28 +300,34 @@ return table.freeze({
 	START_COINS = 1,
 	MAX_COINS = 10, -- table is "full" here and can be RESET
 	BASE_CASH = 1,
-	COIN_BASE_DIAMETER = 2.4,
-	COIN_DIAMETER_PER_LEVEL = 0.12,
-	COIN_THICKNESS = 0.35,
+	COIN_BASE_DIAMETER = 3.0,
+	COIN_DIAMETER_PER_LEVEL = 0.08, -- max 3.8, still fits 10 coins on the ring
+	COIN_THICKNESS = 0.8, -- chunky, so a coin seen edge-on is clearly a coin
 	HITBOX_EXTRA = 1.4, -- big invisible tap target around each coin (phone first)
-	BASE_HEADS_CHANCE = 0.5,
-	HEADS_CHANCE_PER_LEVEL = 0.03,
+	-- Streak game: heads is hard at first, so 10 in a row feels special.
+	BASE_HEADS_CHANCE = 0.35,
+	HEADS_CHANCE_PER_LEVEL = 0.045, -- 10 levels = 80%
 	MAX_HEADS_CHANCE = 0.8,
+	STREAK_GOAL = 10, -- heads in a row (your own taps; helpers don't count)
+	STREAK_PRIZE_FLIPS = 200, -- prize cash = this many heads worth
+	STREAK_PRIZE_HATS = 50, -- and this many hat points
 	BASE_FLIP_TIME = 1.2,
 	FLIP_TIME_PER_LEVEL = 0.075,
 	MIN_FLIP_TIME = 0.45,
+	LOG_COIN_DRIFT = true, -- warn when a landed coin was more than 0.3 studs off its slot (it is snapped back either way)
+	FLIP_HEIGHT = 6, -- studs a coin jumps at the top of its flip (ZOOM camera fits this)
 	CASH_PER_BIG_LEVEL = 0.5,
 
 	-- Helpers
 	MAX_HELPERS = 1, -- helper slots everyone starts with
 	HELPER_SLOT_RESETS = table.freeze({ 1, 3 }), -- each of these resets opens one more slot
 	HELPER_MAX_LEVEL = 10,
-	HELPER_LEVEL_COST = 0.5, -- level 2 costs half the unlock price...
+	HELPER_LEVEL_COST = 1.0, -- level 2 costs the unlock price (an upgrade never looks cheaper than the hire)...
 	HELPER_LEVEL_GROWTH = 1.9, -- ...and each level after costs 1.9x more
 	HELPER_LEVEL_SPEED = 0.93, -- each level flips 7% faster
 	HELPER_LEVEL_CASH = 0.2, -- and +20% cash
 	OFFLINE_RATE = 0.5, -- helpers earn half speed while you're away
-	OFFLINE_CAP_SECONDS = 2 * 60 * 60, -- and at most 2 hours of it
+	OFFLINE_CAP_SECONDS = 8 * 60 * 60, -- and at most 8 hours of it
 
 	-- Chain flips: tap again within the window to grow the combo.
 	COMBO_WINDOW = 1.5,
@@ -311,13 +337,14 @@ return table.freeze({
 	-- Shared mega coin in the middle of the server
 	MEGA_BASE_TAPS = 60,
 	MEGA_TAPS_PER_PLAYER = 30,
-	MEGA_REWARD_FLIPS = 25, -- everyone who tapped gets 25 heads worth of cash
+	MEGA_REWARD_FLIPS = 1000, -- everyone who tapped gets 1000 heads worth of cash (more than the best rare coin pays)
 	MEGA_REWARD_HATS = 5,
 	MEGA_BOOST_MULT = 2, -- then the whole server gets 2x cash...
 	MEGA_BOOST_SECONDS = 60, -- ...for this long
 	MEGA_TAP_RATE = 6,
 	MEGA_TAP_BURST = 10,
 	MEGA_DIAMETER = 16,
+	MEGA_JUMP = 3, -- studs the mega coin hops in its big flip (small, so it stays on screen from your yard)
 	MEGA_HEIGHT = 12, -- coin centre above the ground (sits just above the 3.2 tall pedestal)
 
 	-- Leaderboards (global, OrderedDataStore)
@@ -330,6 +357,89 @@ return table.freeze({
 	AUTO_FLIP_INTERVAL = 0.6, -- auto-flip pass flips one coin this often
 	MAX_EXTRA_HELPER_SLOTS = 3,
 	MAX_SAVED_RECEIPTS = 50,
+
+	-- Friend in the same server: both get this cash multiplier
+	FRIEND_CASH_MULT = 2,
+
+	-- Daily gift + daily jobs. Rewards are "flips" = that many heads worth of cash at
+	-- the player's current cash per heads (so a gift is never tiny or huge), plus hat points.
+	Daily = table.freeze({
+		JOBS_PER_DAY = 3,
+		-- 7-day gift. Missing a day does NOT reset it: the next claim just pays the next day.
+		Gift = table.freeze({
+			table.freeze({ flips = 20, hats = 0 }),
+			table.freeze({ flips = 30, hats = 0 }),
+			table.freeze({ flips = 40, hats = 2 }),
+			table.freeze({ flips = 60, hats = 0 }),
+			table.freeze({ flips = 80, hats = 4 }),
+			table.freeze({ flips = 100, hats = 0 }),
+			table.freeze({ flips = 250, hats = 10 }), -- day 7 chest
+		}),
+		-- Job kinds. Three of these four are picked per player per day; goals[i] pays rewards[i].
+		JobKinds = table.freeze({
+			table.freeze({
+				kind = "flip",
+				text = "Flip %d coins",
+				goals = table.freeze({ 50, 100, 200 }),
+				flips = table.freeze({ 10, 20, 40 }),
+				hats = table.freeze({ 0, 1, 2 }),
+			}),
+			table.freeze({
+				kind = "heads",
+				text = "Get %d heads",
+				goals = table.freeze({ 25, 50, 100 }),
+				flips = table.freeze({ 10, 20, 40 }),
+				hats = table.freeze({ 0, 1, 2 }),
+			}),
+			table.freeze({
+				kind = "mega",
+				text = "Help flip the mega coin %d time",
+				goals = table.freeze({ 1, 2, 3 }),
+				flips = table.freeze({ 15, 30, 50 }),
+				hats = table.freeze({ 1, 2, 3 }),
+			}),
+			table.freeze({
+				kind = "buy",
+				text = "Buy %d upgrades",
+				goals = table.freeze({ 3, 6, 10 }),
+				flips = table.freeze({ 10, 20, 40 }),
+				hats = table.freeze({ 0, 1, 2 }),
+			}),
+		}),
+	}),
+
+	-- Play-time gifts: stay in the game, a gift becomes ready. Nothing is ever taken away:
+	-- a gift you did not claim before midnight (UTC) stays waiting for you.
+	-- Rewards are "flips" (heads worth of cash) and hat points, like the daily gift.
+	PlayGifts = table.freeze({
+		MAX_STEP = 60, -- most seconds one server tick may add (stops clock jumps)
+		Gifts = table.freeze({
+			table.freeze({ minutes = 5, flips = 15, hats = 0 }),
+			table.freeze({ minutes = 15, flips = 40, hats = 1 }),
+			table.freeze({ minutes = 30, flips = 90, hats = 2 }),
+			table.freeze({ minutes = 60, flips = 200, hats = 4 }),
+		}),
+	}),
+
+	-- Badges. badgeId = the Roblox badge id. carter makes the badges in Creator Hub and gives
+	-- the ids, so every id stays 0 (= not awarded on Roblox, still shown in the game) until then.
+	Badges = table.freeze({
+		table.freeze({ id = "streak10", name = "10 Heads!", text = "Get 10 heads in a row", badgeId = 0 }),
+		table.freeze({ id = "flips1m", name = "Million Flipper", text = "Flip 1,000,000 coins", badgeId = 0 }),
+		table.freeze({ id = "firstReset", name = "Fresh Start", text = "Reset your table once", badgeId = 0 }),
+		table.freeze({ id = "allHelpers", name = "Full Crew", text = "Own every helper", badgeId = 0 }),
+	}),
+	BADGE_STREAK = 10,
+	BADGE_FLIPS = 1000000,
+
+	-- Weekend events (UTC Saturday and Sunday). Luck x2 makes every rare coin twice as likely.
+	-- Coin rain: for RAIN_SECONDS of every RAIN_EVERY seconds, heads pay RAIN_MULT x cash.
+	Events = table.freeze({
+		LUCK_MULT = 2,
+		RAIN_MULT = 2,
+		RAIN_EVERY = 600,
+		RAIN_SECONDS = 45,
+	}),
 
 	-- Reset (prestige)
 	RESET_CASH_BONUS = 0.5, -- each reset = +50% cash forever
@@ -349,27 +459,46 @@ return table.freeze({
 	STUDIO_USE_REAL_TEST_STORE = false,
 
 	Upgrades = table.freeze(Upgrades),
-	UPGRADE_ORDER = table.freeze({ "moreCoins", "bigCoins", "luck", "speed" }),
+	UPGRADE_ORDER = table.freeze({ "moreCoins", "bigCoins", "luck", "speed", "multiFlip" }),
 	TableLooks = table.freeze(TableLooks),
 	Rarities = table.freeze(Rarities),
 	HelperTypes = table.freeze(HelperTypes),
 	Hats = table.freeze(Hats),
 	Skins = table.freeze(Skins),
 	LEADERBOARDS = table.freeze({ "flips", "biggestFlip", "resets" }),
+	-- Weekly boards: score = flips since Monday 00:00 UTC. A new board starts every Monday.
+	WEEKLY_LEADERBOARDS = table.freeze({ "weekFlips" }),
 
 	-- Built-in Roblox sounds (ship with every client). Swap for nicer ones any time.
 	Sounds = table.freeze({
-		Tap = "rbxasset://sounds/clickfast.wav",
-		Flip = "rbxasset://sounds/swoosh.wav",
-		Land = "rbxasset://sounds/action_jump_land.mp3",
-		Heads = "rbxasset://sounds/electronicpingshort.wav",
-		Skull = "rbxasset://sounds/uuhhh.mp3",
-		Buy = "rbxasset://sounds/button.wav",
-		Reset = "rbxasset://sounds/snap.wav",
-		Rare = "rbxasset://sounds/victory.wav",
-		Combo = "rbxasset://sounds/electronicpingshort.wav",
-		Mega = "rbxasset://sounds/victory.wav",
-	} :: { [string]: string }),
+		-- id = carter's own uploaded sound (from Find The Pet), only after carter
+		-- says yes to it; he found them annoying all at once, so they are tried
+		-- one at a time. fallback = built-in Roblox sound, used when id is 0 or
+		-- the id will not load.
+		Tap = { id = 0, fallback = "rbxasset://sounds/clickfast.wav" },
+		Flip = { id = 0, fallback = "rbxasset://sounds/action_jump.mp3" },
+		Land = { id = 0, fallback = "rbxasset://sounds/action_jump_land.mp3" },
+		Heads = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: CoinPickup
+		Skull = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Pickup
+		Buy = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Purchase
+		Reset = { id = 0, fallback = "rbxasset://sounds/snap.wav" }, -- to try: LevelUp
+		Rare = { id = 109340819460170, fallback = "rbxasset://sounds/victory.wav" }, -- RarityAccent, trying now
+		Combo = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: LuckyMeter
+		Mega = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: MatchWin
+		Daily = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: DailyClaim
+		Gift = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: GiftOpen
+		JobDone = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: QuestDone
+		Denied = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Denied
+	} :: { [string]: SoundDef }),
+
+	-- Cartoon sky (World): a thick, bright-blue haze over the default skybox.
+	Sky = table.freeze({
+		density = 0.36,
+		offset = 0.1,
+		haze = 2.4,
+		color = Color3.fromRGB(150, 210, 255),
+		decay = Color3.fromRGB(95, 175, 255),
+	}),
 
 	-- Robux shop. Ids come from carter; 0 means "not set yet" (shows SOON).
 	-- Prices are set on the Roblox website and read live, never written in code.

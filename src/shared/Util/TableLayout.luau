@@ -4,7 +4,8 @@
 
 local TableLayout = {}
 
-local RING_RADIUS = 5.6
+-- Wide enough that a rare coin can puff up without touching its neighbours.
+local RING_RADIUS = 6.6
 
 function TableLayout.coinOffset(index: number, maxCoins: number): (number, number)
 	if index <= 1 then
@@ -19,6 +20,15 @@ end
 function TableLayout.plotPosition(slot: number, maxPlots: number, ringRadius: number): (number, number)
 	local angle = (slot - 1) / maxPlots * math.pi * 2
 	return math.cos(angle) * ringRadius, math.sin(angle) * ringRadius
+end
+
+-- Slot numbers that get an empty-spot marker: only the spots with no coin on them.
+function TableLayout.markerSlots(coinCount: number, maxCoins: number): { number }
+	local out: { number } = {}
+	for index = math.max(0, coinCount) + 1, maxCoins do
+		table.insert(out, index)
+	end
+	return out
 end
 
 return TableLayout

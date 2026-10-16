@@ -9,10 +9,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
+local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
-local Format = require(ReplicatedStorage.Shared.Util.Format)
+local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
+local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+local WeekendEvents = require(ReplicatedStorage.Shared.Util.WeekendEvents)
+local MeshPaint = require(ReplicatedStorage.Shared.Util.MeshPaint)
 local Boosts = require(script.Parent.Boosts)
+local Daily = require(script.Parent.Daily)
+local Goals = require(script.Parent.Goals)
+local Meshes = require(script.Parent.Meshes)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
@@ -34,6 +41,8 @@ type TableState = {
 	nextAutoFlip: number,
 	combo: number, -- chain flips: taps in a row, each within COMBO_WINDOW
 	lastTapAt: number,
+	yaw: number, -- turns the coins so they spin toward the ZOOM camera (FlipArc.spinYaw)
+	streak: number, -- heads in a row from your own taps (helpers and auto-flip never count)
 	characterConn: RBXScriptConnection?,
 }
 
@@ -47,44 +56,98 @@ local forcedRarity: { [Player]: string } = {} -- Studio test button only
 local SEE_FLIPS_DISTANCE = 220
 local HEADS: FlipResult = "heads"
 
-local COIN_GOLD = Color3.fromRGB(255, 200, 40)
-
 -- A coin lies flat: its round faces point up/down. Heads = Right face up.
 local function restCFrame(state: TableState, index: number, face: FlipResult): CFrame
 	local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
 	local pos = state.center + Vector3.new(x, Config.COIN_THICKNESS / 2, z)
-	local roll = if face == "heads" then math.pi / 2 else -math.pi / 2
-	return CFrame.new(pos) * CFrame.Angles(0, 0, roll)
+	local roll = FlipArc.restRoll(face)
+	return CFrame.new(pos) * CFrame.Angles(0, state.yaw, 0) * CFrame.Angles(0, 0, roll)
 end
 
-local function faceLabel(parent: BasePart, face: Enum.NormalId, text: string, color: Color3)
+-- One painted coin face: a thick rim, a thin inner ring and the mark in the
+-- middle. Names (Rim, Ring, Mark) let the client recolor a rare coin in the air.
+local function coinFace(parent: BasePart, face: Enum.NormalId, text: string, textColor: Color3, rimColor: Color3)
 	local gui = Instance.new("SurfaceGui")
+	gui.Name = `Face_{face.Name}`
 	gui.Face = face
 	gui.LightInfluence = 0.3
 	gui.CanvasSize = Vector2.new(200, 200)
 	gui.Parent = parent
+
+	local function ring(name: string, scale: number, thickness: number)
+		local frame = Instance.new("Frame")
+		frame.Name = name
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Position = UDim2.fromScale(0.5, 0.5)
+		frame.Size = UDim2.fromScale(scale, scale)
+		frame.BackgroundTransparency = 1
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = frame
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = thickness
+		stroke.Color = rimColor
+		stroke.Parent = frame
+		frame.Parent = gui
+	end
+	ring("Rim", 0.94, 16)
+	ring("Ring", 0.74, 5)
+	-- Bead border between the rim and the inner ring: reads as a minted coin even when small.
+	for i = 1, 16 do
+		local angle = (i - 1) / 16 * math.pi * 2
+		local bead = Instance.new("Frame")
+		bead.Name = "Bead"
+		bead.AnchorPoint = Vector2.new(0.5, 0.5)
+		bead.Position = UDim2.fromScale(0.5 + math.cos(angle) * 0.4, 0.5 + math.sin(angle) * 0.4)
+		bead.Size = UDim2.fromScale(0.07, 0.07)
+		bead.BackgroundTransparency = 1
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = bead
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 4
+		stroke.Color = rimColor
+		stroke.Parent = bead
+		bead.Parent = gui
+	end
+
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
+	label.Name = "Mark"
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.Size = UDim2.fromScale(0.56, 0.56)
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.TextScaled = true
 	label.Font = Enum.Font.FredokaOne
-	label.TextColor3 = color
+	label.TextColor3 = textColor
+	local emboss = Instance.new("UIStroke") -- raised-letter edge
+	emboss.Thickness = 4
+	emboss.Color = rimColor
+	emboss.Parent = label
 	label.Parent = gui
 end
 
-local function makeCoin(state: TableState, index: number, profile: Profile, skin: Config.SkinDef?): BasePart
+local function makeCoin(
+	state: TableState,
+	index: number,
+	profile: Profile,
+	skin: { coin: Color3, text: Color3 }?
+): BasePart
 	local diameter = Economy.coinDiameter(profile.upgrades.bigCoins)
 	local face: FlipResult = state.faces[index] or HEADS
-	local textColor = if skin then skin.text else Color3.fromRGB(255, 255, 255)
+	local look = CoinLook.NORMAL
+	local coinColor = if skin then skin.coin else look.color
+	local textColor = if skin then skin.text else look.text
+	local rimColor = if skin then CoinLook.darker(skin.coin, 0.7) else look.rim
 
 	local coin = World.makePart({
 		Name = `Coin_{index}`,
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(Config.COIN_THICKNESS, diameter, diameter),
-		Color = if skin then skin.coin else COIN_GOLD,
-		Material = Enum.Material.SmoothPlastic,
-		Reflectance = 0.15,
+		Color = coinColor,
+		Material = Enum.Material:FromName(look.material) or Enum.Material.SmoothPlastic,
+		Reflectance = look.reflectance,
 		CanCollide = false,
 		CanQuery = false, -- taps hit the bigger hitbox instead
 		CanTouch = false,
@@ -93,8 +156,38 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	coin.CFrame = restCFrame(state, index, face)
 	coin:SetAttribute("CoinIndex", index)
 	coin:SetAttribute("Face", face)
-	faceLabel(coin, Enum.NormalId.Right, "$", textColor)
-	faceLabel(coin, Enum.NormalId.Left, "💀", textColor)
+	-- What the coin looks like at rest. The client dresses rare coins in the air and always restores
+	-- THIS (never whatever it finds on the part), so a coin can never stay big or colored.
+	coin:SetAttribute("RestPos", restCFrame(state, index, HEADS).Position)
+	coin:SetAttribute("RestYaw", state.yaw)
+	coin:SetAttribute("RestSize", coin.Size)
+	coin:SetAttribute("RestColor", coin.Color)
+	coin:SetAttribute("RestMaterial", coin.Material.Name)
+	coin:SetAttribute("RestReflectance", coin.Reflectance)
+	coinFace(coin, Enum.NormalId.Right, "$", textColor, rimColor)
+	coinFace(coin, Enum.NormalId.Left, "🎩", textColor, rimColor) -- tails gives hat points
+
+	-- The Blender coin when it is uploaded: it rides on the (now invisible) coin part, which keeps doing all
+	-- the work (rest pose, flips, attributes). Heads = the model's +Y, which is the part's +X.
+	local visual = Meshes.clone(
+		MeshPaint.COIN,
+		coin.CFrame * CFrame.Angles(0, 0, -math.pi / 2),
+		{ Rim = rimColor, Face = coinColor, Mark = textColor }
+	)
+	if visual then
+		visual.Name = "Visual"
+		visual:ScaleTo(MeshPaint.coinScale(diameter))
+		Meshes.attach(visual, coin)
+		coin.Transparency = 1
+		for _, gui in coin:GetChildren() do
+			if gui:IsA("SurfaceGui") then
+				gui.Enabled = false
+			end
+		end
+		coin:SetAttribute("TintRim", rimColor)
+		coin:SetAttribute("TintFace", coinColor)
+		coin:SetAttribute("TintMark", textColor)
+	end
 
 	local sparkle = Instance.new("ParticleEmitter")
 	sparkle.Name = "Sparkle"
@@ -103,9 +196,10 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	sparkle.Lifetime = NumberRange.new(0.4, 0.8)
 	sparkle.Speed = NumberRange.new(6, 12)
 	sparkle.SpreadAngle = Vector2.new(180, 180)
-	sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
-	sparkle.Color = ColorSequence.new(Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255))
-	sparkle.LightEmission = 1
+	sparkle.Size =
+		NumberSequence.new({ NumberSequenceKeypoint.new(0, look.sparkleSize), NumberSequenceKeypoint.new(1, 0) })
+	sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[#look.sparkle])
+	sparkle.LightEmission = CoinLook.SPARKLE_LIGHT
 	sparkle.Parent = coin
 
 	local hitbox = World.makePart({
@@ -126,7 +220,34 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	return coin
 end
 
+local function finishHelper(state: TableState, helper: Model, index: number, def: Config.HelperDef)
+	-- The client walks it around the table (smooth, and no network traffic).
+	helper:SetAttribute("OrbitCenter", state.center - Vector3.new(0, Config.TABLE_HEIGHT - 1, 0))
+	helper:SetAttribute("OrbitRadius", Config.TABLE_RADIUS + 2)
+	helper:SetAttribute("Phase", index * 2.1)
+	helper:SetAttribute("HelperId", def.id)
+	helper.Parent = state.model:FindFirstChild("Helpers")
+	CollectionService:AddTag(helper, "Helper")
+end
+
 local function makeHelper(state: TableState, index: number, def: Config.HelperDef, level: number): Model
+	-- The Blender helper when it is uploaded (the client hops it around the table by its pivot, which sits
+	-- one stud above the floor like the body ball of the Part helper).
+	local modelName = MeshPaint.HELPERS[def.id]
+	local mesh = modelName
+		and Meshes.clone(
+			modelName,
+			CFrame.new(state.center + Vector3.new(Config.TABLE_RADIUS + 2, -Config.TABLE_HEIGHT + 1, 0)),
+			{ Body = def.body, Cap = def.cap },
+			1,
+			true
+		)
+	if mesh then
+		mesh.Name = `Helper_{def.id}`
+		mesh:ScaleTo(1 + level * 0.03)
+		finishHelper(state, mesh, index, def)
+		return mesh
+	end
 	local helper = Instance.new("Model")
 	helper.Name = `Helper_{def.id}`
 	local body = World.makePart({
@@ -174,18 +295,14 @@ local function makeHelper(state: TableState, index: number, def: Config.HelperDe
 		part.Parent = helper
 	end
 	helper.PrimaryPart = body
-	-- The client walks it around the table (smooth, and no network traffic).
-	helper:SetAttribute("OrbitCenter", state.center - Vector3.new(0, Config.TABLE_HEIGHT - 1, 0))
-	helper:SetAttribute("OrbitRadius", Config.TABLE_RADIUS + 2)
-	helper:SetAttribute("Phase", index * 2.1)
-	helper:SetAttribute("HelperId", def.id)
-	helper.Parent = state.model:FindFirstChild("Helpers")
-	CollectionService:AddTag(helper, "Helper")
+	finishHelper(state, helper, index, def)
 	return helper
 end
 
 local function buildTable(player: Player, state: TableState, profile: Profile)
-	local look = Config.TableLooks[Economy.tableLook(profile.resets)]
+	-- The table wears the colours of the yard's theme, so table and yard always match.
+	local theme = PlotThemes.resolve(profile.resets, nil)
+	local look = Config.TableLooks[Economy.tableLookNamed(theme.tableLook)]
 	local model = state.model
 	model:ClearAllChildren()
 	for _, name in { "Coins", "Hitboxes", "Helpers" } do
@@ -198,50 +315,99 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	local radius = Config.TABLE_RADIUS
 	local topThickness = 1.2
 
-	local top = World.makePart({
-		Name = "Top",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(topThickness, radius * 2, radius * 2),
-		CFrame = CFrame.new(state.center - Vector3.new(0, topThickness / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = look.top,
-	})
-	top.Parent = model
-
-	local rim = World.makePart({
-		Name = "Rim",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.8, radius * 2 + 1.2, radius * 2 + 1.2),
-		CFrame = CFrame.new(state.center - Vector3.new(0, topThickness + 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = look.rim,
-	})
-	rim.Parent = model
-
-	local legHeight = Config.TABLE_HEIGHT - topThickness - 0.6
-	for i = 0, 3 do
-		local angle = i * math.pi / 2 + math.pi / 4
-		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius * 0.6)
-		local leg = World.makePart({
-			Name = "Leg",
-			Size = Vector3.new(1.4, legHeight, 1.4),
-			Position = groundCenter + offset + Vector3.new(0, legHeight / 2, 0),
-			Color = look.legs,
+	-- The Blender table when it is uploaded, else the chunky Part table.
+	local meshTable = Meshes.clone(
+		MeshPaint.TABLE,
+		CFrame.new(groundCenter),
+		{ Top = look.top, Rim = look.rim, Legs = look.legs },
+		nil,
+		true
+	)
+	if meshTable then
+		meshTable.Name = "TableMesh"
+		meshTable.Parent = model
+	else
+		local top = World.makePart({
+			Name = "Top",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(topThickness, radius * 2, radius * 2),
+			CFrame = CFrame.new(state.center - Vector3.new(0, topThickness / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = look.top,
 		})
-		leg.Parent = model
+		top.Parent = model
+
+		local rim = World.makePart({
+			Name = "Rim",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1.4, radius * 2 + 1.8, radius * 2 + 1.8),
+			CFrame = CFrame.new(state.center - Vector3.new(0, topThickness + 0.2, 0))
+				* CFrame.Angles(0, 0, math.pi / 2),
+			Color = look.rim,
+		})
+		rim.Parent = model
+
+		local legHeight = Config.TABLE_HEIGHT - topThickness - 0.6
+		for i = 0, 3 do
+			local angle = i * math.pi / 2 + math.pi / 4
+			local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius * 0.6)
+			local leg = World.makePart({
+				Name = "Leg",
+				Size = Vector3.new(1.4, legHeight, 1.4),
+				Position = groundCenter + offset + Vector3.new(0, legHeight / 2, 0),
+				Color = look.legs,
+			})
+			leg.Parent = model
+		end
 	end
 
 	-- The yard around the table (fence, name arch, trees).
 	local center, outward = World.plotCenter(state.slot)
 	local plotCFrame = CFrame.lookAt(center, center - outward)
-	Plot.build(World.makePart, model, plotCFrame, look, player.DisplayName, profile.resets)
+	Plot.build(World.makePart, model, plotCFrame, theme, player.DisplayName, profile.resets)
 
 	state.coins = {}
 	-- A skin only shows while the player still owns its pass.
-	local skin = if profile.skin ~= "" and Boosts.owns(player, profile.skin) then Economy.skinDef(profile.skin) else nil
+	local skin = GameLogic.coinSkin(profile, profile.skin ~= "" and Boosts.owns(player, profile.skin))
 	local count = Economy.coinCount(profile)
 	for i = 1, count do
 		state.faces[i] = state.faces[i] or HEADS
 		state.busyUntil[i] = state.busyUntil[i] or 0 -- coins in the air stay in the air
 		state.coins[i] = makeCoin(state, i, profile, skin)
+	end
+	-- Empty spots for the coins you can still buy, so a fresh table after a
+	-- reset looks like a goal ("fill me!") instead of a big empty circle.
+	for _, index in TableLayout.markerSlots(count, Config.MAX_COINS) do
+		local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
+		local d = Config.COIN_BASE_DIAMETER
+		local slot = World.makePart({
+			Name = `Slot_{index}`, -- the client removes it the moment a coin sits on this spot
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.06, d, d),
+			CFrame = CFrame.new(state.center + Vector3.new(x, 0.03, z)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = Color3.fromRGB(120, 235, 165), -- bright mint, so it reads as "free spot" (not locked) on any table color
+			Transparency = 0.3,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			CastShadow = false,
+		})
+		local mark = Instance.new("SurfaceGui")
+		mark.Face = Enum.NormalId.Right
+		mark.LightInfluence = 0.3
+		mark.CanvasSize = Vector2.new(200, 200)
+		mark.Parent = slot
+		local plus = Instance.new("TextLabel")
+		plus.Size = UDim2.fromScale(1, 1)
+		plus.BackgroundTransparency = 1
+		plus.Text = "+"
+		plus.TextScaled = true
+		plus.Font = Enum.Font.FredokaOne
+		plus.TextColor3 = Color3.fromRGB(255, 255, 255)
+		plus.TextTransparency = 0.1
+		plus.TextStrokeTransparency = 0
+		plus.TextStrokeColor3 = Color3.fromRGB(20, 110, 70)
+		plus.Parent = mark
+		slot.Parent = model
 	end
 	for i = count + 1, #state.busyUntil do
 		state.busyUntil[i] = nil
@@ -255,24 +421,23 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 		end
 	end
 	model:SetAttribute("Look", look.name)
+	model:SetAttribute("PlotTheme", theme.id)
 end
 
 local flipRemote: RemoteEvent
 
--- Super rare coins get shouted to the whole server when they land.
+-- Super rare coins get shouted to the whole server the moment they are flipped,
+-- while everyone can still see the big coin in the air. Silver and gold only
+-- label the flipper's own coin.
 local function shoutIfRare(player: Player, outcome: GameLogic.FlipOutcome)
-	local def = Economy.rarityDef(outcome.rarity)
-	if not def or not def.shout then
-		return
+	local notice = GameLogic.shoutNotice(player.DisplayName, player.UserId, outcome)
+	if notice then
+		if notice.everyone then
+			Net.event("Notice"):FireAllClients(notice)
+		else
+			Net.event("Notice"):FireClient(player, notice)
+		end
 	end
-	local prize = if outcome.cash > 0 then `+${Format.short(outcome.cash)}` else `+{outcome.hats} 🎩`
-	local notice: Types.Notice = {
-		kind = "shout",
-		text = `{player.DisplayName} flipped a {def.name} coin! {prize}`,
-		rarity = outcome.rarity,
-		ownerId = player.UserId,
-	}
-	Net.event("Notice"):FireAllClients(notice)
 end
 
 local function flip(
@@ -290,14 +455,34 @@ local function flip(
 	state.busyUntil[index] = now + duration
 	local forced = forcedRarity[player]
 	forcedRarity[player] = nil
-	local rarityRoll = if forced then Economy.rarityRollFor(forced) else rng:NextNumber()
+	local rarityRoll = if forced
+		then Economy.rarityRollFor(forced)
+		else WeekendEvents.luckRoll(rng:NextNumber(), Boosts.eventLuck())
+	-- The Studio RARE button always lands heads, so the rare look and the $ banner match.
 	local outcome = GameLogic.applyFlip(
 		profile,
-		rng:NextNumber(),
+		if forced then 0 else rng:NextNumber(),
 		rarityRoll,
 		Boosts.cashMult(player, now) * (helperMult or 1),
 		combo
 	)
+	Daily.bump(player, "flip", 1)
+	Goals.bump(player, "flip", 1)
+	Goals.onFlip(player, outcome.rarity) -- weekly "rare" goal + coin book
+	if outcome.result == HEADS then
+		Daily.bump(player, "heads", 1)
+		Goals.bump(player, "heads", 1)
+	end
+
+	-- Only a real tap (combo >= 1) plays the streak game.
+	local streak: GameLogic.StreakOutcome = { streak = 0, nextStreak = state.streak, won = false, cash = 0, hats = 0 }
+	if combo >= 1 then
+		streak = GameLogic.applyStreak(profile, state.streak, outcome.result, Boosts.cashMult(player, now))
+		state.streak = streak.nextStreak
+		if streak.won then
+			Goals.bump(player, "streak", 1)
+		end
+	end
 
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,
@@ -310,6 +495,10 @@ local function flip(
 		helper = helperId,
 		rarity = outcome.rarity,
 		combo = combo,
+		streak = streak.streak,
+		streakWin = streak.won,
+		streakCash = streak.cash,
+		streakHats = streak.hats,
 	}
 	-- Only players who can actually see this table get the event.
 	local tablePos = state.center
@@ -319,6 +508,7 @@ local function flip(
 			flipRemote:FireClient(other, event)
 		end
 	end
+	shoutIfRare(player, outcome)
 
 	task.delay(duration, function()
 		if states[player] ~= state then
@@ -332,7 +522,6 @@ local function flip(
 			current:SetAttribute("Face", outcome.result)
 		end
 		PlayerData.changed(player)
-		shoutIfRare(player, outcome)
 	end)
 end
 
@@ -355,7 +544,11 @@ local function onTap(player: Player, rawIndex: unknown)
 	end
 	state.combo = GameLogic.nextCombo(state.combo, state.lastTapAt, now)
 	state.lastTapAt = now
-	flip(player, state, profile, index, false, state.combo)
+	-- Multi Flip: the tapped coin plus the next ready coins, one tap.
+	local flipCoins = GameLogic.pickTapCoins(index, state.busyUntil, now, Economy.flipsPerTap(profile))
+	for _, coinIndex in flipCoins do
+		flip(player, state, profile, coinIndex, false, state.combo)
+	end
 end
 
 local function placeCharacter(player: Player)
@@ -400,7 +593,10 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 		nextAutoFlip = os.clock() + Config.AUTO_FLIP_INTERVAL,
 		combo = 0,
 		lastTapAt = 0,
+		yaw = FlipArc.spinYaw(outward.X, outward.Z),
+		streak = 0,
 	}
+	model:SetAttribute("SpinYaw", state.yaw)
 	states[player] = state
 	buildTable(player, state, profile)
 	model.Parent = World.tablesFolder()
@@ -411,15 +607,17 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 	placeCharacter(player)
 
 	if offlineCash > 0 then
-		Net.event("Notice"):FireClient(
-			player,
-			{
-				kind = "offline",
-				text = `Your helper earned ${offlineCash} while you were away!`,
-			} :: Types.Notice
-		)
+		Tables.offlineNotice(player, offlineCash)
 	end
 	PlayerData.changed(player)
+end
+
+-- "Welcome back" money from helpers who worked while you were away.
+function Tables.offlineNotice(player: Player, cash: number)
+	local notice = GameLogic.offlineNotice(cash)
+	if notice then
+		Net.event("Notice"):FireClient(player, notice)
+	end
 end
 
 -- Studio QA: make this player's next flip a given rare coin.
@@ -437,6 +635,7 @@ function Tables.refresh(player: Player)
 end
 
 function Tables.init()
+	Goals.setLookChanged(Tables.refresh)
 	flipRemote = Net.event("Flipped")
 	Net.event("TapCoin").OnServerEvent:Connect(onTap)
 	PlayerData.onLoaded(onLoaded)

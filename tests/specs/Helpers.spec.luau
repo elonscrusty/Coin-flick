@@ -92,7 +92,7 @@ describe("Helper crew", function()
 
 	it("old saves: a v1 helper becomes Buddy on the team", function()
 		local p = ProfileSchema.migrate({ version = 1, cash = 3, helpers = 1 })
-		expect(p.version).toBe(2)
+		expect(p.version).toBe(ProfileSchema.CURRENT_VERSION)
 		expect(p.crew.buddy).toBe(1)
 		expect(p.team[1]).toBe("buddy")
 		local q = ProfileSchema.migrate({ version = 1, helpers = 0 })

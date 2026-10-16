@@ -8,14 +8,22 @@ local Systems = script.Systems
 local ORDER = {
 	"Net",
 	"Boosts",
+	"Meshes", -- before World, so the world is built with the models
 	"World",
 	"PlayerData",
 	"Tables",
 	"Shop",
 	"Mega",
+	"Pets",
 	"Hats",
 	"Robux",
 	"Leaderboards",
+	"Daily",
+	"Goals",
+	"PlayGifts",
+	"Badges",
+	"Events",
+	"Friends",
 	"Cheats",
 }
 
