@@ -104,7 +104,12 @@ local function coinFace(parent: BasePart, face: Enum.NormalId, text: string, tex
 	label.Parent = gui
 end
 
-local function makeCoin(state: TableState, index: number, profile: Profile, skin: Config.SkinDef?): BasePart
+local function makeCoin(
+	state: TableState,
+	index: number,
+	profile: Profile,
+	skin: { coin: Color3, text: Color3 }?
+): BasePart
 	local diameter = Economy.coinDiameter(profile.upgrades.bigCoins)
 	local face: FlipResult = state.faces[index] or HEADS
 	local look = CoinLook.NORMAL
@@ -280,7 +285,7 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 
 	state.coins = {}
 	-- A skin only shows while the player still owns its pass.
-	local skin = if profile.skin ~= "" and Boosts.owns(player, profile.skin) then Economy.skinDef(profile.skin) else nil
+	local skin = GameLogic.coinSkin(profile, profile.skin ~= "" and Boosts.owns(player, profile.skin))
 	local count = Economy.coinCount(profile)
 	for i = 1, count do
 		state.faces[i] = state.faces[i] or HEADS
@@ -549,6 +554,7 @@ function Tables.refresh(player: Player)
 end
 
 function Tables.init()
+	Goals.setLookChanged(Tables.refresh)
 	flipRemote = Net.event("Flipped")
 	Net.event("TapCoin").OnServerEvent:Connect(onTap)
 	PlayerData.onLoaded(onLoaded)

@@ -142,6 +142,7 @@ export type Snapshot = {
 	hats: { string }, -- owned hat ids
 	hat: string,
 	skin: string,
+	ladderSkin: string, -- worn streak-ladder look id, "" = none
 	maxHelpers: number,
 	helperSlots: number, -- extra slots bought with Robux
 	passes: { [string]: boolean }, -- "doubleCash", "autoFlip", and skin ids
