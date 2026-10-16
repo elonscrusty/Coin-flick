@@ -243,8 +243,8 @@ describe("CoinLook round 4: rare coins never overlap a neighbour, edge-on still 
 			expect(CoinLook.growFor(1.1, index, 3.0)).toBeAtLeast(1)
 			expect(CoinLook.growFor(1.1, index, 3.8)).toBeAtLeast(1)
 		end
-		-- GIANT is still clearly bigger than the others (capped to 6.4 studs wide)
-		expect(CoinLook.growFor(2.5, 1, 3.8)).toBeAtLeast(1.6)
+		-- GIANT is still clearly bigger than the others (capped to 5.6 studs wide)
+		expect(CoinLook.growFor(2.5, 1, 3.8)).toBeAtLeast(1.4)
 		-- silver (x1.1) puffs fully on every slot at normal size
 		for index = 1, Config.MAX_COINS do
 			expect(CoinLook.growFor(1.1, index, 3.0)).toBeNear(1.1, 1e-9)
@@ -448,14 +448,15 @@ describe("CoinLook round 8: SILVER is cool, plain gold is warm", function()
 		expect(CoinLook.distance(silver.color, plain.color)).toBeAtLeast(150)
 	end)
 
-	it("silver has a white ridge, a blue outline and white sparkles", function()
+	it("silver has a dark steel ridge, a dark blue outline and pale blue sparkles", function()
 		local silver = CoinLook.RARE.silver
-		expect(CoinLook.distance(silver.rim, Color3.fromRGB(255, 255, 255))).toBeAtMost(10)
+		expect(CoinLook.contrast(silver.rim, silver.color)).toBeAtLeast(2) -- dark ridge, not white
+		expect(silver.rim.B).toBeAtMost(160)
 		expect(silver.outline ~= nil).toBeTruthy()
 		local outline = silver.outline :: Color3
 		expect(outline.B).toBeAtLeast(outline.R * 2) -- blue
 		expect(CoinLook.contrast(outline, silver.color)).toBeAtLeast(2)
-		expect(CoinLook.distance(silver.sparkle[1], Color3.fromRGB(255, 255, 255))).toBeAtMost(10)
+		expect(silver.material ~= "Foil").toBeTruthy() -- no white shine disc
 	end)
 
 	it("every look is far from every other, in the table-top and rare tests too", function()

@@ -31,11 +31,11 @@ CoinLook.SPARKLE_LIGHT = 0.35
 
 -- Warm coin gold. Rare GOLD is a brighter lemon gold so the two never look alike.
 CoinLook.NORMAL = table.freeze({
-	color = Color3.fromRGB(240, 185, 40), -- warm gold, a bit darker than before so silver and lemon never match it
+	color = Color3.fromRGB(176, 110, 28), -- warm bronze-gold, clearly darker than lemon GOLD and cooler SILVER
 	material = "SmoothPlastic",
 	reflectance = 0.15,
-	text = Color3.fromRGB(110, 55, 0),
-	rim = Color3.fromRGB(176, 108, 18),
+	text = Color3.fromRGB(255, 235, 170),
+	rim = Color3.fromRGB(110, 60, 8),
 	sparkle = { Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255) },
 	sparkleSize = 0.6,
 	landBurst = 14,
@@ -46,30 +46,30 @@ CoinLook.NORMAL = table.freeze({
 
 local RARE: { [string]: Look } = {
 	silver = table.freeze({
-		color = Color3.fromRGB(195, 220, 255), -- cool blue-white: the opposite of the warm plain gold
-		material = "Foil",
-		reflectance = 0.4,
-		text = Color3.fromRGB(30, 60, 130),
-		rim = Color3.fromRGB(255, 255, 255), -- bright white ridge
-		sparkle = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 225, 255) },
+		color = Color3.fromRGB(140, 185, 235), -- light steel blue: never white, never a glow disc
+		material = "Metal",
+		reflectance = 0.1,
+		text = Color3.fromRGB(20, 40, 100),
+		rim = Color3.fromRGB(55, 85, 130), -- dark steel ridge
+		sparkle = { Color3.fromRGB(190, 225, 255), Color3.fromRGB(120, 175, 235) },
 		sparkleSize = 0.7,
 		landBurst = 30,
 		trail = 10,
-		outline = Color3.fromRGB(60, 110, 200), -- thin blue outline
+		outline = Color3.fromRGB(20, 45, 110), -- thin dark blue outline
 		rainbow = false,
 		stars = false,
 	} :: Look),
 	gold = table.freeze({
-		color = Color3.fromRGB(255, 140, 0), -- deep amber: clearly not the plain yellow coin
+		color = Color3.fromRGB(255, 200, 30), -- rich yellow-gold
 		material = "Foil",
 		reflectance = 0.3,
 		text = Color3.fromRGB(100, 40, 0),
-		rim = Color3.fromRGB(150, 60, 0), -- strong dark ridge
+		rim = Color3.fromRGB(160, 90, 0), -- warm ridge
 		sparkle = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 255, 200) },
 		sparkleSize = 0.9,
 		landBurst = 45,
 		trail = 25,
-		outline = Color3.fromRGB(90, 35, 0),
+		outline = Color3.fromRGB(120, 70, 0),
 		rainbow = false,
 		stars = true,
 	} :: Look),
@@ -228,7 +228,7 @@ function CoinLook.maxScale(index: number, restDiameter: number): number
 end
 
 -- The grown scale a rare coin really uses on this slot.
-CoinLook.MAX_DIAMETER = 6.4 -- no rare coin is ever wider than this in the air (edge-on it swept helpers and back coins)
+CoinLook.MAX_DIAMETER = 5.6 -- no rare coin is ever wider than this in the air (edge-on it swept helpers and back coins)
 
 function CoinLook.growFor(grow: number, index: number, restDiameter: number): number
 	return math.max(1, math.min(grow, CoinLook.maxScale(index, restDiameter), CoinLook.MAX_DIAMETER / restDiameter))
@@ -252,7 +252,7 @@ end
 
 -- A grown coin also hovers a bit higher, so it flies over the helpers and the coins behind it.
 function CoinLook.hover(scale: number): number
-	return math.max(0, scale - 1) * 2.5
+	return math.max(0, scale - 1) * 3.2
 end
 
 -- The flight trail is a thin ribbon: its two ends sit at most this far from the coin's spin axis,
