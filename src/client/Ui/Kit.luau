@@ -36,11 +36,12 @@ Kit.BRONZE = Color3.fromRGB(215, 140, 80)
 -- they never look buyable.
 Kit.LOOKS = {
 	buy = { bg = Color3.fromRGB(70, 210, 110), text = Color3.fromRGB(255, 255, 255) },
-	poor = { bg = Color3.fromRGB(150, 155, 168), text = Color3.fromRGB(255, 255, 255) },
+	poor = { bg = Color3.fromRGB(88, 92, 112), text = Color3.fromRGB(255, 255, 255) }, -- dim, but white text stays easy to read
 	max = { bg = UiStyle.GOLD, text = Color3.fromRGB(255, 255, 255) },
 	locked = { bg = Color3.fromRGB(122, 108, 156), text = Color3.fromRGB(228, 222, 242) },
 	owned = { bg = Color3.fromRGB(60, 170, 255), text = Color3.fromRGB(255, 255, 255) },
 	equipped = { bg = Color3.fromRGB(30, 200, 180), text = Color3.fromRGB(255, 255, 255) },
+	done = { bg = Color3.fromRGB(64, 118, 88), text = Color3.fromRGB(255, 255, 255) },
 	soon = { bg = Color3.fromRGB(80, 84, 104), text = Color3.fromRGB(255, 255, 255) },
 } :: { [string]: { bg: Color3, text: Color3 } }
 

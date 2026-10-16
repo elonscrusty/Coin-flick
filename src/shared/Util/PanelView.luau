@@ -21,7 +21,7 @@ type Snapshot = Types.Snapshot
 -- buy = can buy now, poor = can't afford yet, max = all done, locked = needs
 -- resets first, owned = yours (tap to use), equipped = in use right now,
 -- soon = not for sale yet.
-export type Look = "buy" | "poor" | "max" | "locked" | "owned" | "equipped" | "soon"
+export type Look = "buy" | "poor" | "max" | "locked" | "owned" | "equipped" | "soon" | "done"
 
 export type Card = {
 	id: string,
@@ -521,7 +521,7 @@ end
 
 function PanelView.awayLine(text: string): string
 	local prize = string.match(text, "%$[%w%.]+")
-	return if prize then `Helpers earned {prize}!` else text
+	return if prize then `Crew earned {prize}!` else text
 end
 
 -- One banner shape for every message: a short title row and one text row.
@@ -533,12 +533,54 @@ end
 
 PanelView.AWAY_TITLE = "WELCOME BACK!"
 
+-- "1 head", "2 times": numbers in goal texts agree with their word ("Get 1 heads" -> "Get 1 head").
+local SINGULAR = { heads = "head", coins = "coin", upgrades = "upgrade", times = "time", flips = "flip" }
+local PLURAL = { time = "times" }
+function PanelView.fixCount(text: string): string
+	local fixed = string.gsub(text, "([%d,]+) rare coins", function(num: string)
+		return if tonumber((string.gsub(num, ",", ""))) == 1 then `{num} rare coin` else `{num} rare coins`
+	end)
+	local out, pos = "", 1
+	while true do
+		local first, last, num, word = string.find(fixed, "([%d,]+) (%a+)", pos)
+		if not first or not last or not num or not word then
+			break
+		end
+		local n = tonumber((string.gsub(num, ",", "")))
+		local replaced = word
+		if n == 1 and SINGULAR[word] then
+			replaced = SINGULAR[word]
+		elseif n ~= nil and n ~= 1 and PLURAL[word] then
+			replaced = PLURAL[word]
+		end
+		out ..= string.sub(fixed, pos, first - 1) .. `{num} {replaced}`
+		pos = last + 1
+	end
+	fixed = out .. string.sub(fixed, pos)
+	return fixed
+end
+
+-- Unlock banners (new pet, new badge): one look, picture + name. nil = not an unlock notice.
+function PanelView.unlockBanner(kind: string, text: string): (string?, string?, string?)
+	if kind == "pet" then
+		local icon, name = string.match(text, "^New pet!%s*(%S+)%s+(.-) is yours!?$")
+		if icon and name then
+			return "NEW PET!", name, icon
+		end
+		return "NEW PET!", text, "🐾"
+	elseif kind == "badge" then
+		local name = string.match(text, "^Badge:%s*(.-)!?$")
+		return "NEW BADGE!", name or text, "🏅"
+	end
+	return nil, nil, nil
+end
+
 -- Reset popup ---------------------------------------------------------------
 
 function PanelView.resetLines(s: Snapshot): { ResetLine }
 	local lines: { ResetLine } = {
 		{ kind = "lose", text = "LOSE: cash + upgrades" },
-		{ kind = "keep", text = "KEEP: helpers + 🎩 hats" },
+		{ kind = "keep", text = "KEEP: crew + 🎩 hats" },
 		{ kind = "get", text = `GET: x{string.format("%.4g", s.resetBonus)} cash + new table` },
 	}
 	if not s.tableFull then

@@ -79,7 +79,7 @@ function GoalsPanelView.ladderRows(view: GoalsView): { LadderRow }
 		elseif rung.owned then
 			button, action = { text = "WEAR", look = "buy" }, "wear"
 		else
-			button, action = { text = `{view.ladder.best}/{rung.need}`, look = "locked" }, "none"
+			button, action = { text = `{view.ladder.best}/{rung.need}`, look = "poor" }, "none"
 		end
 		table.insert(rows, {
 			id = rung.id,
@@ -105,12 +105,12 @@ function GoalsPanelView.challengeRows(view: GoalsView): { ChallengeRow }
 	local rows: { ChallengeRow } = {}
 	for _, item in view.challenges.items do
 		local button: Button = if item.claimed
-			then { text = "DONE ✔", look = "owned" }
+			then { text = "DONE", look = "done" }
 			elseif item.done then { text = "CLAIM!", look = "buy" }
 			else { text = "NOT YET", look = "poor" }
 		table.insert(rows, {
 			slot = item.slot,
-			text = item.text,
+			text = PanelView.fixCount(item.text),
 			frac = math.clamp(item.progress / math.max(1, item.goal), 0, 1),
 			count = `{Format.short(item.progress)}/{Format.short(item.goal)}`,
 			reward = reward(item.cash, item.hats),
@@ -133,7 +133,7 @@ function GoalsPanelView.challengeRows(view: GoalsView): { ChallengeRow }
 		count = `{doneCount}/{total}`,
 		reward = reward(bonus.cash, bonus.hats),
 		button = if bonus.claimed
-			then { text = "DONE ✔", look = "owned" }
+			then { text = "DONE", look = "done" }
 			elseif bonus.ready then { text = "CLAIM!", look = "buy" }
 			else { text = "NOT YET", look = "poor" },
 		canClaim = bonus.ready,

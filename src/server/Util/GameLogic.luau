@@ -378,7 +378,7 @@ function GameLogic.offlineNotice(cash: number): Types.Notice?
 	if math.floor(cash) < 1 then
 		return nil
 	end
-	return { kind = "offline", text = `Your helpers earned ${Format.short(math.floor(cash))} while you were away!` }
+	return { kind = "offline", text = `Your crew earned ${Format.short(math.floor(cash))} while you were away!` }
 end
 
 return GameLogic
