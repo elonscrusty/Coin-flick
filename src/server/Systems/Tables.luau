@@ -11,6 +11,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
@@ -35,6 +36,7 @@ type TableState = {
 	nextAutoFlip: number,
 	combo: number, -- chain flips: taps in a row, each within COMBO_WINDOW
 	lastTapAt: number,
+	yaw: number, -- turns the coins so they spin toward the ZOOM camera (FlipArc.spinYaw)
 	characterConn: RBXScriptConnection?,
 }
 
@@ -53,7 +55,7 @@ local function restCFrame(state: TableState, index: number, face: FlipResult): C
 	local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
 	local pos = state.center + Vector3.new(x, Config.COIN_THICKNESS / 2, z)
 	local roll = if face == "heads" then math.pi / 2 else -math.pi / 2
-	return CFrame.new(pos) * CFrame.Angles(0, 0, roll)
+	return CFrame.new(pos) * CFrame.Angles(0, state.yaw, 0) * CFrame.Angles(0, 0, roll)
 end
 
 -- One painted coin face: a thick rim, a thin inner ring and the mark in the
@@ -456,7 +458,9 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 		nextAutoFlip = os.clock() + Config.AUTO_FLIP_INTERVAL,
 		combo = 0,
 		lastTapAt = 0,
+		yaw = FlipArc.spinYaw(outward.X, outward.Z),
 	}
+	model:SetAttribute("SpinYaw", state.yaw)
 	states[player] = state
 	buildTable(player, state, profile)
 	model.Parent = World.tablesFolder()

@@ -36,6 +36,7 @@ type Anim = {
 	restColor: Color3,
 	restMaterial: Enum.Material,
 	shadow: BasePart?,
+	yaw: number, -- table's spin direction (FlipArc.spinYaw), set by the server
 	restReflectance: number,
 	restMarks: { [Instance]: Color3 }, -- face marks/rims and their resting colors
 	dressed: boolean,
@@ -78,7 +79,7 @@ local function trailOn(coin: BasePart, on: boolean)
 			return
 		end
 		-- Attachments on the spin axis, so the ribbon stays smooth while the coin spins.
-		local r = coin.Size.Y * 0.35
+		local r = coin.Size.Y * 0.5
 		local a0 = Instance.new("Attachment")
 		a0.Name = "TrailA"
 		a0.Position = Vector3.new(0, 0, -r)
@@ -91,7 +92,7 @@ local function trailOn(coin: BasePart, on: boolean)
 		t.Name = "FlipTrail"
 		t.Attachment0 = a0
 		t.Attachment1 = a1
-		t.Lifetime = 0.22
+		t.Lifetime = 0.3
 		t.LightEmission = 0.7
 		t.FaceCamera = true
 		t.Color = ColorSequence.new(Color3.fromRGB(255, 245, 170), Color3.fromRGB(255, 200, 60))
@@ -313,6 +314,7 @@ local function onFlipped(ev: FlipEvent)
 	if not coin or not coin:IsA("BasePart") then
 		return
 	end
+	local yawAttr = model and model:GetAttribute("SpinYaw")
 	local mine = ev.ownerId == player.UserId
 	local camera = workspace.CurrentCamera
 	if not mine and camera and (camera.CFrame.Position - coin.Position).Magnitude > OTHERS_MAX_DISTANCE then
@@ -355,6 +357,7 @@ local function onFlipped(ev: FlipEvent)
 		restSize = restSize,
 		restColor = restColor,
 		restMaterial = restMaterial,
+		yaw = if typeof(yawAttr) == "number" then yawAttr else 0,
 		shadow = if old and old.shadow then old.shadow else makeShadow(coin, base),
 		restReflectance = restReflectance,
 		restMarks = restMarks,
@@ -398,10 +401,14 @@ local function step()
 		dressRare(anim, now, t)
 		-- Never let the spinning (or grown) coin cut into the table top.
 		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y)
-		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0)) * CFrame.Angles(0, 0, roll)
+		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0))
+			* CFrame.Angles(0, anim.yaw, 0)
+			* CFrame.Angles(0, 0, roll)
 		if t >= 1 then
 			undressRare(anim)
-			coin.CFrame = CFrame.new(anim.base) * CFrame.Angles(0, 0, rollFor(anim.event.result))
+			coin.CFrame = CFrame.new(anim.base)
+				* CFrame.Angles(0, anim.yaw, 0)
+				* CFrame.Angles(0, 0, rollFor(anim.event.result))
 			if anim.shadow then
 				anim.shadow:Destroy()
 			end

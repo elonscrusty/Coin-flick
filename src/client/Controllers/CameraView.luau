@@ -122,7 +122,9 @@ local function faceTable()
 	if typeof(center) ~= "Vector3" or typeof(outward) ~= "Vector3" then
 		return
 	end
-	local eye = root.Position - outward * 9 + Vector3.new(0, 9, 0)
+	-- Just inside the entrance arch, looking down at the table, so the arch and name
+	-- sign are behind the camera and not under the top bar.
+	local eye = root.Position - outward * 0.5 + Vector3.new(0, 9, 0)
 	camera.CFrame = CFrame.lookAt(eye, center)
 end
 

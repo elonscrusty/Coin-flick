@@ -49,3 +49,23 @@ describe("WALK camera after ZOOM", function()
 		expect(pitch).toBeAtLeast(10)
 	end)
 end)
+
+describe("Coins spin toward the ZOOM camera on every plot", function()
+	it("the spin axis is sideways to the camera view on all 8 plots (not a flat wheel)", function()
+		local Config = require(ReplicatedStorage.Shared.Config)
+		local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+		for slot = 1, Config.MAX_PLOTS do
+			local x, z = TableLayout.plotPosition(slot, Config.MAX_PLOTS, Config.PLOT_RING_RADIUS)
+			local len = math.sqrt(x * x + z * z)
+			local ox, oz = x / len, z / len -- the way the ZOOM camera looks
+			local ax, az = FlipArc.spinAxis(FlipArc.spinYaw(ox, oz))
+			-- axis is unit length and at right angles to the view direction
+			expect(math.sqrt(ax * ax + az * az)).toBeNear(1, 1e-9)
+			expect(ax * ox + az * oz).toBeNear(0, 1e-9)
+		end
+	end)
+
+	it("a table with no direction keeps the old spin", function()
+		expect(FlipArc.spinYaw(0, 0)).toBe(0)
+	end)
+end)

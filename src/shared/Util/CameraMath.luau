@@ -12,8 +12,10 @@ local TableLayout = require(script.Parent.TableLayout)
 
 local CameraMath = {}
 
--- Camera direction: this far back for every 1 up (steep, but you still see the coin faces).
-local BACK_PER_UP = 0.62
+-- Camera tilt choices: this far back for every 1 up. Steep (0.62 = 58 degrees down) shows the
+-- coin faces; flatter ones let a WIDE screen get closer (the table is wider than it is deep).
+-- The closest camera that fits wins; the flattest allowed is 1.0 (45 degrees).
+local BACK_PER_UP_CHOICES = { 0.62, 0.8, 1.0 }
 -- Aim this far past the table centre (studs). Small, so the near coins are not cut.
 local AIM_AHEAD = 0.6
 
@@ -45,6 +47,18 @@ function CameraMath.points(): { { number } }
 			table.insert(list, { x + d[1], 0, z + d[2] })
 		end
 		table.insert(list, { x, Config.FLIP_HEIGHT, z, 1 })
+	end
+	-- The table's rim, and the helper guys who walk around it (feet on the ground, heads up).
+	local rimY = -1.2
+	local helperR = Config.TABLE_RADIUS + 2
+	for k = 0, 7 do
+		local a = k / 8 * math.pi * 2
+		table.insert(
+			list,
+			{ math.cos(a) * (Config.TABLE_RADIUS + 0.6), rimY, math.sin(a) * (Config.TABLE_RADIUS + 0.6) }
+		)
+		table.insert(list, { math.cos(a) * helperR, -Config.TABLE_HEIGHT + 0.2, math.sin(a) * helperR })
+		table.insert(list, { math.cos(a) * helperR, -Config.TABLE_HEIGHT + 3.4, math.sin(a) * helperR })
 	end
 	return list
 end
@@ -94,13 +108,21 @@ function CameraMath.tableView(aspect: number, fovDeg: number): View
 	if hit then
 		return hit
 	end
-	local view: View = { back = 0, up = 0, aim = AIM_AHEAD }
-	for up = 8, 80, 0.5 do
-		view = { back = up * BACK_PER_UP, up = up, aim = AIM_AHEAD }
-		if fits(view, a, fovDeg) then
-			break
+	local best: View? = nil
+	local bestDist = math.huge
+	for _, ratio in BACK_PER_UP_CHOICES do
+		for up = 8, 90, 0.5 do
+			local candidate: View = { back = up * ratio, up = up, aim = AIM_AHEAD }
+			if fits(candidate, a, fovDeg) then
+				local dist = math.sqrt(candidate.back ^ 2 + candidate.up ^ 2)
+				if dist < bestDist then
+					best, bestDist = candidate, dist
+				end
+				break
+			end
 		end
 	end
+	local view: View = best or { back = 90 * BACK_PER_UP_CHOICES[1], up = 90, aim = AIM_AHEAD }
 	cache[key] = view
 	return view
 end

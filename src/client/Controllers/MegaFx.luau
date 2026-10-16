@@ -27,7 +27,8 @@ local function buildSign(part: BasePart)
 	gui.Name = "MegaSign"
 	gui.Adornee = part
 	gui.Size = UDim2.fromScale(18, 5)
-	gui.StudsOffsetWorldSpace = Vector3.new(0, Config.MEGA_DIAMETER / 2 + 4, 0)
+	-- Low, at the foot of the pedestal: up above the coin it sat behind the HUD bars on screen.
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 2.8 - Config.MEGA_HEIGHT, 0)
 	gui.LightInfluence = 0
 	gui.MaxDistance = 48 -- up close only; from your yard the HUD shows the count
 	local title = Instance.new("TextLabel")

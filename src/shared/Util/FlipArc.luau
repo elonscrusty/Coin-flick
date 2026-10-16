@@ -26,6 +26,22 @@ function FlipArc.spins(duration: number): number
 	return 3 + math.floor(math.max(0, duration) * 2)
 end
 
+-- Which way to turn a table's coins so they always spin TOWARD the ZOOM camera (like a
+-- real coin flip seen from the player), never in a flat "wheel" that looks like a thin
+-- sliver. The spin axis is the sideways direction (perpendicular to `outward`, the way the
+-- camera looks). Returns a yaw in radians: turn the whole coin by it around the up axis.
+function FlipArc.spinYaw(outwardX: number, outwardZ: number): number
+	if outwardX == 0 and outwardZ == 0 then
+		return 0
+	end
+	return math.atan2(-outwardZ, outwardX)
+end
+
+-- The sideways spin axis (x, z) that goes with a yaw: rotating (0, 0, 1) around up by `yaw`.
+function FlipArc.spinAxis(yaw: number): (number, number)
+	return math.sin(yaw), math.cos(yaw)
+end
+
 -- Shadow under the coin: full size on the table, half size at the top of the jump.
 function FlipArc.shadowScale(height: number, peak: number?): number
 	local top = peak or Config.FLIP_HEIGHT

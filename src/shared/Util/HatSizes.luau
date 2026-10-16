@@ -17,7 +17,7 @@ HatSizes.WIDTH = table.freeze({
 } :: { [string]: number })
 
 -- Widest a hat may be on the head, in hat units (before the shared 1.6x chunky scale).
-HatSizes.MAX_WIDTH = 1.45
+HatSizes.MAX_WIDTH = 1.2
 
 -- Shrink factor for one hat (1 = normal size).
 function HatSizes.fit(id: string): number

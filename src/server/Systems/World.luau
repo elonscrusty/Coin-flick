@@ -76,10 +76,11 @@ function World.init()
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(10, 1, 10)
 	spawn.Position = Vector3.new(0, 0.5, 26) -- the mega coin stands in the very middle
-	spawn.Color = Color3.fromRGB(255, 220, 80)
-	spawn.Material = Enum.Material.SmoothPlastic
+	spawn.Transparency = 1 -- the round welcome mat below is what you see
+	spawn.CanQuery = false
 	spawn.Duration = 0
 	spawn.Parent = workspace
+	World.welcomeMat(Vector3.new(0, 0, 26))
 
 	tablesFolder = Instance.new("Folder")
 	tablesFolder.Name = "Tables"
@@ -169,6 +170,30 @@ function World.decorate()
 			CastShadow = false,
 		})
 		hill.Parent = folder
+	end
+	folder.Parent = workspace
+end
+
+-- The spawn spot: a round mat (blue ring, white ring, gold middle) instead of a plain yellow slab.
+function World.welcomeMat(at: Vector3)
+	local folder = Instance.new("Folder")
+	folder.Name = "WelcomeMat"
+	local rings = {
+		{ diameter = 14, color = Color3.fromRGB(70, 170, 255) },
+		{ diameter = 11.5, color = Color3.fromRGB(255, 255, 255) },
+		{ diameter = 9, color = Color3.fromRGB(255, 200, 40) },
+		{ diameter = 5.5, color = Color3.fromRGB(255, 120, 190) },
+	}
+	for i, ring in rings do
+		local disc = makePart({
+			Name = `Mat{i}`,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.25 + i * 0.08, ring.diameter, ring.diameter),
+			CFrame = CFrame.new(at + Vector3.new(0, 0.1 + i * 0.04, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = ring.color,
+			CanCollide = false,
+		})
+		disc.Parent = folder
 	end
 	folder.Parent = workspace
 end

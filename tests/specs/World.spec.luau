@@ -17,7 +17,7 @@ describe("Hats fit the head", function()
 		for _, def in Config.Hats do
 			expect(HatSizes.WIDTH[def.id] * HatSizes.fit(def.id)).toBeAtMost(HatSizes.MAX_WIDTH + 1e-9)
 		end
-		expect(HatSizes.fit("cowboy")).toBeAtMost(0.75)
+		expect(HatSizes.fit("cowboy")).toBeAtMost(0.6)
 		expect(HatSizes.fit("party")).toBe(1)
 		expect(HatSizes.fit("nope")).toBe(1)
 	end)
