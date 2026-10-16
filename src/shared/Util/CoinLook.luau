@@ -209,7 +209,7 @@ end
 -- Every slot on the table counts as a neighbour (empty slots show a disc).
 -- Returns a scale >= 1 to clamp a rare coin's `grow` with. `restDiameter` is the
 -- diameter of the coins sitting on the other slots.
-CoinLook.GAP = 0.1 -- air left between a grown coin (with its ridge) and its neighbours
+CoinLook.GAP = 0.4 -- air left between a grown coin (with its ridge) and its neighbours
 CoinLook.RIDGE_WIDER = 1.12 -- the ridge ring is this much wider than the coin
 CoinLook.EDGE_OVERHANG = 0.5 -- a grown coin may hang this far past the table edge
 

@@ -475,3 +475,35 @@ describe("CoinLook round 8: SILVER is cool, plain gold is warm", function()
 		expect(CoinLook.trailHalfWidth(widest) * 2).toBeAtMost(1.5 + 1e-9)
 	end)
 end)
+
+describe("CoinLook round 10: big coins keep clear of neighbours, no marker under a coin", function()
+	local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+
+	it("a grown coin (with its ridge) keeps at least 0.4 studs from every other slot's coin", function()
+		for _, restD in { 3.0, 3.4, 3.8 } do
+			for index = 1, Config.MAX_COINS do
+				local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
+				local grow = CoinLook.growFor(3, index, restD)
+				local grownD = restD * grow * CoinLook.RIDGE_WIDER
+				for other = 1, Config.MAX_COINS do
+					if other ~= index and grow > 1 then
+						local ox, oz = TableLayout.coinOffset(other, Config.MAX_COINS)
+						local dist = math.sqrt((x - ox) ^ 2 + (z - oz) ^ 2)
+						expect(dist - grownD / 2 - restD / 2).toBeAtLeast(0.4 - 1e-9)
+					end
+				end
+			end
+		end
+	end)
+
+	it("empty-spot markers exist only for slots with no coin", function()
+		for count = 1, Config.MAX_COINS do
+			local markers = TableLayout.markerSlots(count, Config.MAX_COINS)
+			expect(#markers).toBe(Config.MAX_COINS - count)
+			for _, index in markers do
+				expect(index).toBeAtLeast(count + 1)
+			end
+		end
+		expect(#TableLayout.markerSlots(Config.MAX_COINS, Config.MAX_COINS)).toBe(0)
+	end)
+end)

@@ -22,4 +22,13 @@ function TableLayout.plotPosition(slot: number, maxPlots: number, ringRadius: nu
 	return math.cos(angle) * ringRadius, math.sin(angle) * ringRadius
 end
 
+-- Slot numbers that get an empty-spot marker: only the spots with no coin on them.
+function TableLayout.markerSlots(coinCount: number, maxCoins: number): { number }
+	local out: { number } = {}
+	for index = math.max(0, coinCount) + 1, maxCoins do
+		table.insert(out, index)
+	end
+	return out
+end
+
 return TableLayout

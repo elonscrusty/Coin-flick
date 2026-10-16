@@ -295,12 +295,11 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	end
 	-- Empty spots for the coins you can still buy, so a fresh table after a
 	-- reset looks like a goal ("fill me!") instead of a big empty circle.
-	for i = 1, Economy.emptySlots(profile) do
-		local index = count + i
+	for _, index in TableLayout.markerSlots(count, Config.MAX_COINS) do
 		local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
 		local d = Config.COIN_BASE_DIAMETER
 		local slot = World.makePart({
-			Name = `Slot_{index}`,
+			Name = `Slot_{index}`, -- the client removes it the moment a coin sits on this spot
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(0.06, d, d),
 			CFrame = CFrame.new(state.center + Vector3.new(x, 0.03, z)) * CFrame.Angles(0, 0, math.pi / 2),
