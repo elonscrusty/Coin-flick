@@ -318,10 +318,43 @@ function PanelView.fitRows(
 	pad: number
 ): (number, number, number)
 	local fits = math.clamp(math.floor((avail - pad + gap) / (minH + gap)), 1, math.max(1, count))
-	local h = math.clamp(math.floor((avail - pad - (fits - 1) * gap) / fits), minH, maxH)
+	local h = math.floor((avail - pad - (fits - 1) * gap) / fits)
+	if count <= fits then
+		h = math.min(h, maxH) -- everything fits: rows may stay smaller than the window
+	end -- else rows share the whole window, so no sliver of the next row peeks in
+	h = math.max(h, minH)
 	local shown = math.min(fits, count)
 	local content = pad + shown * h + math.max(0, shown - 1) * gap
 	return fits, h, content
+end
+
+-- Top 10 rows: the real players, up to two open seats, and an "Invite friends!"
+-- card that must always be fully visible. Open seats go first when space is short.
+PanelView.INVITE_MIN = 56
+PanelView.ROW_MIN = 34
+PanelView.ROW_MAX = 62
+
+function PanelView.boardLayout(full: number, real: number, wanted: number): (number, number, number)
+	if wanted > 5 then -- a long list: just scroll, no invite card
+		local _, rowH = PanelView.fitRows(full, wanted, PanelView.ROW_MIN, PanelView.ROW_MAX, 8, 8)
+		return wanted, rowH, 0
+	end
+	for n = wanted, math.max(real, 1), -1 do
+		local rowMax = math.floor((full - 8 - 8 - (n - 1) * 8 - PanelView.INVITE_MIN) / n)
+		if rowMax >= PanelView.ROW_MIN then
+			local rowH = math.min(PanelView.ROW_MAX, rowMax)
+			local invite = math.min(130, full - (8 + n * rowH + (n - 1) * 8) - 8)
+			return n, rowH, invite
+		end
+	end
+	local _, rowH = PanelView.fitRows(full, math.max(real, 1), PanelView.ROW_MIN, PanelView.ROW_MAX, 8, 8)
+	return math.max(real, 1), rowH, 0
+end
+
+-- Banner rows (title over text) inside a banner `h` pixels tall.
+PanelView.BANNER_TITLE_MIN_FONT = 16
+function PanelView.bannerRows(h: number): (number, number)
+	return math.floor(h * 0.55), math.floor(h * 0.34)
 end
 
 -- Top 10 --------------------------------------------------------------------
@@ -395,11 +428,34 @@ function PanelView.shoutText(text: string, ownerName: string, isMe: boolean): st
 	return text
 end
 
+-- Banner body lines are short on purpose (the banner slot is small): the title
+-- already says what happened, the line adds who and how much.
+function PanelView.shoutLine(text: string, ownerName: string, isMe: boolean): string
+	local who, prize = string.match(text, "^(.-) flipped an? .- coin! (.+)$")
+	if not who or not prize then
+		return PanelView.shoutText(text, ownerName, isMe)
+	end
+	return `{if isMe then "You" else who} flipped it! {prize}`
+end
+
+function PanelView.megaLine(text: string): string
+	local prize = string.match(text, "%+%$[%w%.]+")
+	if not prize then
+		return PanelView.megaBody(text)
+	end
+	return if string.find(text, "2x", 1, true) then `{prize} and 2x cash!` else prize
+end
+
+function PanelView.awayLine(text: string): string
+	local prize = string.match(text, "%$[%w%.]+")
+	return if prize then `Helpers earned {prize}!` else text
+end
+
 -- One banner shape for every message: a short title row and one text row.
 PanelView.BANNER_TITLE_MAX = 18
 
 function PanelView.hatBanner(hatName: string): (string, string)
-	return `{string.upper(hatName)} ON!`, "Looking good!"
+	return string.upper(hatName), "Now wearing it!"
 end
 
 PanelView.AWAY_TITLE = "WELCOME BACK!"

@@ -350,3 +350,65 @@ describe("Round 6", function()
 		expect(PanelView.boardRows("flips", nil, "Me")[1].name).toBe("Be the first!")
 	end)
 end)
+
+describe("Round 7", function()
+	local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
+	local function eachScreen(fn)
+		table.insert(HudLayout.SCREENS, { name = "runner-phone", w = 845, h = 397, touch = true })
+		for _, screen in HudLayout.SCREENS do
+			local l = HudLayout.compute(screen.w, screen.h, screen.touch)
+			local fit = math.clamp(math.min(l.panel.w / 600, l.panel.h / 470), 1, 2)
+			fn(screen, l, fit, l.panel.h / fit)
+		end
+		table.remove(HudLayout.SCREENS)
+	end
+
+	it("no sliver of the next row peeks in under the last whole row", function()
+		eachScreen(function(_, _, _, boxH)
+			for _, header in { 0, 26 } do
+				local avail = boxH - 62 - 44 - header - 20 - 4
+				for _, count in { 3, 4, 8, 9 } do
+					local fits, h, content = PanelView.fitRows(avail, count, 44, 88, 8, 8)
+					if count > fits then
+						local used = 8 + fits * h + (fits - 1) * 8
+						expect(used).toBeAtMost(avail)
+						expect(avail - used).toBeAtMost(fits + 1) -- rounding only
+					else
+						expect(content).toBeAtMost(avail)
+					end
+				end
+			end
+		end)
+	end)
+
+	it("the Invite card is always whole and never under the YOU bar", function()
+		eachScreen(function(_, _, _, boxH)
+			local full = boxH - 62 - 44 - 34 - 20 - 4
+			for real = 0, 3 do
+				local n, rowH, invite = PanelView.boardLayout(full, real, real + PanelView.OPEN_SEATS)
+				expect(n >= math.max(real, 1)).toBe(true)
+				if invite > 0 then
+					expect(invite).toBeAtLeast(PanelView.INVITE_MIN)
+					expect(8 + n * rowH + (n - 1) * 8 + 8 + invite).toBeAtMost(full)
+				end
+			end
+		end)
+	end)
+
+	it("banner title row is at least 18px tall on every screen", function()
+		eachScreen(function(_, l)
+			local titleH = PanelView.bannerRows(l.shout.h - 8)
+			expect(titleH).toBeAtLeast(18)
+			expect(PanelView.BANNER_TITLE_MIN_FONT).toBeAtLeast(16)
+		end)
+	end)
+end)
+
+describe("Short banner lines", function()
+	it("rare, mega and away lines fit a small banner", function()
+		expect(PanelView.shoutLine("Ava flipped a RAINBOW coin! +$1.20K", "Me", false)).toBe("Ava flipped it! +$1.20K")
+		expect(PanelView.shoutLine("Me flipped a GIANT coin! +$25K", "Me", true)).toBe("You flipped it! +$25K")
+		expect(PanelView.megaLine("MEGA FLIP! You got +$25 and 2x cash for 2 minutes!")).toBe("+$25 and 2x cash!")
+		expect(PanelView.awayLine("Your helpers earned $120 while you were away!")).toBe("Helpers earned $120!")
+	end)
+end)

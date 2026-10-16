@@ -38,7 +38,7 @@ Kit.LOOKS = {
 	buy = { bg = Color3.fromRGB(70, 210, 110), text = Color3.fromRGB(255, 255, 255) },
 	poor = { bg = Color3.fromRGB(150, 155, 168), text = Color3.fromRGB(255, 255, 255) },
 	max = { bg = UiStyle.GOLD, text = Color3.fromRGB(255, 255, 255) },
-	locked = { bg = Color3.fromRGB(140, 100, 205), text = Color3.fromRGB(255, 255, 255) },
+	locked = { bg = Color3.fromRGB(122, 108, 156), text = Color3.fromRGB(228, 222, 242) },
 	owned = { bg = Color3.fromRGB(60, 170, 255), text = Color3.fromRGB(255, 255, 255) },
 	equipped = { bg = Color3.fromRGB(30, 200, 180), text = Color3.fromRGB(255, 255, 255) },
 	soon = { bg = Color3.fromRGB(80, 84, 104), text = Color3.fromRGB(255, 255, 255) },
