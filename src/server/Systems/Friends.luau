@@ -55,6 +55,8 @@ local function refresh()
 				player,
 				{ kind = "friend", text = `Friend bonus! {Config.FRIEND_CASH_MULT}x cash while your friend is here!` } :: Types.Notice
 			)
+		elseif had and not has then
+			Net.event("Notice"):FireClient(player, { kind = "friendOff", text = "Your friend left." } :: Types.Notice)
 		end
 	end
 end

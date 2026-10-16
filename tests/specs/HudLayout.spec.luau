@@ -27,6 +27,8 @@ local function pieces(l)
 	return {
 		top = l.top,
 		info = l.info,
+		streak = l.streak,
+		friend = l.friend,
 		mega = l.mega,
 		boost = l.boost,
 		side = l.side,
@@ -201,6 +203,29 @@ describe("HUD layout", function()
 			-- chip text: white with a thin outline on a deep color (see Hud.strip)
 			expect(fittedTextSize(l.boost, "⚡ 2x  9:59", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
 			expect(fittedTextSize(l.mega, "🌟 999/999", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
+	it("streak counter and friend chip sit side by side in the top middle, readable", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(HudLayout.overlaps(l.streak, l.friend)).toBeFalsy()
+			expect(l.streak.h).toBeAtLeast(28)
+			expect(l.friend.h).toBeAtLeast(28)
+			-- centered between Roblox's menu and its right buttons
+			local mid = (l.streak.x + l.friend.x + l.friend.w) / 2
+			expect(math.abs(mid - sc.w / 2)).toBeAtMost(sc.w * 0.1)
+			expect(fittedTextSize(l.streak, "🔥 10/10 HEADS", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			expect(fittedTextSize(l.friend, "👫 2x cash", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			-- the 'ONE MORE!' hint hangs 2px under the streak chip and stays above the table
+			expect(l.streak.y + l.streak.h + 2 + 26).toBeAtMost(HudLayout.tableZone(sc.w, sc.h).y + 1)
+		end
+	end)
+
+	it("Heads card with the Multi Flip badge still reads at 14px", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(fittedLines(l.info, "Heads = $999K\nLuck 100% 🌀x4", 0.06)).toBeAtLeast(HudLayout.MIN_TEXT)
 		end
 	end)
 

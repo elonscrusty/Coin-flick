@@ -15,6 +15,8 @@ export type Layout = {
 	boost: Rect, -- 2x boost timer chip
 	side: Rect, -- 2x2 grid: SHOP RESET / TOP ZOOM
 	sideButtons: { Rect },
+	streak: Rect, -- 🔥 heads-in-a-row counter (top middle, shown during a streak)
+	friend: Rect, -- 👫 friend 2x chip (top middle, shown while a friend is here)
 	-- Pop in for a moment
 	shout: Rect, -- rare coin banner
 	toast: Rect, -- little message
@@ -115,6 +117,18 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local shout = rect(msg.x, msg.y, msg.w, msg.h)
 	local toast = rect(msg.x, msg.y, msg.w, msg.h)
 
+	-- Top middle, between Roblox's menu and its right buttons (the table zone
+	-- starts below): the streak counter and the friend 2x chip, side by side.
+	local midH = clamp(28 * s, 28, 36)
+	local midLeft = reserved.menu.x + reserved.menu.w + 8
+	local midRight = reserved.topRight.x - 8
+	local midW = midRight - midLeft
+	local streakW = math.min(190 * s, midW * 0.6)
+	local friendW = math.min(112 * s, midW * 0.34)
+	local midX = midLeft + (midW - streakW - friendW - gap) / 2
+	local streak = rect(midX, 8, streakW, midH)
+	local friend = rect(midX + streakW + gap, 8, friendW, midH)
+
 	-- Right band, top to bottom: mega count chip, 2x boost timer chip, combo
 	-- card, then the 2x2 side buttons above the jump button.
 	local yr = TOPBAR_H + 4 -- the right band starts just under Roblox's top buttons
@@ -176,6 +190,8 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 		panel = panel,
 		top = top,
 		info = info,
+		streak = streak,
+		friend = friend,
 		mega = mega,
 		boost = boost,
 		side = side,
