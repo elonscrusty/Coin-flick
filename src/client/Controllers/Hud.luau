@@ -355,11 +355,11 @@ local function scrollList(parent: Frame, top: number): ScrollingFrame
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.CanvasSize = UDim2.new()
 	list.ZIndex = 6
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 8)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout.Parent = list
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 8)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	listLayout.Parent = list
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(0, 4)
 	pad.PaddingBottom = UDim.new(0, 4)
@@ -374,11 +374,11 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 	row.Size = UDim2.new(1, 0, 0, 44)
 	row.BackgroundTransparency = 1
 	row.ZIndex = 6
-	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.Padding = UDim.new(0.02, 0)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = row
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.FillDirection = Enum.FillDirection.Horizontal
+	listLayout.Padding = UDim.new(0.02, 0)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Parent = row
 	local buttons: { [string]: TextButton } = {}
 	for i, tab in tabs do
 		local key = tab[1]

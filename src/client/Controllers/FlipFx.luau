@@ -195,6 +195,35 @@ local function setMarks(anim: Anim, text: Color3?, rim: Color3?)
 	end
 end
 
+-- Paint every rainbow color across both faces (behind the marks).
+local function paintRainbow(coin: BasePart)
+	local stops = CoinLook.rainbowStops(6)
+	local keys = {}
+	for i, c in stops do
+		table.insert(keys, ColorSequenceKeypoint.new((i - 1) / #stops, c))
+	end
+	table.insert(keys, ColorSequenceKeypoint.new(1, stops[1]))
+	for _, gui in coin:GetChildren() do
+		if gui:IsA("SurfaceGui") then
+			local disc = Instance.new("Frame")
+			disc.Name = "RainbowFace"
+			disc.AnchorPoint = Vector2.new(0.5, 0.5)
+			disc.Position = UDim2.fromScale(0.5, 0.5)
+			disc.Size = UDim2.fromScale(0.94, 0.94)
+			disc.BackgroundColor3 = Color3.new(1, 1, 1)
+			disc.BorderSizePixel = 0
+			disc.ZIndex = 0
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0.5, 0)
+			corner.Parent = disc
+			local gradient = Instance.new("UIGradient")
+			gradient.Color = ColorSequence.new(keys)
+			gradient.Parent = disc
+			disc.Parent = gui
+		end
+	end
+end
+
 local function dressRare(anim: Anim, now: number, t: number)
 	local rare = anim.rare
 	if not rare then
@@ -207,6 +236,9 @@ local function dressRare(anim: Anim, now: number, t: number)
 		coin.Material = Enum.Material:FromName(look.material) or Enum.Material.SmoothPlastic
 		coin.Reflectance = look.reflectance
 		setMarks(anim, look.text, look.rim)
+		if look.rainbow then
+			paintRainbow(coin)
+		end
 		local sparkle = coin:FindFirstChild("Sparkle")
 		if sparkle and sparkle:IsA("ParticleEmitter") then
 			sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[2])
@@ -228,6 +260,15 @@ local function dressRare(anim: Anim, now: number, t: number)
 		end
 	end
 	coin.Color = if look.rainbow then CoinLook.rainbowColor(now) else look.color
+	if look.rainbow then
+		for _, gui in coin:GetChildren() do
+			local disc = gui:FindFirstChild("RainbowFace")
+			local gradient = disc and disc:FindFirstChildOfClass("UIGradient")
+			if gradient then
+				gradient.Rotation = (now * 360) % 360 -- colors swirl while it spins
+			end
+		end
+	end
 	coin.Size = CoinLook.size(anim.restSize, CoinLook.scale(rare.grow, t, MAIN))
 end
 
@@ -254,6 +295,12 @@ local function undressRare(anim: Anim)
 	local glow = coin:FindFirstChild("RareGlow")
 	if glow then
 		glow:Destroy()
+	end
+	for _, gui in coin:GetChildren() do
+		local disc = gui:FindFirstChild("RainbowFace")
+		if disc then
+			disc:Destroy()
+		end
 	end
 	anim.dressed = false
 end
@@ -350,7 +397,7 @@ local function step()
 		end
 		dressRare(anim, now, t)
 		-- Never let the spinning (or grown) coin cut into the table top.
-		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X)
+		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y)
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0)) * CFrame.Angles(0, 0, roll)
 		if t >= 1 then
 			undressRare(anim)
