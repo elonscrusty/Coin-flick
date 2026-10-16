@@ -19,7 +19,7 @@ YardLayout.TallRadius = 3.4 -- footprint of the biggest tall piece (at its large
 YardLayout.LowRadius = 2.1 -- footprint of the biggest low prop
 YardLayout.MaxTallScale = 1.14
 YardLayout.MinTallScale = 0.6
-YardLayout.TopLimit = 0.7 -- highest screen position (-1 bottom .. 1 top) a piece top may reach: under the top HUD
+YardLayout.TopLimit = 0.55 -- highest screen position (-1 bottom .. 1 top) a piece top may reach: under the top HUD
 YardLayout.SpawnFov = 70 -- CameraView.WALK_FOV, the spawn camera's field of view
 
 -- Height of each tall piece at scale 1, measured from its parts in Builders/PlotDecor.

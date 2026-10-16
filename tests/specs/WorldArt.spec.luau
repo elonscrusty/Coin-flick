@@ -87,3 +87,23 @@ describe("Theme skies", function()
 		end
 	end)
 end)
+
+describe("Sky colours", function()
+	it("no sky piece uses brown or tan", function()
+		local colors: { Color3 } = {}
+		for _, c in SkyLayout.ISLAND do
+			table.insert(colors, c)
+		end
+		for _, c in SkyLayout.BALLOONS do
+			table.insert(colors, c)
+		end
+		for _, c in SkyLayout.PATH_EDGES do
+			table.insert(colors, c)
+		end
+		for _, c in colors do
+			expect(SkyLayout.isBrownish(c)).toBe(false)
+		end
+		expect(SkyLayout.isBrownish(Color3.fromRGB(150, 100, 60))).toBe(true)
+		expect(SkyLayout.isBrownish(Color3.fromRGB(190, 150, 110))).toBe(true)
+	end)
+end)

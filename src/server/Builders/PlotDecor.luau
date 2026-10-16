@@ -634,7 +634,7 @@ local function ring(make: PartMaker, parent: Instance, plotCFrame: CFrame, theme
 			false
 		)
 	end
-	slab("RingFront", outer * 2, RING_WIDTH, 0, -(edge + RING_WIDTH / 2))
+	-- no front slab: the ZOOM camera looks over the front edge, a solid strip there read as a coloured band
 	slab("RingBack", outer * 2, RING_WIDTH, 0, edge + RING_WIDTH / 2)
 	slab("RingLeft", RING_WIDTH, edge * 2, -(edge + RING_WIDTH / 2), 0)
 	slab("RingRight", RING_WIDTH, edge * 2, edge + RING_WIDTH / 2, 0)

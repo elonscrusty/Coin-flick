@@ -135,14 +135,14 @@ function WorldArt.balloon(make: PartMaker, parent: Instance, item: SkyLayout.Ite
 		Vector3.new(2, 1.6, 2) * s,
 		color:Lerp(Color3.new(0, 0, 0), 0.25)
 	)
-	upCyl(make, model, "String", at + Vector3.new(0, -2.6 * s, 0), 0.2 * s, 5 * s, Color3.fromRGB(120, 100, 80))
+	upCyl(make, model, "String", at + Vector3.new(0, -2.6 * s, 0), 0.2 * s, 5 * s, SkyLayout.ISLAND.trunk)
 	deco(
 		make,
 		model,
 		"Basket",
 		CFrame.new(at + Vector3.new(0, -5.6 * s, 0)),
 		Vector3.new(2.4, 1.6, 2.4) * s,
-		Color3.fromRGB(190, 130, 70)
+		Color3.fromRGB(245, 245, 250)
 	)
 	model.Parent = parent
 	bobbing(model, 3 * s, 0.5, item.spin * 0.4, item.phase)
@@ -153,38 +153,29 @@ function WorldArt.island(make: PartMaker, parent: Instance, item: SkyLayout.Item
 	model.Name = "FloatingIsland"
 	local s = item.scale
 	local at = Vector3.new(item.x, item.y, item.z)
-	-- grassy top, then rock layers shrinking down to a point, like a big spinning top
-	upCyl(make, model, "Grass", at, 26 * s, 2.4 * s, Color3.fromRGB(110, 215, 90))
-	upCyl(make, model, "Edge", at + Vector3.new(0, -1.6 * s, 0), 27 * s, 1.0 * s, Color3.fromRGB(255, 215, 90))
-	local rock = { Color3.fromRGB(190, 150, 110), Color3.fromRGB(165, 125, 90), Color3.fromRGB(140, 105, 78) }
-	for i = 1, 3 do
-		upCyl(make, model, "Rock", at + Vector3.new(0, (-3 - i * 2.6) * s, 0), (24 - i * 6.5) * s, 3 * s, rock[i])
-	end
-	-- a tiny tree, a flower patch and a big gold coin on top
+	local p = SkyLayout.ISLAND
+	-- a round grassy top over a smooth grey-and-white rock bowl (no stacked layers), cute and clean
+	deco(make, model, "RockBowl", CFrame.new(at + Vector3.new(0, -2 * s, 0)), Vector3.new(24, 20, 24) * s, p.rock, BALL)
 	deco(
 		make,
 		model,
-		"Trunk",
-		CFrame.new(at + Vector3.new(-6 * s, 3.2 * s, 2 * s)),
-		Vector3.new(1.2, 4, 1.2) * s,
-		Color3.fromRGB(150, 100, 60)
-	)
-	deco(
-		make,
-		model,
-		"Leaves",
-		CFrame.new(at + Vector3.new(-6 * s, 7 * s, 2 * s)),
-		Vector3.one * 6 * s,
-		Color3.fromRGB(70, 200, 90),
+		"RockLight",
+		CFrame.new(at + Vector3.new(3 * s, -4.5 * s, 3 * s)),
+		Vector3.new(11, 11, 11) * s,
+		p.rockLight,
 		BALL
 	)
+	upCyl(make, model, "Grass", at + Vector3.new(0, 0.6 * s, 0), 27 * s, 2.2 * s, p.grass)
+	-- a round bushy tree (grey trunk), flower dots and a big gold coin on top
+	upCyl(make, model, "Trunk", at + Vector3.new(-6 * s, 3.6 * s, 2 * s), 1.4 * s, 4.4 * s, p.trunk)
+	deco(make, model, "Leaves", CFrame.new(at + Vector3.new(-6 * s, 8 * s, 2 * s)), Vector3.one * 7 * s, p.leaf, BALL)
 	for i = 1, 4 do
 		local a = i * 1.6
 		deco(
 			make,
 			model,
 			"Flower",
-			CFrame.new(at + Vector3.new(math.cos(a) * 6 * s + 3 * s, 1.7 * s, math.sin(a) * 4 * s - 3 * s)),
+			CFrame.new(at + Vector3.new(math.cos(a) * 6 * s + 3 * s, 2 * s, math.sin(a) * 4 * s - 3 * s)),
 			Vector3.one * 1.4 * s,
 			SkyLayout.BALLOONS[(i + item.color) % #SkyLayout.BALLOONS + 1],
 			BALL
@@ -194,7 +185,7 @@ function WorldArt.island(make: PartMaker, parent: Instance, item: SkyLayout.Item
 		make,
 		model,
 		"Coin",
-		CFrame.new(at + Vector3.new(6 * s, 5.2 * s, -2 * s)) * CFrame.Angles(0, math.rad(40), 0),
+		CFrame.new(at + Vector3.new(6 * s, 5.6 * s, -2 * s)) * CFrame.Angles(0, math.rad(40), 0),
 		Vector3.new(0.9, 6, 6) * s,
 		Color3.fromRGB(255, 205, 40),
 		CYL
@@ -302,7 +293,7 @@ function WorldArt.path(make: PartMaker, parent: Instance, slot: number, inner: n
 	local length = outer - inner
 	local edge = SkyLayout.PATH_EDGES[(slot - 1) % #SkyLayout.PATH_EDGES + 1]
 	for _, sign in { -1, 1 } do
-		deco(make, parent, "Curb", look * CFrame.new(sign * 3.4, 0.3, 0), Vector3.new(0.8, 0.4, length), edge)
+		deco(make, parent, "Curb", look * CFrame.new(sign * 3.4, 0.22, 0), Vector3.new(0.7, 0.25, length), edge)
 	end
 	local dashes = math.floor(length / 5)
 	for i = 0, dashes - 1 do

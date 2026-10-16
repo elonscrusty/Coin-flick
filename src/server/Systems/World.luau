@@ -246,7 +246,7 @@ function World.decorate()
 	WorldArt.hills(makePart, folder)
 	WorldArt.plaza(makePart, folder)
 	for slot = 1, Config.MAX_PLOTS do
-		WorldArt.path(makePart, folder, slot, inner, outer)
+		WorldArt.path(makePart, folder, slot, inner, outer - 14) -- stops short of the yard: ZOOM sees the front
 	end
 	WorldArt.sky(makePart, folder)
 	folder.Parent = workspace

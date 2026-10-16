@@ -30,6 +30,33 @@ SkyLayout.BALLOONS = table.freeze({
 	Color3.fromRGB(255, 140, 40),
 })
 
+-- Floating island palette: green, grey and white only (no brown, no tan: it must never look like mud).
+SkyLayout.ISLAND = table.freeze({
+	grass = Color3.fromRGB(110, 220, 95),
+	rock = Color3.fromRGB(165, 175, 195),
+	rockLight = Color3.fromRGB(235, 240, 250),
+	trunk = Color3.fromRGB(215, 220, 230),
+	leaf = Color3.fromRGB(60, 200, 100),
+})
+
+-- True for browns and tans (dull orange/yellow hues): banned in the sky.
+function SkyLayout.isBrownish(c: Color3): boolean
+	local hi, lo = math.max(c.R, c.G, c.B), math.min(c.R, c.G, c.B)
+	if hi == lo or hi >= 0.95 or (hi - lo) / hi < 0.1 then
+		return false
+	end
+	local delta = hi - lo
+	local hue: number
+	if hi == c.R then
+		hue = 60 * (((c.G - c.B) / delta) % 6)
+	elseif hi == c.G then
+		hue = 60 * ((c.B - c.R) / delta + 2)
+	else
+		hue = 60 * ((c.R - c.G) / delta + 4)
+	end
+	return hue >= 10 and hue <= 55
+end
+
 -- Hills: many greens plus a few warm and cool ones, so the horizon is not one flat colour.
 SkyLayout.HILL_COLORS = table.freeze({
 	{ Color3.fromRGB(95, 205, 85), Color3.fromRGB(140, 230, 100) },
