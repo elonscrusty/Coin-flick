@@ -241,7 +241,7 @@ local function shopCard(parent: ScrollingFrame, order: number, icon: string, nam
 	local title = label({
 		Text = name,
 		Size = UDim2.new(0.62, -76, 0.45, 0),
-		Position = UDim2.new(0, 70, 0, 6),
+		Position = UDim2.fromOffset(70, 6),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = INK,
 		TextStrokeTransparency = 1,
@@ -316,7 +316,7 @@ local function buildReset()
 	resetPanel = panel
 	panel.Size = UDim2.fromScale(0.55, 0.66)
 	resetBody = label({
-		Size = UDim2.new(1, 0, 0.62, 0),
+		Size = UDim2.fromScale(1, 0.62),
 		TextColor3 = INK,
 		TextStrokeTransparency = 1,
 		TextWrapped = true,
