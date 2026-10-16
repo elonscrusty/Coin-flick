@@ -7,7 +7,6 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
-local Types = require(ReplicatedStorage.Shared.Types)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local CameraView = require(script.Parent.CameraView)
 local Sounds = require(script.Parent.Sounds)
@@ -16,9 +15,7 @@ local MegaFx = {}
 
 local coin: BasePart? = nil
 local base: CFrame = CFrame.new()
-local bar: Frame? = nil
 local sign: BillboardGui? = nil
-local countLabel: TextLabel? = nil
 local wobbleAt = -10
 local flipAt = -10
 local FLIP_TIME = 2.6
@@ -27,14 +24,14 @@ local function buildSign(part: BasePart)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "MegaSign"
 	gui.Adornee = part
-	gui.Size = UDim2.fromScale(18, 5)
+	gui.Size = UDim2.fromScale(20, 3)
 	-- Just above the coin's top edge (the HUD now keeps the middle of the screen clear).
-	gui.StudsOffsetWorldSpace = Vector3.new(0, Config.MEGA_DIAMETER / 2 + 3, 0)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, Config.MEGA_DIAMETER / 2 + 4, 0)
 	gui.LightInfluence = 0
-	gui.MaxDistance = 48 -- up close only; from your yard the HUD shows the count
+	gui.MaxDistance = 48 -- up close only; the HUD chip shows the count
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
-	title.Size = UDim2.fromScale(1, 0.45)
+	title.Size = UDim2.fromScale(1, 1)
 	title.Font = Enum.Font.FredokaOne
 	title.TextScaled = true
 	title.Text = "MEGA COIN - TAP IT!"
@@ -42,49 +39,8 @@ local function buildSign(part: BasePart)
 	title.TextStrokeColor3 = Color3.fromRGB(45, 30, 20)
 	title.TextStrokeTransparency = 0
 	title.Parent = gui
-	local track = Instance.new("Frame")
-	track.Position = UDim2.fromScale(0.05, 0.55)
-	track.Size = UDim2.fromScale(0.9, 0.4)
-	track.BackgroundColor3 = Color3.fromRGB(70, 50, 40) -- dark track, the green fill shows clearly
-	local trackCorner = Instance.new("UICorner")
-	trackCorner.CornerRadius = UDim.new(0.5, 0)
-	trackCorner.Parent = track
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
-	stroke.Color = Color3.fromRGB(45, 30, 20)
-	stroke.Parent = track
-	local fill = Instance.new("Frame")
-	fill.Size = UDim2.fromScale(0, 1)
-	fill.BackgroundColor3 = Color3.fromRGB(70, 210, 110)
-	local fillCorner = Instance.new("UICorner")
-	fillCorner.CornerRadius = UDim.new(0.5, 0)
-	fillCorner.Parent = fill
-	fill.Parent = track
-	local count = Instance.new("TextLabel")
-	count.BackgroundTransparency = 1
-	count.Size = UDim2.fromScale(1, 1)
-	count.Font = Enum.Font.FredokaOne
-	count.TextScaled = true
-	count.TextColor3 = Color3.fromRGB(255, 255, 255)
-	count.TextStrokeColor3 = Color3.fromRGB(45, 30, 20)
-	count.TextStrokeTransparency = 0
-	count.Text = "0 / ?"
-	count.ZIndex = 2
-	count.Parent = track
-	track.Parent = gui
 	gui.Parent = part
-	bar = fill
-	countLabel = count
 	sign = gui
-end
-
-local function onState(state: Types.MegaState)
-	if bar then
-		bar.Size = UDim2.fromScale(math.clamp(state.taps / math.max(1, state.goal), 0, 1), 1)
-	end
-	if countLabel then
-		countLabel.Text = `{state.taps} / {state.goal}`
-	end
 end
 
 local function onFlipped()
@@ -93,7 +49,7 @@ local function onFlipped()
 	CameraView.shake(0.6, 1)
 	local sparkle = coin and coin:FindFirstChild("Sparkle")
 	if sparkle and sparkle:IsA("ParticleEmitter") then
-		sparkle:Emit(260)
+		sparkle:Emit(400)
 	end
 end
 
@@ -139,7 +95,6 @@ function MegaFx.poke()
 end
 
 function MegaFx.init()
-	ClientNet.event("MegaState").OnClientEvent:Connect(onState)
 	ClientNet.event("MegaFlipped").OnClientEvent:Connect(onFlipped)
 end
 
