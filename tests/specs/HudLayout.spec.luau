@@ -89,12 +89,24 @@ describe("HUD layout", function()
 		end
 	end)
 
-	it("a panel (even at its 1.1x pop-in peak) stays between the side bands", function()
+	it("a panel is big: most of the screen height, fits 3+ rows on a phone", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.panel.h).toBeAtLeast(sc.h * 0.75)
+			expect(l.panel.y + l.panel.h).toBeAtMost(sc.h * 0.96 + 1)
+			expect(l.panel.w).toBeAtLeast(sc.w * 0.4)
+			-- header 54 + tabs 44 + rows of 60: at least 3 rows on a phone, 4 on a desktop
+			local rows = (l.panel.h - 54 - 44) / 60
+			expect(rows).toBeAtLeast(if sc.touch and sc.w < 1000 then 3 else 4)
+		end
+	end)
+
+	it("a panel (even at its 1.04x pop-in peak) stays between the side bands", function()
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
 			local p = l.panel
-			-- UIScale 1.1 at the peak of the bounce
-			local pop = { x = p.x - p.w * 0.05, y = p.y - p.h * 0.05, w = p.w * 1.1, h = p.h * 1.1 }
+			-- UIScale 1.04 at the peak of the pop-in
+			local pop = { x = p.x - p.w * 0.02, y = p.y - p.h * 0.02, w = p.w * 1.04, h = p.h * 1.04 }
 			for _, other in { "top", "info", "boost", "combo", "side" } do
 				if HudLayout.overlaps(pop, l[other]) then
 					error(`{sc.name}: panel pop-in touches {other}`)
@@ -170,7 +182,7 @@ describe("HUD layout", function()
 			end
 			expect(HudLayout.overlaps(l.panel, l.side)).toBeFalsy()
 			expect(HudLayout.overlaps(l.panel, l.toastLow)).toBeFalsy()
-			expect(l.panel.h).toBeAtLeast(190)
+			expect(HudLayout.overlaps(l.toastLow, l.top)).toBeFalsy()
 			expect(l.panel.w).toBeAtLeast(270)
 			expect(fittedTextSize(l.toastLow, "Reset 3 times to meet King Flip!", nil, 2)).toBeAtLeast(
 				HudLayout.MIN_TEXT
