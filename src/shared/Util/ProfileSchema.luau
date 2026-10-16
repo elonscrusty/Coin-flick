@@ -6,6 +6,7 @@ local Config = require(script.Parent.Parent.Config)
 local PetConfig = require(script.Parent.Parent.PetConfig)
 local Types = require(script.Parent.Parent.Types)
 local Daily = require(script.Parent.Daily)
+local Goals = require(script.Parent.Goals)
 local Economy = require(script.Parent.Economy)
 local deepCopy = require(script.Parent.DeepCopy)
 
@@ -40,6 +41,9 @@ local DEFAULT: Profile = {
 	helperSlots = 0,
 	receipts = {},
 	daily = Daily.empty(),
+	ladderSkin = "",
+	challenges = Goals.emptyChallenges(),
+	book = Goals.emptyBook(),
 	pets = { puppy = { level = 1, xp = 0 } },
 	petActive = "puppy",
 	petProgress = { megaBeats = 0 },
@@ -223,6 +227,9 @@ local function reconcile(data: { [string]: any }): Profile
 		helperSlots = math.min(Config.MAX_EXTRA_HELPER_SLOTS, cleanInt(data.helperSlots, 0)),
 		receipts = cleanReceipts(data.receipts),
 		daily = Daily.sanitize(data.daily),
+		ladderSkin = "",
+		challenges = Goals.sanitizeChallenges(data.challenges),
+		book = Goals.sanitizeBook(data.book),
 		pets = pets,
 		petActive = if typeof(data.petActive) == "string" and (pets[data.petActive] or data.petActive == "")
 			then data.petActive
@@ -231,6 +238,10 @@ local function reconcile(data: { [string]: any }): Profile
 			megaBeats = cleanInt(pp.megaBeats, 0),
 		},
 	}
+	-- Only a ladder look you reached can be worn (the best streak is saved in stats).
+	if typeof(data.ladderSkin) == "string" and Goals.ownsRung(profile, data.ladderSkin) then
+		profile.ladderSkin = data.ladderSkin
+	end
 	profile.team = cleanTeam(data.team, crew, Economy.maxHelpers(profile))
 	return profile
 end

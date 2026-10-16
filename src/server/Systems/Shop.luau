@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Daily = require(script.Parent.Daily)
+local Goals = require(script.Parent.Goals)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local Tables = require(script.Parent.Tables)
@@ -37,6 +38,7 @@ local function onBuyUpgrade(player: Player, rawId: unknown)
 	end
 	local id = rawId :: string -- validated by buyUpgrade
 	Daily.bump(player, "buy", 1)
+	Goals.bump(player, "buy", 1)
 	if REBUILD_ON[id] then
 		Tables.refresh(player)
 	end

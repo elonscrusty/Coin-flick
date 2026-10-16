@@ -31,6 +31,20 @@ export type DailyState = {
 	giftClaims: number, -- total gifts claimed; picks which of the 7 gift days is next
 }
 
+-- Weekly challenges, saved in the profile. Weeks are whole UTC weeks (Monday start) since 1970.
+export type ChallengeState = {
+	week: number, -- the week progress / claimed belong to (0 = never)
+	progress: { number }, -- per slot 1..3
+	claimed: { boolean }, -- per slot 1..3
+	bonusClaimed: boolean, -- the all-three bonus
+}
+
+-- Coin book: the rare coins you have flipped, and which prizes were already paid.
+export type BookState = {
+	found: { [string]: number }, -- rarity id -> times flipped
+	paid: { [string]: boolean }, -- rarity id -> first-find prize paid; "all" = full book prize
+}
+
 -- One coin pet you own.
 export type PetOwned = {
 	level: number, -- 1 to PetConfig.MAX_LEVEL
@@ -59,6 +73,9 @@ export type Profile = {
 	helperSlots: number, -- extra helper slots bought with Robux
 	receipts: { string }, -- recent Robux purchase ids, so one is never granted twice
 	daily: DailyState,
+	ladderSkin: string, -- worn streak-ladder coin look id, "" = none (earned, never bought)
+	challenges: ChallengeState,
+	book: BookState,
 	pets: { [string]: PetOwned }, -- coin pets you own (the free puppy is always there)
 	petActive: string, -- the pet out flipping for you, "" = none
 	petProgress: PetProgress,

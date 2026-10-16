@@ -267,6 +267,7 @@ function GameLogic.chooseSkin(profile: Profile, id: unknown, owned: boolean): bo
 		return false
 	end
 	profile.skin = id :: string
+	profile.ladderSkin = "" -- one coin look at a time
 	return true
 end
 
