@@ -24,6 +24,9 @@ return table.freeze({
 		"DailyState", -- server -> client: (DailyView)
 		"ClaimGift", -- client -> server: ()
 		"ClaimJob", -- client -> server: (slot: number)
+		"GoalsState", -- server -> client: (GoalsView) ladder + weekly challenges + coin book
+		"ClaimChallenge", -- client -> server: (slot: number, 0 = the all-three bonus)
+		"WearLadder", -- client -> server: (rungId: string, "" = take it off)
 		"PetEquip", -- client -> server: (petId: string, "" = put pets away)
 		"PetState", -- server -> client: (views: { PetRules.PetView }, activeId: string)
 		"PetFlipped", -- server -> client: (petId, cash, level, leveledUp)
