@@ -4,10 +4,90 @@
 export type Piece = { color: Color3, material: string } -- material = Enum.Material name
 
 local Catalog: { [string]: { [string]: Piece } } = {
+	CF_Buddy = {
+		Body = { color = Color3.fromRGB(90, 200, 255), material = "SmoothPlastic" },
+		Head = { color = Color3.fromRGB(255, 220, 180), material = "SmoothPlastic" },
+		Feet = { color = Color3.fromRGB(255, 255, 255), material = "SmoothPlastic" },
+		Eye = { color = Color3.fromRGB(28, 28, 40), material = "SmoothPlastic" },
+		Cheek = { color = Color3.fromRGB(255, 143, 168), material = "SmoothPlastic" },
+		Cap = { color = Color3.fromRGB(255, 90, 90), material = "SmoothPlastic" },
+		Extra = { color = Color3.fromRGB(255, 210, 58), material = "SmoothPlastic" },
+	},
+	CF_Chompy = {
+		Body = { color = Color3.fromRGB(255, 150, 60), material = "SmoothPlastic" },
+		Head = { color = Color3.fromRGB(255, 220, 180), material = "SmoothPlastic" },
+		Feet = { color = Color3.fromRGB(255, 255, 255), material = "SmoothPlastic" },
+		Eye = { color = Color3.fromRGB(28, 28, 40), material = "SmoothPlastic" },
+		Cheek = { color = Color3.fromRGB(255, 143, 168), material = "SmoothPlastic" },
+		Cap = { color = Color3.fromRGB(255, 120, 190), material = "SmoothPlastic" },
+		Extra = { color = Color3.fromRGB(255, 210, 58), material = "SmoothPlastic" },
+		Mouth = { color = Color3.fromRGB(176, 40, 72), material = "SmoothPlastic" },
+	},
 	CF_Coin = {
 		Rim = { color = Color3.fromRGB(232, 154, 0), material = "SmoothPlastic" },
 		Face = { color = Color3.fromRGB(255, 210, 58), material = "SmoothPlastic" },
 		Mark = { color = Color3.fromRGB(138, 74, 0), material = "SmoothPlastic" },
+	},
+	CF_GiftBox = {
+		Box = { color = Color3.fromRGB(255, 95, 168), material = "SmoothPlastic" },
+		Lid = { color = Color3.fromRGB(255, 134, 191), material = "SmoothPlastic" },
+		Ribbon = { color = Color3.fromRGB(255, 225, 74), material = "SmoothPlastic" },
+	},
+	CF_HatChef = {
+		White = { color = Color3.fromRGB(255, 255, 255), material = "SmoothPlastic" },
+		Band = { color = Color3.fromRGB(205, 215, 235), material = "SmoothPlastic" },
+	},
+	CF_HatCone = {
+		Base = { color = Color3.fromRGB(225, 95, 20), material = "SmoothPlastic" },
+		Cone = { color = Color3.fromRGB(255, 130, 30), material = "SmoothPlastic" },
+		Band = { color = Color3.fromRGB(255, 255, 255), material = "SmoothPlastic" },
+	},
+	CF_HatCowboy = {
+		Felt = { color = Color3.fromRGB(150, 96, 58), material = "SmoothPlastic" },
+		Band = { color = Color3.fromRGB(240, 70, 70), material = "SmoothPlastic" },
+	},
+	CF_HatCrown = {
+		Gold = { color = Color3.fromRGB(255, 200, 40), material = "SmoothPlastic" },
+		Gem = { color = Color3.fromRGB(240, 70, 70), material = "SmoothPlastic" },
+		GemB = { color = Color3.fromRGB(70, 160, 255), material = "SmoothPlastic" },
+	},
+	CF_HatDuck = {
+		Body = { color = Color3.fromRGB(255, 220, 60), material = "SmoothPlastic" },
+		Beak = { color = Color3.fromRGB(255, 130, 30), material = "SmoothPlastic" },
+		Eye = { color = Color3.fromRGB(35, 35, 48), material = "SmoothPlastic" },
+	},
+	CF_HatParty = {
+		Cone = { color = Color3.fromRGB(255, 110, 190), material = "SmoothPlastic" },
+		Brim = { color = Color3.fromRGB(255, 220, 60), material = "SmoothPlastic" },
+		Stripe = { color = Color3.fromRGB(70, 160, 255), material = "SmoothPlastic" },
+	},
+	CF_HatPropeller = {
+		Cap = { color = Color3.fromRGB(70, 160, 255), material = "SmoothPlastic" },
+		Stripe = { color = Color3.fromRGB(255, 220, 60), material = "SmoothPlastic" },
+		Pin = { color = Color3.fromRGB(35, 35, 48), material = "SmoothPlastic" },
+		Blade = { color = Color3.fromRGB(240, 70, 70), material = "SmoothPlastic" },
+		BladeB = { color = Color3.fromRGB(255, 220, 60), material = "SmoothPlastic" },
+	},
+	CF_HatTop = {
+		Felt = { color = Color3.fromRGB(35, 35, 48), material = "SmoothPlastic" },
+		Band = { color = Color3.fromRGB(240, 70, 70), material = "SmoothPlastic" },
+	},
+	CF_King = {
+		Body = { color = Color3.fromRGB(160, 100, 240), material = "SmoothPlastic" },
+		Head = { color = Color3.fromRGB(255, 220, 180), material = "SmoothPlastic" },
+		Feet = { color = Color3.fromRGB(255, 255, 255), material = "SmoothPlastic" },
+		Eye = { color = Color3.fromRGB(28, 28, 40), material = "SmoothPlastic" },
+		Cheek = { color = Color3.fromRGB(255, 143, 168), material = "SmoothPlastic" },
+		Cap = { color = Color3.fromRGB(255, 200, 40), material = "SmoothPlastic" },
+		Extra = { color = Color3.fromRGB(255, 210, 58), material = "SmoothPlastic" },
+		Cape = { color = Color3.fromRGB(232, 56, 79), material = "SmoothPlastic" },
+		Trim = { color = Color3.fromRGB(255, 245, 220), material = "SmoothPlastic" },
+	},
+	CF_MegaCoin = {
+		Rim = { color = Color3.fromRGB(232, 154, 0), material = "SmoothPlastic" },
+		Face = { color = Color3.fromRGB(255, 210, 58), material = "SmoothPlastic" },
+		Mark = { color = Color3.fromRGB(138, 74, 0), material = "SmoothPlastic" },
+		Gem = { color = Color3.fromRGB(255, 95, 176), material = "SmoothPlastic" },
 	},
 	CF_Table = {
 		Top = { color = Color3.fromRGB(214, 150, 90), material = "SmoothPlastic" },
@@ -20,6 +100,24 @@ local Catalog: { [string]: { [string]: Piece } } = {
 		Leaf = { color = Color3.fromRGB(88, 201, 68), material = "SmoothPlastic" },
 		LeafLight = { color = Color3.fromRGB(143, 224, 90), material = "SmoothPlastic" },
 		Fruit = { color = Color3.fromRGB(255, 79, 94), material = "SmoothPlastic" },
+	},
+	CF_Twinkle = {
+		Body = { color = Color3.fromRGB(255, 130, 200), material = "SmoothPlastic" },
+		Head = { color = Color3.fromRGB(255, 220, 180), material = "SmoothPlastic" },
+		Feet = { color = Color3.fromRGB(255, 255, 255), material = "SmoothPlastic" },
+		Eye = { color = Color3.fromRGB(28, 28, 40), material = "SmoothPlastic" },
+		Cheek = { color = Color3.fromRGB(255, 143, 168), material = "SmoothPlastic" },
+		Cap = { color = Color3.fromRGB(150, 225, 255), material = "SmoothPlastic" },
+		Extra = { color = Color3.fromRGB(255, 210, 58), material = "SmoothPlastic" },
+	},
+	CF_Zippy = {
+		Body = { color = Color3.fromRGB(110, 220, 90), material = "SmoothPlastic" },
+		Head = { color = Color3.fromRGB(255, 220, 180), material = "SmoothPlastic" },
+		Feet = { color = Color3.fromRGB(255, 255, 255), material = "SmoothPlastic" },
+		Eye = { color = Color3.fromRGB(28, 28, 40), material = "SmoothPlastic" },
+		Cheek = { color = Color3.fromRGB(255, 143, 168), material = "SmoothPlastic" },
+		Cap = { color = Color3.fromRGB(255, 220, 60), material = "SmoothPlastic" },
+		Extra = { color = Color3.fromRGB(255, 210, 58), material = "SmoothPlastic" },
 	},
 }
 
