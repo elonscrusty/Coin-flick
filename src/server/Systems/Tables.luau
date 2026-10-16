@@ -15,6 +15,7 @@ local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
 local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local WeekendEvents = require(ReplicatedStorage.Shared.Util.WeekendEvents)
+local FlipPads = require(ReplicatedStorage.Shared.Util.FlipPads)
 local MeshPaint = require(ReplicatedStorage.Shared.Util.MeshPaint)
 local Boosts = require(script.Parent.Boosts)
 local Daily = require(script.Parent.Daily)
@@ -44,6 +45,9 @@ type TableState = {
 	yaw: number, -- turns the coins so they spin toward the ZOOM camera (FlipArc.spinYaw)
 	streak: number, -- heads in a row from your own taps (helpers and auto-flip never count)
 	characterConn: RBXScriptConnection?,
+	plotCF: CFrame, -- the yard's frame (gate toward -Z), for the flip pads
+	pads: { BasePart }, -- the lit disc of each flip pad
+	padReadyAt: { number }, -- os.clock() when each pad flips again
 }
 
 local Tables = {}
@@ -299,6 +303,39 @@ local function makeHelper(state: TableState, index: number, def: Config.HelperDe
 	return helper
 end
 
+local PAD_READY = Color3.fromRGB(110, 235, 120)
+local PAD_COOL = Color3.fromRGB(190, 195, 205)
+
+-- Flat round pads on the yard floor: walk onto one and a coin flips (checked on the server in start()).
+local function buildPads(state: TableState, model: Model, plotCFrame: CFrame)
+	local folder = Instance.new("Folder")
+	folder.Name = "FlipPads"
+	folder.Parent = model
+	state.pads = {}
+	for index, pad in FlipPads.pads do
+		local function disc(name: string, diameter: number, y: number, color: Color3): Part
+			local part = World.makePart({
+				Name = name,
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(FlipPads.Height, diameter, diameter),
+				CFrame = plotCFrame * CFrame.new(pad.x, 0.45 + y, pad.z) * CFrame.Angles(0, 0, math.pi / 2),
+				Color = color,
+				CanCollide = false,
+				CanQuery = false,
+				CanTouch = false,
+				CastShadow = false,
+			})
+			part.Parent = folder
+			return part
+		end
+		disc("PadRing", FlipPads.Radius * 2, 0, Color3.fromRGB(255, 205, 50))
+		local lit = disc("PadLit", FlipPads.Radius * 1.5, 0.03, PAD_READY)
+		disc("PadCoin", FlipPads.Radius * 0.8, 0.06, Color3.fromRGB(255, 240, 160))
+		state.pads[index] = lit
+		state.padReadyAt[index] = state.padReadyAt[index] or 0
+	end
+end
+
 local function buildTable(player: Player, state: TableState, profile: Profile)
 	-- The table wears the colours of the yard's theme, so table and yard always match.
 	local theme = PlotThemes.resolve(profile.resets, nil)
@@ -364,6 +401,8 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	local center, outward = World.plotCenter(state.slot)
 	local plotCFrame = CFrame.lookAt(center, center - outward)
 	Plot.build(World.makePart, model, plotCFrame, theme, player.DisplayName, profile.resets)
+	state.plotCF = plotCFrame
+	buildPads(state, model, plotCFrame)
 
 	state.coins = {}
 	-- A skin only shows while the player still owns its pass.
@@ -595,6 +634,9 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 		lastTapAt = 0,
 		yaw = FlipArc.spinYaw(outward.X, outward.Z),
 		streak = 0,
+		plotCF = CFrame.new(),
+		pads = {},
+		padReadyAt = {},
 	}
 	model:SetAttribute("SpinYaw", state.yaw)
 	states[player] = state
@@ -674,6 +716,38 @@ local function randomReadyCoin(state: TableState, now: number): number?
 	return if #ready > 0 then ready[rng:NextInteger(1, #ready)] else nil
 end
 
+-- Walk onto a flip pad and a ready coin flips (cash like a helper flip: no combo, no streak game).
+-- The server reads where the avatar stands, so nothing the client sends can flip a pad.
+local function stepOnPads(player: Player, state: TableState, profile: Profile, now: number)
+	local root = player.Character and player.Character.PrimaryPart
+	if not root then
+		return
+	end
+	local here = state.plotCF:PointToObjectSpace(root.Position)
+	if here.Y > 6 then
+		return -- up in the air or on the table: not standing on the floor
+	end
+	local index = FlipPads.padAt(here.X, here.Z)
+	if not index or now < (state.padReadyAt[index] or 0) then
+		return
+	end
+	local coin = randomReadyCoin(state, now)
+	if not coin then
+		return
+	end
+	state.padReadyAt[index] = now + FlipPads.Cooldown
+	flip(player, state, profile, coin, false, 0)
+	local lit = state.pads[index]
+	if lit then
+		lit.Color = PAD_COOL
+		task.delay(FlipPads.Cooldown, function()
+			if lit.Parent then
+				lit.Color = PAD_READY
+			end
+		end)
+	end
+end
+
 function Tables.start()
 	-- Helper guys (and the auto-flip pass) flip a random coin that's on the table.
 	while true do
@@ -684,6 +758,7 @@ function Tables.start()
 			if not profile then
 				continue
 			end
+			stepOnPads(player, state, profile, now)
 			for _, id in profile.team do
 				local def = Economy.helperDef(id)
 				local level = profile.crew[id]
