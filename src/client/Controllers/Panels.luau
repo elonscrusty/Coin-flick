@@ -76,6 +76,7 @@ local popGui: ScreenGui
 local backdrop: TextButton
 local toastRing: UIStroke
 local confirmFrame: Frame
+local bannerIconHost: Frame
 local confirmText: TextLabel
 local confirmYes: () -> () = function() end
 local panels: { [string]: Frame } = {}
@@ -201,7 +202,7 @@ function Panels.toast(text: string, color: Color3?)
 	local token = toastToken
 	toastLabel.Text = text
 	toastLabel.TextColor3 = color or Kit.WHITE
-	toastLabel.BackgroundColor3 = Color3.fromRGB(45, 30, 70)
+	toastLabel.BackgroundColor3 = Color3.fromRGB(35, 25, 50)
 	toastRing.Color = color or Kit.WHITE
 	toastRing.Transparency = 0
 	local restPos, size = toastPlace()
@@ -259,10 +260,32 @@ end
 
 -- Big banner near the top: rare coins (whole server) and the mega flip payout.
 -- A new banner replaces the old one at once, so the words always match the coin.
-local function showBanner(title: string, text: string, color: Color3, rainbow: boolean, seconds: number)
+local function showBanner(
+	title: string,
+	text: string,
+	color: Color3,
+	rainbow: boolean,
+	seconds: number,
+	icon: GuiObject?
+)
 	bannerToken += 1
 	local token = bannerToken
 	bannerTitle.Text = title
+	-- Optional icon on a light tile (so dark hats show) with the words to its right.
+	for _, child in bannerIconHost:GetChildren() do
+		child:Destroy()
+	end
+	bannerIconHost.Visible = icon ~= nil
+	local left = if icon then 0.3 else 0.05
+	bannerTitle.Position = UDim2.fromScale(left, 0.06)
+	bannerTitle.Size = UDim2.fromScale(0.95 - left, 0.44)
+	bannerText.Position = UDim2.fromScale(left, 0.52)
+	bannerText.Size = UDim2.fromScale(0.95 - left, 0.42)
+	if icon then
+		icon.Size = UDim2.fromScale(1, 1)
+		icon.ZIndex = 27
+		icon.Parent = bannerIconHost
+	end
 	bannerTitle.TextColor3 = color
 	bannerText.Text = text
 	bannerStroke.Color = color
@@ -315,7 +338,8 @@ local function shout(notice: Types.Notice)
 		notice.text,
 		if def then def.color else Kit.GOLD,
 		notice.rarity == "rainbow",
-		if notice.everyone == false then 1.8 else 2.8
+		if notice.everyone == false then 1.8 else 2.8,
+		nil
 	)
 	if notice.rarity == "giant" then
 		confetti(30)
@@ -1051,7 +1075,8 @@ function Panels.render(s: Snapshot)
 	if lastHat ~= nil and s.hat ~= lastHat then
 		local def = Economy.hatDef(s.hat)
 		if def then
-			Panels.toast(`{def.name} on! Looking good`, Color3.fromRGB(150, 255, 230))
+			local title, text = PanelView.hatBanner(def.name)
+			showBanner(title, text, Color3.fromRGB(150, 255, 230), false, 1.8, Icons.hat(def.id))
 		end
 	end
 	lastHat = s.hat
@@ -1150,7 +1175,7 @@ function Panels.init()
 		Visible = false,
 		ZIndex = 20,
 	})
-	Kit.corner(toastLabel, 0.5)
+	Kit.corner(toastLabel, 0.3)
 	toastRing = Kit.stroke(toastLabel, 3, Kit.WHITE)
 	Kit.padding(toastLabel, UDim.new(0, 16), UDim.new(0.14, 0))
 	Kit.textLimit(toastLabel, 26)
@@ -1172,6 +1197,16 @@ function Panels.init()
 	bannerStroke = Kit.stroke(banner, 5, Kit.GOLD)
 	bannerScale = Instance.new("UIScale")
 	bannerScale.Parent = banner
+	bannerIconHost = Instance.new("Frame")
+	bannerIconHost.Name = "Icon"
+	bannerIconHost.Position = UDim2.fromScale(0.04, 0.12)
+	bannerIconHost.Size = UDim2.fromScale(0.2, 0.76)
+	bannerIconHost.SizeConstraint = Enum.SizeConstraint.RelativeYY
+	bannerIconHost.BackgroundColor3 = Color3.fromRGB(255, 236, 190)
+	bannerIconHost.Visible = false
+	bannerIconHost.ZIndex = 26
+	Kit.corner(bannerIconHost, 0.25)
+	bannerIconHost.Parent = banner
 	bannerTitle = Kit.label({
 		Name = "Title",
 		Position = UDim2.fromScale(0.05, 0.06),
@@ -1263,12 +1298,12 @@ function Panels.start()
 		if notice.kind == "reset" then
 			Sounds.play("Reset", 0.8)
 			CameraView.shake(0.35, 0.5)
-			showBanner("NEW TABLE!", notice.text, Kit.ORANGE, false, 2.4)
+			showBanner("NEW TABLE!", notice.text, Kit.ORANGE, false, 2.4, nil)
 			confetti(24)
 		elseif notice.kind == "shout" then
 			shout(notice)
 		elseif notice.kind == "mega" then
-			showBanner("MEGA FLIP!", PanelView.megaBody(notice.text), Kit.GOLD, false, 2.8)
+			showBanner("MEGA FLIP!", PanelView.megaBody(notice.text), Kit.GOLD, false, 2.8, nil)
 			screenFlash()
 			confetti(36)
 		elseif notice.kind == "bought" then
@@ -1285,7 +1320,7 @@ function Panels.start()
 			Panels.toast(notice.text)
 		elseif notice.kind == "offline" then
 			Sounds.play("Gift", 0.7)
-			Panels.toast(notice.text)
+			showBanner(PanelView.AWAY_TITLE, notice.text, Kit.TEAL, false, 3.2, nil)
 		else
 			Panels.toast(notice.text)
 		end
