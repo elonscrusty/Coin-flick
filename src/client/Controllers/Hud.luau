@@ -651,7 +651,12 @@ local function buildReset()
 end
 
 -- Big icon on top, word underneath (the icon is the thing kids spot).
-local function sideButton(icon: string, word: string, color: Color3, onPress: () -> ()): (TextButton, TextLabel, TextLabel)
+local function sideButton(
+	icon: string,
+	word: string,
+	color: Color3,
+	onPress: () -> ()
+): (TextButton, TextLabel, TextLabel)
 	local b = button("", color, onPress)
 	local iconLabel = label({
 		Name = "Icon",
