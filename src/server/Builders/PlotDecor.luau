@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local DecorLayout = require(ReplicatedStorage.Shared.Util.DecorLayout)
 local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
+local YardLayout = require(ReplicatedStorage.Shared.Util.YardLayout)
 
 type Theme = PlotThemes.Theme
 type PartMaker = (props: { [string]: any }) -> Part
@@ -246,8 +247,7 @@ function TREES.crystal(make, parent, base, s, theme)
 			Vector3.new(1.1, h, 1.1) * s,
 			pick(theme.foliage, i),
 			nil,
-			false,
-			NEON
+			false
 		)
 	end
 end
@@ -456,7 +456,16 @@ end
 
 function PROPS.orb(make, parent, base, s, theme)
 	upCyl(make, parent, "Plinth", base, 0.4 * s, 1.8 * s, 0.8 * s, pick(theme.stone, 1))
-	put(make, parent, "Orb", base, CFrame.new(0, 2.2 * s, 0), Vector3.one * 2.4 * s, theme.accent[1], BALL, false, NEON)
+	put(
+		make,
+		parent,
+		"Orb",
+		base,
+		CFrame.new(0, 2.2 * s, 0),
+		Vector3.one * 2.2 * s,
+		theme.accent[1]:Lerp(theme.pad, 0.2),
+		BALL
+	)
 end
 
 function PROPS.antenna(make, parent, base, s, theme)
@@ -576,30 +585,6 @@ local WORLD_KINDS: { [string]: Piece } = {
 
 -- Yard dressing -----------------------------------------------------------------------------------
 
--- Corner spots for big pieces, side spots for small ones (yard-local, -Z faces the entrance).
-function PlotDecor.cornerSpots(half: number): { Vector3 }
-	return {
-		Vector3.new(-half + 3.5, 0, half - 3.5),
-		Vector3.new(half - 3.5, 0, half - 3.5),
-		Vector3.new(-half + 3.5, 0, -half + 5),
-		Vector3.new(half - 3.5, 0, -half + 5),
-		Vector3.new(-half + 3.5, 0, 0),
-		Vector3.new(half - 3.5, 0, 0),
-	}
-end
-
-function PlotDecor.sideSpots(half: number): { Vector3 }
-	local x = half - 4.5
-	return {
-		Vector3.new(-x, 0, 8),
-		Vector3.new(x, 0, 8),
-		Vector3.new(-x, 0, -8),
-		Vector3.new(x, 0, -8),
-		Vector3.new(-x + 1, 0, half - 3),
-		Vector3.new(x - 1, 0, half - 3),
-	}
-end
-
 -- Checkered floor tiles in the theme's colours, kept off the table in the middle.
 local function floor(make: PartMaker, parent: Instance, plotCFrame: CFrame, theme: Theme)
 	local half = Config.PLOT_SIZE / 2
@@ -619,7 +604,7 @@ local function floor(make: PartMaker, parent: Instance, plotCFrame: CFrame, them
 						plotCFrame,
 						CFrame.new(x, 0.43, z),
 						Vector3.new(tile - 0.5, 0.06, tile - 0.5),
-						theme.accent[1]:Lerp(theme.pad, 0.72)
+						theme.tile
 					)
 				end
 			end
@@ -627,28 +612,67 @@ local function floor(make: PartMaker, parent: Instance, plotCFrame: CFrame, them
 	end
 end
 
--- `resets` grows the yard like Plot.build does: two big pieces, one more per reset.
+-- A ring of themed ground just outside the fence (sand, candy pink, stone, space grey), under the
+-- gate path, so every yard reads as its own place in the shared world.
+local RING_WIDTH = 7
+PlotDecor.RingWidth = RING_WIDTH
+
+local function ring(make: PartMaker, parent: Instance, plotCFrame: CFrame, theme: Theme)
+	local edge = Config.PLOT_SIZE / 2 + 0.8 -- the yard's border trim
+	local outer = edge + RING_WIDTH
+	local top = 0.16 -- under the paths (their tops are at 0.2)
+	local function slab(name: string, sx: number, sz: number, cx: number, cz: number)
+		put(
+			make,
+			parent,
+			name,
+			plotCFrame,
+			CFrame.new(cx, top / 2, cz),
+			Vector3.new(sx, top, sz),
+			theme.ground,
+			nil,
+			false
+		)
+	end
+	slab("RingFront", outer * 2, RING_WIDTH, 0, -(edge + RING_WIDTH / 2))
+	slab("RingBack", outer * 2, RING_WIDTH, 0, edge + RING_WIDTH / 2)
+	slab("RingLeft", RING_WIDTH, edge * 2, -(edge + RING_WIDTH / 2), 0)
+	slab("RingRight", RING_WIDTH, edge * 2, edge + RING_WIDTH / 2, 0)
+end
+
+-- A base that only turns around Y (never tilts), at yard-local (x, z), facing the yard centre.
+local function standing(plotCFrame: CFrame, x: number, z: number): CFrame
+	local at = plotCFrame * CFrame.new(x, 0, z)
+	local centre = plotCFrame.Position
+	local yaw = YardLayout.yawToward(at.X, at.Z, centre.X, centre.Z)
+	return CFrame.new(at.X, plotCFrame.Y, at.Z) * CFrame.Angles(0, yaw, 0)
+end
+
+-- `resets` grows the yard like Plot.build does. Tall pieces (two, +1 per reset up to four) stand
+-- at the back corners and sides; low props (one, +1 per reset up to three) behind the table.
+-- Nothing stands in the front half of the yard (the camera and the HUD are there).
 function PlotDecor.yard(make: PartMaker, parent: Instance, plotCFrame: CFrame, theme: Theme, resets: number)
 	local folder = Instance.new("Folder")
 	folder.Name = "Decor_" .. theme.id
 	local half = Config.PLOT_SIZE / 2
+	ring(make, folder, plotCFrame, theme)
 	floor(make, folder, plotCFrame, theme)
 
 	local treePiece = TREES[theme.tree] or TREES.oak
-	local corners = PlotDecor.cornerSpots(half)
-	for i = 1, math.min(#corners, 2 + resets) do
-		-- face the yard centre
-		local at = plotCFrame * CFrame.new(corners[i])
-		local base = CFrame.lookAt(at.Position, plotCFrame.Position)
-		treePiece(make, folder, base, 1 + (i % 3) * 0.12, theme)
+	local tall = YardLayout.tall(half)
+	for i = 1, math.min(#tall, 2 + resets) do
+		local spot = tall[i]
+		-- never above MaxTallScale, and small enough to stay under the top HUD in the spawn view
+		local scale = YardLayout.tallScale(theme.tree, spot.x, spot.z, 1 + (i % 3) * 0.07)
+		treePiece(make, folder, standing(plotCFrame, spot.x, spot.z), scale, theme)
 	end
 
-	local sides = PlotDecor.sideSpots(half)
-	for i = 1, math.min(#sides, 1 + resets) do
+	local low = YardLayout.low(half)
+	for i = 1, math.min(#low, 1 + resets) do
 		local kind = pick(theme.props, i)
 		local piece = PROPS[kind] or PROPS.boulder
-		local at = plotCFrame * CFrame.new(sides[i])
-		piece(make, folder, CFrame.lookAt(at.Position, plotCFrame.Position), 1, theme)
+		local spot = low[i]
+		piece(make, folder, standing(plotCFrame, spot.x, spot.z), YardLayout.lowScale(kind), theme)
 	end
 	folder.Parent = parent
 	return folder
@@ -665,6 +689,10 @@ function PlotDecor.world(make: PartMaker, parent: Instance, params: DecorLayout.
 		if piece then
 			piece(make, folder, CFrame.new(spot.x, 0, spot.z) * CFrame.Angles(0, spot.yaw, 0), spot.scale, theme)
 		end
+	end
+	-- The edge forest: a wall of tall trees right round the map.
+	for _, tree in DecorLayout.edgeTrees(params) do
+		TREES.oak(make, folder, CFrame.new(tree.x, 0, tree.z) * CFrame.Angles(0, tree.yaw, 0), tree.scale, theme)
 	end
 	folder.Parent = parent
 	return folder

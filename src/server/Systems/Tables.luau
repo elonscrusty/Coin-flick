@@ -233,7 +233,9 @@ local function makeHelper(state: TableState, index: number, def: Config.HelperDe
 end
 
 local function buildTable(player: Player, state: TableState, profile: Profile)
-	local look = Config.TableLooks[Economy.tableLook(profile.resets)]
+	-- The table wears the colours of the yard's theme, so table and yard always match.
+	local theme = PlotThemes.resolve(profile.resets, nil)
+	local look = Config.TableLooks[Economy.tableLookNamed(theme.tableLook)]
 	local model = state.model
 	model:ClearAllChildren()
 	for _, name in { "Coins", "Hitboxes", "Helpers" } do
@@ -280,7 +282,6 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	-- The yard around the table (fence, name arch, trees).
 	local center, outward = World.plotCenter(state.slot)
 	local plotCFrame = CFrame.lookAt(center, center - outward)
-	local theme = PlotThemes.resolve(profile.resets, nil)
 	Plot.build(World.makePart, model, plotCFrame, theme, player.DisplayName, profile.resets)
 
 	state.coins = {}
@@ -294,12 +295,11 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	end
 	-- Empty spots for the coins you can still buy, so a fresh table after a
 	-- reset looks like a goal ("fill me!") instead of a big empty circle.
-	for i = 1, Economy.emptySlots(profile) do
-		local index = count + i
+	for _, index in TableLayout.markerSlots(count, Config.MAX_COINS) do
 		local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
 		local d = Config.COIN_BASE_DIAMETER
 		local slot = World.makePart({
-			Name = `Slot_{index}`,
+			Name = `Slot_{index}`, -- the client removes it the moment a coin sits on this spot
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(0.06, d, d),
 			CFrame = CFrame.new(state.center + Vector3.new(x, 0.03, z)) * CFrame.Angles(0, 0, math.pi / 2),

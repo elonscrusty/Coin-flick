@@ -401,6 +401,11 @@ local function onFlipped(ev: FlipEvent)
 	if not mine and camera and (camera.CFrame.Position - coin.Position).Magnitude > OTHERS_MAX_DISTANCE then
 		return -- too far to see; the server still puts it on the right face
 	end
+	-- A coin sits here, so no empty-spot marker may show under it.
+	local marker = model and model:FindFirstChild(`Slot_{ev.coin}`)
+	if marker then
+		marker:Destroy()
+	end
 	local old = active[coin]
 	if old then
 		undressRare(old) -- a re-flip mid-air starts from the plain coin

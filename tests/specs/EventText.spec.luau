@@ -70,6 +70,7 @@ describe("Event chip words", function()
 			"🌧 RAIN 2x 59:59",
 			"🍀 2x LUCK 1d 22h",
 			"🎁 9 READY!",
+			"Next gift 59:59",
 			"👫 2x cash",
 		}
 		for _, t in longest do
@@ -87,7 +88,7 @@ describe("Event chip words", function()
 		expect(text).toBe("🎁 2 READY!")
 		expect(tap).toBeTruthy()
 		local near, nearTap = EventText.gift(view(0, { 200, 900 }), 20)
-		expect(near).toBe("🎁 3:00")
+		expect(near).toBe("Next gift 3:00")
 		expect(nearTap).toBeFalsy()
 		local ripe, ripeTap = EventText.gift(view(0, { 200 }), 200)
 		expect(ripe).toBe("🎁 READY!")

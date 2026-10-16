@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 local Daily = require(script.Parent.Daily)
 local Goals = require(script.Parent.Goals)
 local Net = require(script.Parent.Net)
@@ -105,11 +106,11 @@ local function onReset(player: Player)
 	if GameLogic.reset(profile) then
 		Tables.refresh(player)
 		PlayerData.changed(player)
-		local look = Config.TableLooks[Economy.tableLook(profile.resets)]
+		local theme = PlotThemes.resolve(profile.resets, nil)
 		notify(
 			player,
 			"reset",
-			`RESET! Cash x{Economy.resetMultiplier(profile.resets)} forever. New table: {look.name}`
+			`RESET! Cash x{Economy.resetMultiplier(profile.resets)} forever. New yard: {theme.name}`
 		)
 	end
 end

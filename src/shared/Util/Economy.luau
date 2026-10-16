@@ -236,6 +236,16 @@ function Economy.offlineEarnings(profile: Profile, elapsedSeconds: number): numb
 end
 
 -- Which table look (1-based) a player with `resets` resets gets.
+-- Index of the table look called `name` (1 when the name is unknown).
+function Economy.tableLookNamed(name: string): number
+	for i, look in Config.TableLooks do
+		if look.name == name then
+			return i
+		end
+	end
+	return 1
+end
+
 function Economy.tableLook(resets: number): number
 	return (resets % #Config.TableLooks) + 1
 end

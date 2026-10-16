@@ -27,7 +27,7 @@ describe("GOALS tab: streak ladder", function()
 		expect(#rows).toBe(#GoalsConfig.Ladder)
 		for _, row in rows do
 			expect(row.action).toBe("none")
-			expect(row.button.look).toBe("locked")
+			expect(row.button.look).toBe("poor")
 		end
 		expect(rows[1].button.text).toBe(`0/{GoalsConfig.Ladder[1].need}`)
 		expect(GoalsPanelView.ladderHeader(v)).toBe(`Best streak: 0 heads. Next look at {GoalsConfig.Ladder[1].need}!`)
@@ -78,13 +78,13 @@ describe("GOALS tab: weekly challenges", function()
 			Goals.claimChallenge(p.challenges, week, slot)
 		end
 		rows = GoalsPanelView.challengeRows(viewOf(p))
-		expect(rows[1].button.text).toBe("DONE ✔")
+		expect(rows[1].button.text).toBe("DONE")
 		expect(rows[4].button.text).toBe("CLAIM!")
 		expect(rows[4].canClaim).toBe(true)
 		expect(rows[4].count).toBe("3/3")
 		Goals.claimChallengeBonus(p.challenges, week)
 		rows = GoalsPanelView.challengeRows(viewOf(p))
-		expect(rows[4].button.text).toBe("DONE ✔")
+		expect(rows[4].button.text).toBe("DONE")
 	end)
 
 	it("the clock counts down to Monday", function()
@@ -217,13 +217,94 @@ describe("THIS WEEK board, badges, play gifts", function()
 			},
 		}
 		local rows = GiftPetView.playGiftRows(view, 0)
-		expect(rows[1].button.text).toBe("DONE ✔")
+		expect(rows[1].button.text).toBe("DONE")
 		expect(rows[2].button.text).toBe("CLAIM!")
 		expect(rows[2].canClaim).toBe(true)
-		expect(rows[3].button.text).toBe("2m 05s")
+		expect(rows[3].button.text).toBe("Next gift 2:05")
 		expect(rows[3].button.look).toBe("poor")
 		expect(rows[3].text).toBe("Play 20 min")
 		expect(GiftPetView.playGiftRows(view, 130)[3].button.text).toBe("CLAIM!")
 		expect(GiftPetView.dailyDot(nil, view)).toBe(true)
+	end)
+end)
+
+describe("Round 10 polish", function()
+	local GiftPetView = require(ReplicatedStorage.Shared.Util.GiftPetView)
+	local EventText = require(ReplicatedStorage.Shared.Util.EventText)
+
+	it("goal texts agree: 1 head, 2 times", function()
+		expect(PanelView.fixCount("Get 1 heads")).toBe("Get 1 head")
+		expect(PanelView.fixCount("Get 250 heads")).toBe("Get 250 heads")
+		expect(PanelView.fixCount("Hit the 10 heads streak 2 time")).toBe("Hit the 10 heads streak 2 times")
+		expect(PanelView.fixCount("Hit the 10 heads streak 1 time")).toBe("Hit the 10 heads streak 1 time")
+		expect(PanelView.fixCount("Help flip the MEGA coin 1 times")).toBe("Help flip the MEGA coin 1 time")
+		expect(PanelView.fixCount("Flip 1 rare coins")).toBe("Flip 1 rare coin")
+		expect(PanelView.fixCount("Flip 3 rare coins")).toBe("Flip 3 rare coins")
+		expect(PanelView.fixCount("Buy 1 upgrades")).toBe("Buy 1 upgrade")
+	end)
+
+	it("every real job and challenge text reads right", function()
+		for _, kind in Config.Daily.JobKinds do
+			for _, goal in kind.goals do
+				local text = PanelView.fixCount(string.format(kind.text, goal))
+				expect(string.find(text, "1 heads", 1, true)).toBeNil()
+				expect(string.find(text, "1 times", 1, true)).toBeNil()
+			end
+		end
+	end)
+
+	it("one gift timer wording for the HUD chip and the GIFTS tab", function()
+		expect(EventText.giftWait(231)).toBe("Next gift 3:51")
+		local view = {
+			seconds = 0,
+			claimable = 0,
+			gifts = { { slot = 1, minutes = 5, cash = 10, hats = 1, state = "waiting", left = 231 } },
+		}
+		expect(GiftPetView.playGiftRows(view, 0)[1].button.text).toBe("Next gift 3:51")
+		local chip = EventText.gift(view, 0)
+		expect(chip).toBe("Next gift 3:51")
+	end)
+
+	it("a claimed daily gift shows the same countdown, not a blue blank", function()
+		local Daily = require(ReplicatedStorage.Shared.Util.Daily)
+		local d = Daily.empty()
+		Daily.claimGift(d, 20000)
+		local v = Daily.view(d, 1, 20000, 2)
+		local rows = GiftPetView.dailyRows(v, 20000 * 86400 + 3600)
+		expect(rows.gift.text).toBe("Next gift 23h 00m")
+		expect(rows.gift.look).toBe("done")
+	end)
+
+	it("goal progress buttons use the dim grey look, never the purple locked one", function()
+		local rows = GoalsPanelView.ladderRows(viewOf(fresh(0)))
+		for _, row in rows do
+			expect(row.button.look).toBe("poor")
+		end
+	end)
+
+	it("all four ladder icons are plain emoji every phone can draw", function()
+		for _, rung in GoalsConfig.Ladder do
+			expect(#rung.icon > 0).toBe(true)
+			for _, cp in utf8.codes(rung.icon) do
+				expect(cp < 0x1FA00).toBe(true) -- 🫧 (U+1FAE7) showed blank
+			end
+		end
+	end)
+
+	it("pet and badge unlocks are one banner: title, name, picture", function()
+		local title, name, icon = PanelView.unlockBanner("pet", "New pet! 🐷 Piggy is yours!")
+		expect(title).toBe("NEW PET!")
+		expect(name).toBe("Piggy")
+		expect(icon).toBe("🐷")
+		local t2, n2, i2 = PanelView.unlockBanner("badge", "Badge: Full Crew!")
+		expect(t2).toBe("NEW BADGE!")
+		expect(n2).toBe("Full Crew")
+		expect(i2).toBe("🏅")
+		expect(PanelView.unlockBanner("bought", "x")).toBeNil()
+	end)
+
+	it("reset and away words say crew", function()
+		local lines = PanelView.resetLines({ resetBonus = 2, tableFull = true, coinCount = 3 } :: any)
+		expect(lines[2].text).toBe("KEEP: crew + 🎩 hats")
 	end)
 end)

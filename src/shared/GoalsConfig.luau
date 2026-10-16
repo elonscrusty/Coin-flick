@@ -36,7 +36,7 @@ local Ladder: { LadderRung } = {
 	{
 		id = "pearl",
 		name = "Pearl Streak",
-		icon = "🫧",
+		icon = "🔮",
 		need = 5,
 		coin = Color3.fromRGB(240, 235, 255),
 		text = Color3.fromRGB(120, 100, 190),

@@ -3,6 +3,7 @@
 -- tests/specs/GiftPetView.spec.luau can check the words, bars and buttons offline.
 -- The server decides every reward; these views only describe it.
 
+local EventText = require(script.Parent.EventText)
 local Format = require(script.Parent.Format)
 local PanelView = require(script.Parent.PanelView)
 local PetConfig = require(script.Parent.Parent.PetConfig)
@@ -44,15 +45,9 @@ GiftPetView.GIFT_TAB = "GIFTS"
 GiftPetView.PETS_TAB = "PETS"
 GiftPetView.NO_DAILY = "Loading your gifts..."
 
--- "3h 20m", "20m 05s", "45s".
+-- One clock format everywhere ("3:51", "3h 20m"), the same as the HUD chip.
 function GiftPetView.timeLeft(seconds: number): string
-	local s = math.max(0, math.floor(seconds))
-	if s >= 3600 then
-		return string.format("%dh %02dm", s // 3600, (s % 3600) // 60)
-	elseif s >= 60 then
-		return string.format("%dm %02ds", s // 60, s % 60)
-	end
-	return `{s}s`
+	return EventText.span(seconds)
 end
 
 local function rewardText(cash: number, hats: number): string
@@ -84,15 +79,15 @@ function GiftPetView.dailyRows(view: DailyView, now: number): DailyRows
 	local timer = `New gifts in {GiftPetView.timeLeft(view.nextReset - now)}`
 	local giftButton: Button = if gift.ready
 		then { text = `GET DAY {gift.dayIndex} GIFT!`, look = "buy" }
-		else { text = "GIFT TAKEN ✔", look = "owned" }
+		else { text = EventText.giftWait(view.nextReset - now), look = "done" }
 	local jobs: { JobRow } = {}
 	for i, job in view.jobs do
 		local button: Button = if job.claimed
-			then { text = "DONE ✔", look = "owned" }
+			then { text = "DONE", look = "done" }
 			elseif job.done then { text = "CLAIM!", look = "buy" }
 			else { text = "NOT YET", look = "poor" }
 		table.insert(jobs, {
-			text = job.text,
+			text = PanelView.fixCount(job.text),
 			frac = math.clamp(job.progress / math.max(1, job.goal), 0, 1),
 			count = `{Format.short(job.progress)}/{Format.short(job.goal)}`,
 			reward = rewardText(job.cash, job.hats),
@@ -139,7 +134,7 @@ function GiftPetView.petRows(views: { PetView }): { PetRow }
 				line = view.goalText,
 				frac = math.clamp(view.have / math.max(1, view.need), 0, 1),
 				bar = `{Format.short(view.have)}/{Format.short(view.need)}`,
-				button = { text = "LOCKED 🔒", look = "locked" },
+				button = { text = "LOCKED 🔒", look = "poor" },
 				action = "none",
 				owned = false,
 				active = false,
@@ -158,9 +153,9 @@ function GiftPetView.playGiftRows(view: Types.PlayGiftView, age: number): { Play
 	local rows: { PlayGiftRow } = {}
 	for _, g in view.gifts do
 		local button: Button = if g.state == "claimed"
-			then { text = "DONE ✔", look = "owned" }
+			then { text = "DONE", look = "done" }
 			elseif g.state == "ready" or g.left - age <= 0 then { text = "CLAIM!", look = "buy" }
-			else { text = GiftPetView.timeLeft(g.left - age), look = "poor" }
+			else { text = EventText.giftWait(g.left - age), look = "poor" }
 		table.insert(rows, {
 			slot = g.slot,
 			text = `Play {g.minutes} min`,
