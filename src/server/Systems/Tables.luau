@@ -228,7 +228,9 @@ local function makeHelper(state: TableState, index: number, def: Config.HelperDe
 end
 
 local function buildTable(player: Player, state: TableState, profile: Profile)
-	local look = Config.TableLooks[Economy.tableLook(profile.resets)]
+	-- The table wears the colours of the yard's theme, so table and yard always match.
+	local theme = PlotThemes.resolve(profile.resets, nil)
+	local look = Config.TableLooks[Economy.tableLookNamed(theme.tableLook)]
 	local model = state.model
 	model:ClearAllChildren()
 	for _, name in { "Coins", "Hitboxes", "Helpers" } do
@@ -275,7 +277,6 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	-- The yard around the table (fence, name arch, trees).
 	local center, outward = World.plotCenter(state.slot)
 	local plotCFrame = CFrame.lookAt(center, center - outward)
-	local theme = PlotThemes.resolve(profile.resets, nil)
 	Plot.build(World.makePart, model, plotCFrame, theme, player.DisplayName, profile.resets)
 
 	state.coins = {}
