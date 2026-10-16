@@ -298,3 +298,14 @@ describe("Round 4: no wrong buys", function()
 		end
 	end)
 end)
+
+describe("One banner style", function()
+	it("every banner title fits its row", function()
+		for _, def in Config.Hats do
+			local title, text = PanelView.hatBanner(def.name)
+			expect(utf8.len(title)).toBeAtMost(PanelView.BANNER_TITLE_MAX)
+			expect(#text > 0).toBe(true)
+		end
+		expect(utf8.len(PanelView.AWAY_TITLE)).toBeAtMost(PanelView.BANNER_TITLE_MAX)
+	end)
+end)

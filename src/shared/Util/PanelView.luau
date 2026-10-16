@@ -364,6 +364,15 @@ function PanelView.megaBody(text: string): string
 	return body
 end
 
+-- One banner shape for every message: a short title row and one text row.
+PanelView.BANNER_TITLE_MAX = 18
+
+function PanelView.hatBanner(hatName: string): (string, string)
+	return `{string.upper(hatName)} ON!`, "Looking good!"
+end
+
+PanelView.AWAY_TITLE = "WELCOME BACK!"
+
 -- Reset popup ---------------------------------------------------------------
 
 function PanelView.resetLines(s: Snapshot): { ResetLine }
