@@ -169,7 +169,7 @@ function Panels.toast(text: string, color: Color3?)
 	toastLabel.Position = restPos + UDim2.fromOffset(0, 6)
 	toastLabel.Visible = true
 	toastLabel.TextTransparency = 0
-	toastLabel.BackgroundTransparency = 0.12
+	toastLabel.BackgroundTransparency = 0 -- opaque: it covers the info cards under it
 	local stroke = toastLabel:FindFirstChildOfClass("UIStroke")
 	if stroke then
 		stroke.Transparency = 0
@@ -226,7 +226,7 @@ local function showBanner(title: string, text: string, color: Color3, rainbow: b
 	bannerText.Text = text
 	bannerStroke.Color = color
 	banner.Visible = true
-	banner.BackgroundTransparency = 0.25
+	banner.BackgroundTransparency = 0
 	bannerTitle.TextTransparency = 0
 	bannerText.TextTransparency = 0
 	bannerScale.Scale = 0.3
@@ -995,7 +995,7 @@ function Panels.setLayout(l: HudLayout.Layout)
 	end
 	if banner then
 		banner.Position = UDim2.fromOffset(l.shout.x + l.shout.w / 2, l.shout.y + l.shout.h / 2)
-		banner.Size = UDim2.fromOffset(math.min(520, l.shout.w), math.clamp(l.shout.h, 56, 72))
+		banner.Size = UDim2.fromOffset(l.shout.w, l.shout.h)
 	end
 	if toastLabel and toastLabel.Visible then
 		local slot = if openName then l.toastLow else l.toast
@@ -1037,7 +1037,7 @@ function Panels.init()
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Size = UDim2.fromScale(0.6, 0.075),
 		BackgroundColor3 = Kit.INK,
-		BackgroundTransparency = 0.12,
+		BackgroundTransparency = 0,
 		Visible = false,
 		ZIndex = 20,
 	})
@@ -1045,10 +1045,7 @@ function Panels.init()
 	Kit.outline(toastLabel, 2)
 	Kit.padding(toastLabel, UDim.new(0, 16), UDim.new(0.14, 0))
 	Kit.textLimit(toastLabel, 26)
-	local toastSize = Instance.new("UISizeConstraint")
-	toastSize.MaxSize = Vector2.new(560, 56)
-	toastSize.MinSize = Vector2.new(260, 36)
-	toastSize.Parent = toastLabel
+	toastLabel.TextWrapped = true
 	toastLabel.Parent = popGui
 
 	-- Banner: a dark pill near the top with a colored border, so it reads on
@@ -1059,15 +1056,11 @@ function Panels.init()
 	banner.Position = UDim2.fromScale(0.5, 0.29)
 	banner.Size = UDim2.fromOffset(500, 90)
 	banner.BackgroundColor3 = Color3.fromRGB(35, 25, 50)
-	banner.BackgroundTransparency = 0.1
+	banner.BackgroundTransparency = 0
 	banner.Visible = false
 	banner.ZIndex = 25
 	Kit.corner(banner, 0.3)
 	bannerStroke = Kit.stroke(banner, 5, Kit.GOLD)
-	local bannerSize = Instance.new("UISizeConstraint")
-	bannerSize.MaxSize = Vector2.new(620, 110)
-	bannerSize.MinSize = Vector2.new(280, 64)
-	bannerSize.Parent = banner
 	bannerScale = Instance.new("UIScale")
 	bannerScale.Parent = banner
 	bannerTitle = Kit.label({
@@ -1077,7 +1070,8 @@ function Panels.init()
 		ZIndex = 26,
 	})
 	Kit.outline(bannerTitle, 3)
-	Kit.textLimit(bannerTitle, 44)
+	Kit.textLimit(bannerTitle, 30)
+	bannerTitle.TextWrapped = true
 	bannerTitle.Parent = banner
 	bannerText = Kit.label({
 		Name = "Text",
@@ -1086,7 +1080,8 @@ function Panels.init()
 		ZIndex = 26,
 	})
 	Kit.outline(bannerText, 2)
-	Kit.textLimit(bannerText, 24)
+	Kit.textLimit(bannerText, 20)
+	bannerText.TextWrapped = true
 	bannerText.Parent = banner
 	banner.Parent = popGui
 
