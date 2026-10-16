@@ -368,7 +368,7 @@ return table.freeze({
 		-- id = carter's own uploaded sound (from Find The Pet). fallback = a
 		-- built-in Roblox sound used if the id will not load (for example a
 		-- place opened from a file in Studio).
-		Tap = { id = 137600997709297, fallback = "rbxasset://sounds/clickfast.wav" }, -- Button
+		Tap = { id = 0, fallback = "rbxasset://sounds/clickfast.wav" }, -- soft click (carter: Button was annoying)
 		Flip = { id = 0, fallback = "rbxasset://sounds/action_jump.mp3" },
 		Land = { id = 0, fallback = "rbxasset://sounds/action_jump_land.mp3" },
 		Heads = { id = 73948288584672, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- CoinPickup

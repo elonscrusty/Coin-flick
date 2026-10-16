@@ -4,7 +4,6 @@ local SoundPick = require(ReplicatedStorage.Shared.Util.SoundPick)
 
 -- carter's uploaded ids, copied from Find The Pet's SoundIds.luau (b578be3).
 local UPLOADED: { [string]: number } = {
-	Tap = 137600997709297, -- Button
 	Heads = 73948288584672, -- CoinPickup
 	Skull = 112800468947570, -- Pickup
 	Buy = 120358225055021, -- Purchase
