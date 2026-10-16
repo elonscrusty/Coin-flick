@@ -196,3 +196,66 @@ describe("CoinLook round 3: coins stand out on the table, GIANT is a shiny coin"
 		end
 	end)
 end)
+
+describe("CoinLook round 4: rare coins never overlap a neighbour, edge-on still reads as a coin", function()
+	local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+
+	it("a grown rare coin never touches another slot, at any size upgrade", function()
+		for _, restD in { 3.0, 3.4, 3.8 } do
+			for index = 1, Config.MAX_COINS do
+				local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
+				for _, def in Config.Rarities do
+					local grown = restD * CoinLook.growFor(def.grow, index, restD)
+					for other = 1, Config.MAX_COINS do
+						if other ~= index then
+							local ox, oz = TableLayout.coinOffset(other, Config.MAX_COINS)
+							local dist = math.sqrt((x - ox) ^ 2 + (z - oz) ^ 2)
+							-- grown radius + the ridge (8% wider) + neighbour at rest must fit
+							expect(dist - grown * CoinLook.RIDGE_WIDER / 2 - restD / 2).toBeAtLeast(0)
+						end
+					end
+				end
+			end
+		end
+	end)
+
+	it("a grown coin stays over the table (never flies off behind it)", function()
+		for index = 1, Config.MAX_COINS do
+			local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
+			local grown = 3.8 * CoinLook.growFor(2.5, index, 3.8)
+			local reach = math.sqrt(x * x + z * z) + grown * CoinLook.RIDGE_WIDER / 2
+			expect(reach).toBeAtMost(Config.TABLE_RADIUS + CoinLook.EDGE_OVERHANG + 1e-9)
+		end
+	end)
+
+	it("a rare coin never shrinks below its normal size and the cap keeps some puff", function()
+		for index = 1, Config.MAX_COINS do
+			expect(CoinLook.growFor(1.1, index, 3.0)).toBeAtLeast(1)
+			expect(CoinLook.growFor(1.1, index, 3.8)).toBeAtLeast(1)
+		end
+		-- the middle coin has the most room, so GIANT is really big there
+		expect(CoinLook.growFor(2.5, 1, 3.8)).toBeAtLeast(2)
+		-- silver (x1.1) puffs fully on every slot at normal size
+		for index = 1, Config.MAX_COINS do
+			expect(CoinLook.growFor(1.1, index, 3.0)).toBeNear(1.1, 1e-9)
+		end
+	end)
+
+	it("ring coins at the biggest upgrade still fit on the table", function()
+		for index = 1, Config.MAX_COINS do
+			local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
+			expect(math.sqrt(x * x + z * z) + 3.8 / 2).toBeAtMost(Config.TABLE_RADIUS)
+		end
+	end)
+
+	it("the ridge is wider than the coin and thinner, so edge-on has a bump", function()
+		local thickness, diameter = CoinLook.ridge(0.5, 3.8)
+		expect(thickness).toBeAtMost(0.5)
+		expect(diameter).toBeAtLeast(3.8 * 1.05)
+		expect((diameter - 3.8) / 2).toBeAtLeast(0.1) -- at least 0.1 stud visible from the side
+	end)
+
+	it("coins are chunky enough to read edge-on", function()
+		expect(Config.COIN_THICKNESS / 3.8).toBeAtLeast(0.12)
+	end)
+end)
