@@ -94,7 +94,9 @@ describe("HUD layout", function()
 			expect(HudLayout.overlaps(l.panel, l.toastLow)).toBeFalsy()
 			expect(l.panel.h).toBeAtLeast(210)
 			expect(l.panel.w).toBeAtLeast(300)
-			expect(fittedTextSize(l.toastLow, "Reset 3 times to meet King Flip!", nil, 2)).toBeAtLeast(HudLayout.MIN_TEXT)
+			expect(fittedTextSize(l.toastLow, "Reset 3 times to meet King Flip!", nil, 2)).toBeAtLeast(
+				HudLayout.MIN_TEXT
+			)
 		end
 	end)
 

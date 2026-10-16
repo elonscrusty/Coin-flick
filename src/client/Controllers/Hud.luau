@@ -658,7 +658,6 @@ local function buildCheats(parent: ScreenGui)
 	cheatFrame = frame
 end
 
-
 render = function(s: Snapshot)
 	-- Cash counts up instead of snapping.
 	local oldCash = shownCash.Value
