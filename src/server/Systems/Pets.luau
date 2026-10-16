@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PetConfig = require(ReplicatedStorage.Shared.PetConfig)
 local Types = require(ReplicatedStorage.Shared.Types)
 local PetRules = require(ReplicatedStorage.Shared.Util.PetRules)
+local PetBuilder = require(script.Parent.Parent.Builders.PetBuilder)
 local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
@@ -18,6 +19,8 @@ local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
 local Pets = {}
 
 local nextFlip: { [Player]: number } = {}
+local bodies: { [Player]: Model } = {} -- the pet standing in the world for each player
+local folder: Folder
 local limiter = RateLimiter.new(PetConfig.EQUIP_RATE, PetConfig.EQUIP_BURST, os.clock)
 
 local function sendState(player: Player, profile: Types.Profile)
@@ -60,6 +63,38 @@ local function onEquip(player: Player, id: unknown)
 	end
 end
 
+local function dropBody(player: Player)
+	local body = bodies[player]
+	bodies[player] = nil
+	if body then
+		body:Destroy()
+	end
+end
+
+-- Keep exactly one 3D pet in the world for the active pet at its level (Blender model, or the Part
+-- stand-in). Clients walk it around locally; the server only places it, and only when something changed.
+local function syncBody(player: Player, profile: Types.Profile)
+	local def = PetRules.def(profile.petActive)
+	local pet = def and profile.pets[def.id]
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	local body = bodies[player]
+	if not def or not pet then
+		dropBody(player)
+		return
+	end
+	if body and body.Parent and body:GetAttribute("PetId") == def.id and body:GetAttribute("Level") == pet.level then
+		return
+	end
+	if not root or not root:IsA("BasePart") then
+		return -- no character yet: try again next tick
+	end
+	dropBody(player)
+	local at = CFrame.new(root.Position - Vector3.new(0, 2.8, 0)) * CFrame.Angles(0, math.rad(player.UserId % 360), 0)
+	local made = PetBuilder.make(def, pet.level, player.UserId, at)
+	made.Parent = folder
+	bodies[player] = made
+end
+
 local function tick(player: Player, profile: Types.Profile, now: number)
 	local def = PetRules.def(profile.petActive)
 	local pet = def and profile.pets[def.id]
@@ -81,6 +116,10 @@ local function tick(player: Player, profile: Types.Profile, now: number)
 	if not result then
 		return
 	end
+	local body = bodies[player]
+	if body then
+		body:SetAttribute("FlipAt", workspace:GetServerTimeNow()) -- every client hops this pet
+	end
 	PlayerData.changed(player)
 	Net.event("PetFlipped"):FireClient(player, result.id, result.cash, result.level, result.leveled)
 	if result.leveled then
@@ -89,6 +128,9 @@ local function tick(player: Player, profile: Types.Profile, now: number)
 end
 
 function Pets.init()
+	folder = Instance.new("Folder")
+	folder.Name = "CoinPets"
+	folder.Parent = workspace
 	Net.event("PetEquip").OnServerEvent:Connect(onEquip)
 	PlayerData.onLoaded(function(player: Player, profile: Types.Profile)
 		-- Older saves may already have earned pets (1,000 flips, resets).
@@ -97,6 +139,7 @@ function Pets.init()
 	end)
 	Players.PlayerRemoving:Connect(function(player: Player)
 		nextFlip[player] = nil
+		dropBody(player)
 		limiter:remove(player)
 	end)
 end
@@ -110,6 +153,7 @@ function Pets.start()
 		for _, player in Players:GetPlayers() do
 			local profile = PlayerData.get(player)
 			if profile then
+				syncBody(player, profile)
 				tick(player, profile, now)
 				-- Resets and flip counts change elsewhere; look for new pets once a second.
 				if slow % 5 == 0 then
