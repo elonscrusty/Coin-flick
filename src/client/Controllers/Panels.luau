@@ -7,6 +7,7 @@
 -- Panels live in their own ScreenGui above the HUD, with a dim backdrop, so
 -- nothing on the HUD ever pokes out from behind an open panel.
 
+local GuiService = game:GetService("GuiService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,6 +15,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local Types = require(ReplicatedStorage.Shared.Types)
@@ -100,6 +102,7 @@ local bannerToken = 0
 local flash: Frame
 
 local prices: { [string]: string } = {}
+local layout: HudLayout.Layout = HudLayout.compute(844, 390, true) -- replaced by Panels.setLayout
 local lastHat: string? = nil
 
 -- Open / close -----------------------------------------------------------------
@@ -111,6 +114,8 @@ local function setOpen(name: string?)
 		panel.Visible = key == name
 	end
 	backdrop.Visible = name ~= nil
+	-- Panels may reach over the thumbstick, so hide Roblox's touch controls while one is open.
+	GuiService.TouchControlsEnabled = name == nil
 	if (name ~= nil) ~= was then
 		for _, fn in openListeners do
 			task.spawn(fn, name ~= nil)
@@ -141,8 +146,6 @@ function Panels.open(name: string)
 	if name == "shop" then
 		onShopOpen()
 	end
-	local narrow = panelGui.AbsoluteSize.X < 700
-	panel.Size = UDim2.new(if narrow then 0.94 else (if name == "reset" then 0.5 else 0.64), 0, if name == "reset" then 0.7 else 0.78, -8)
 	setOpen(name)
 	local scale = panel:FindFirstChildOfClass("UIScale")
 	if scale then
@@ -159,8 +162,10 @@ function Panels.toast(text: string, color: Color3?)
 	toastLabel.Text = text
 	toastLabel.TextColor3 = color or Kit.WHITE
 	-- Under an open panel, else low in the middle (between thumbstick and jump).
-	local y = if openName then 0.93 else 0.84
-	toastLabel.Position = UDim2.fromScale(0.5, y + 0.03)
+	local slot = if openName then layout.toastLow else layout.toast
+	local restPos = UDim2.fromOffset(slot.x + slot.w / 2, slot.y + slot.h / 2)
+	toastLabel.Size = UDim2.fromOffset(slot.w, slot.h)
+	toastLabel.Position = restPos + UDim2.fromOffset(0, 6)
 	toastLabel.Visible = true
 	toastLabel.TextTransparency = 0
 	toastLabel.BackgroundTransparency = 0.12
@@ -168,7 +173,7 @@ function Panels.toast(text: string, color: Color3?)
 	if stroke then
 		stroke.Transparency = 0
 	end
-	TweenService:Create(toastLabel, Kit.BOUNCY, { Position = UDim2.fromScale(0.5, y) }):Play()
+	TweenService:Create(toastLabel, Kit.BOUNCY, { Position = restPos }):Play()
 	task.delay(2.6, function()
 		if token ~= toastToken then
 			return
@@ -202,7 +207,8 @@ local function confetti(count: number)
 		local reach = 0.15 + math.random() * 0.3
 		local target = UDim2.fromScale(0.5 + math.cos(angle) * reach, 0.3 + math.sin(angle) * reach * 0.8 + 0.15)
 		local t = TweenInfo.new(0.9 + math.random() * 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-		TweenService:Create(bit, t, { Position = target, Rotation = bit.Rotation + 360, BackgroundTransparency = 1 }):Play()
+		TweenService:Create(bit, t, { Position = target, Rotation = bit.Rotation + 360, BackgroundTransparency = 1 })
+			:Play()
 		task.delay(1.5, function()
 			bit:Destroy()
 		end)
@@ -276,10 +282,10 @@ end
 local function makePanel(name: string, title: string, color: Color3, maxSize: Vector2): (Frame, Frame, TextLabel)
 	local panel = Instance.new("Frame")
 	panel.Name = name
-	-- Starts under the cash bar and ends above the toast strip.
-	panel.AnchorPoint = Vector2.new(0.5, 0)
-	panel.Position = UDim2.new(0.5, 0, 0.13, 8)
-	panel.Size = UDim2.new(0.64, 0, 0.78, -8)
+	-- Sized and placed by Panels.setLayout (the free box from HudLayout).
+	panel.AnchorPoint = Vector2.new(0.5, 0.5)
+	panel.Position = UDim2.fromScale(0.5, 0.5)
+	panel.Size = UDim2.fromOffset(560, 400)
 	panel.BackgroundColor3 = Kit.PANEL
 	panel.Visible = false
 	panel.ZIndex = 5
@@ -358,11 +364,11 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.CanvasSize = UDim2.new()
 	list.ZIndex = 6
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 8)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout.Parent = list
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 8)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	listLayout.Parent = list
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(0, 8)
 	pad.PaddingBottom = UDim.new(0, 28) -- the last row can scroll clear of the fade
@@ -411,12 +417,12 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 	row.Size = UDim2.new(1, 0, 0, 38)
 	row.BackgroundTransparency = 1
 	row.ZIndex = 6
-	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout.Padding = UDim.new(0, 6)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = row
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.FillDirection = Enum.FillDirection.Horizontal
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	listLayout.Padding = UDim.new(0, 6)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Parent = row
 	local buttons: { [string]: TextButton } = {}
 	for i, tab in tabs do
 		local key = tab[1]
@@ -440,20 +446,25 @@ local function paintTabs(buttons: { [string]: TextButton }, picked: string)
 	for key, b in buttons do
 		local color = TAB_COLORS[key] or Kit.ORANGE
 		local on = key == picked
-		b.BackgroundColor3 = if on then color else color:Lerp(Kit.WHITE, 0.5)
+		b.BackgroundColor3 = if on then color else color:Lerp(Kit.WHITE, 0.35)
 		for _, child in b:GetChildren() do
 			if child:IsA("UIStroke") then
 				if child.ApplyStrokeMode == Enum.ApplyStrokeMode.Border then
 					child.Thickness = if on then 4 else 2
-				else
-					child.Transparency = if on then 0 else 0.3
 				end
 			end
 		end
 	end
 end
 
-local function newCard(list: ScrollingFrame, id: string, icon: GuiObject?, withTeam: boolean, onBuy: () -> (), onTeam: (() -> ())?): CardUi
+local function newCard(
+	list: ScrollingFrame,
+	id: string,
+	icon: GuiObject?,
+	withTeam: boolean,
+	onBuy: () -> (),
+	onTeam: (() -> ())?
+): CardUi
 	local frame = Instance.new("Frame")
 	frame.Name = id
 	frame.Size = UDim2.new(1, 0, 0, CARD_HEIGHT)
@@ -780,7 +791,8 @@ local function renderBoard()
 	local s = State.get()
 	if s and myRow then
 		local unit = PanelView.BOARD_UNITS[boardShown]
-		myRow.Text = `YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}  •  board updates every minute`
+		myRow.Text =
+			`YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}  •  board updates every minute`
 	end
 end
 
@@ -860,15 +872,14 @@ end
 local function buildReset()
 	local panel, body = makePanel("Reset", "RESET TABLE?", Kit.ORANGE, Vector2.new(460, 340))
 	panels.reset = panel
-	panel.Size = UDim2.new(0.5, 0, 0.7, -8)
 	local holder = Instance.new("Frame")
 	holder.BackgroundTransparency = 1
 	holder.Size = UDim2.fromScale(1, 0.7)
 	holder.ZIndex = 6
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0.04, 0)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = holder
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0.04, 0)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Parent = holder
 	for i = 1, 4 do
 		local line = Kit.label({
 			Name = `Line{i}`,
@@ -949,6 +960,30 @@ end
 
 -- Init / start ---------------------------------------------------------------------
 
+-- Puts panels, toast and banner in the HUD's free slots (HudLayout), on every
+-- screen change. Hud.applyLayout calls this.
+function Panels.setLayout(l: HudLayout.Layout)
+	layout = l
+	local box = l.panel
+	local wide = Vector2.new(math.min(600, box.w), math.min(470, box.h))
+	local small = Vector2.new(math.min(480, box.w), math.min(340, box.h))
+	for name, panel in panels do
+		local size = if name == "reset" then small else wide
+		panel.AnchorPoint = Vector2.new(0.5, 0.5)
+		panel.Position = UDim2.fromOffset(box.x + box.w / 2, box.y + box.h / 2)
+		panel.Size = UDim2.fromOffset(size.X, size.Y)
+	end
+	if banner then
+		banner.Position = UDim2.fromOffset(l.shout.x + l.shout.w / 2, l.shout.y + l.shout.h / 2)
+		banner.Size = UDim2.fromOffset(math.min(620, l.shout.w), math.max(64, l.shout.h))
+	end
+	if toastLabel and toastLabel.Visible then
+		local slot = if openName then l.toastLow else l.toast
+		toastLabel.Size = UDim2.fromOffset(slot.w, slot.h)
+		toastLabel.Position = UDim2.fromOffset(slot.x + slot.w / 2, slot.y + slot.h / 2)
+	end
+end
+
 function Panels.init()
 	panelGui = Instance.new("ScreenGui")
 	panelGui.Name = "CoinFlickPanels"
@@ -1002,7 +1037,7 @@ function Panels.init()
 	banner.Name = "Banner"
 	banner.AnchorPoint = Vector2.new(0.5, 0.5)
 	banner.Position = UDim2.fromScale(0.5, 0.29)
-	banner.Size = UDim2.fromScale(0.62, 0.17)
+	banner.Size = UDim2.fromOffset(500, 90)
 	banner.BackgroundColor3 = Color3.fromRGB(35, 25, 50)
 	banner.BackgroundTransparency = 0.1
 	banner.Visible = false
@@ -1048,6 +1083,7 @@ function Panels.init()
 	buildShop()
 	buildReset()
 	buildTop()
+	Panels.setLayout(layout)
 	panelGui.Parent = player:WaitForChild("PlayerGui")
 	popGui.Parent = player:WaitForChild("PlayerGui")
 end

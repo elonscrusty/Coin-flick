@@ -25,7 +25,7 @@ export type RarityDef = {
 	name: string,
 	chance: number, -- odds per flip, e.g. 1/100
 	mult: number,
-	color: Color3,
+	color: Color3, -- popup/shout text; the coin itself is dressed by Util/CoinLook
 	grow: number, -- how much bigger the coin gets in the air
 	shout: boolean, -- tell the whole server
 }
@@ -143,7 +143,7 @@ local Rarities: { RarityDef } = {
 		name = "GIANT",
 		chance = 1 / 10000,
 		mult = 500,
-		color = Color3.fromRGB(255, 120, 30),
+		color = Color3.fromRGB(255, 100, 25),
 		grow = 2.5,
 		shout = true,
 	},
@@ -161,7 +161,7 @@ local Rarities: { RarityDef } = {
 		name = "GOLD",
 		chance = 1 / 100,
 		mult = 10,
-		color = Color3.fromRGB(255, 225, 60),
+		color = Color3.fromRGB(255, 232, 40),
 		grow = 1.3,
 		shout = false,
 	},
@@ -170,7 +170,7 @@ local Rarities: { RarityDef } = {
 		name = "SILVER",
 		chance = 1 / 20,
 		mult = 3,
-		color = Color3.fromRGB(215, 225, 240),
+		color = Color3.fromRGB(178, 194, 216),
 		grow = 1.1,
 		shout = false,
 	},
@@ -296,6 +296,7 @@ return table.freeze({
 	BASE_FLIP_TIME = 1.2,
 	FLIP_TIME_PER_LEVEL = 0.075,
 	MIN_FLIP_TIME = 0.45,
+	FLIP_HEIGHT = 6, -- studs a coin jumps at the top of its flip (ZOOM camera fits this)
 	CASH_PER_BIG_LEVEL = 0.5,
 
 	-- Helpers
@@ -384,6 +385,15 @@ return table.freeze({
 		JobDone = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: QuestDone
 		Denied = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Denied
 	} :: { [string]: SoundDef }),
+
+	-- Cartoon sky (World): a thick, bright-blue haze over the default skybox.
+	Sky = table.freeze({
+		density = 0.36,
+		offset = 0.1,
+		haze = 2.4,
+		color = Color3.fromRGB(150, 210, 255),
+		decay = Color3.fromRGB(95, 175, 255),
+	}),
 
 	-- Robux shop. Ids come from carter; 0 means "not set yet" (shows SOON).
 	-- Prices are set on the Roblox website and read live, never written in code.

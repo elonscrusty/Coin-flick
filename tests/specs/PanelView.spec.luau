@@ -33,7 +33,9 @@ end
 
 local function allCards(s)
 	local out = {}
-	for _, list in { PanelView.upgradeCards(s), PanelView.helperCards(s), PanelView.hatCards(s), PanelView.robuxCards(s, {}) } do
+	for _, list in
+		{ PanelView.upgradeCards(s), PanelView.helperCards(s), PanelView.hatCards(s), PanelView.robuxCards(s, {}) }
+	do
 		for _, c in list do
 			table.insert(out, c)
 		end
@@ -61,7 +63,15 @@ local function players()
 	end
 	return {
 		snap(),
-		snap({ cash = 5000, hatPoints = 40, resets = 1, crew = { buddy = 3 }, team = { "buddy" }, hats = { "party" }, hat = "party" }),
+		snap({
+			cash = 5000,
+			hatPoints = 40,
+			resets = 1,
+			crew = { buddy = 3 },
+			team = { "buddy" },
+			hats = { "party" },
+			hat = "party",
+		}),
 		snap({
 			cash = 1e12,
 			hatPoints = 1e6,
@@ -82,7 +92,9 @@ describe("Shop cards (runner problems 12-19)", function()
 	it("every card line fits on one phone line", function()
 		for _, s in players() do
 			for _, c in allCards(s) do
-				if utf8.len(c.line) > PanelView.MAX_LINE then error("too long: " .. c.line) end
+				if utf8.len(c.line) > PanelView.MAX_LINE then
+					error("too long: " .. c.line)
+				end
 				expect(utf8.len(c.button)).toBeAtMost(12)
 				expect(utf8.len(c.title)).toBeAtMost(18)
 			end

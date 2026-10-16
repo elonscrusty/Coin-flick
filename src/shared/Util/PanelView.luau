@@ -178,7 +178,14 @@ function PanelView.hatCards(s: Snapshot): { Card }
 				order = i,
 			}
 		elseif owned then
-			card = { id = def.id, title = def.name, line = "Yours! Tap to wear", button = "WEAR", look = "owned", order = i }
+			card = {
+				id = def.id,
+				title = def.name,
+				line = "Yours! Tap to wear",
+				button = "WEAR",
+				look = "owned",
+				order = i,
+			}
 		else
 			card = {
 				id = def.id,
@@ -221,7 +228,10 @@ function PanelView.robuxItems(): { RobuxItem }
 		},
 	}
 	for _, skin in Config.Skins do
-		table.insert(items, { key = skin.id, title = skin.name, line = "A new look for every coin", id = skin.passId, kind = "pass" })
+		table.insert(
+			items,
+			{ key = skin.id, title = skin.name, line = "A new look for every coin", id = skin.passId, kind = "pass" }
+		)
 	end
 	return items
 end

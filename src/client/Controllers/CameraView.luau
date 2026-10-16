@@ -3,7 +3,10 @@
 -- swoops to a close "table view" of your own coins, great for fast tapping.
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+
+local CameraMath = require(ReplicatedStorage.Shared.Util.CameraMath)
 
 local CameraView = {}
 
@@ -12,6 +15,8 @@ local enabled = false
 local shakeUntil = 0
 local shakePower = 0
 local rng = Random.new()
+local ZOOM_FOV = 55
+local WALK_FOV = 70
 
 local tableName = `Table_{player.UserId}`
 local cachedTable: Model? = nil
@@ -42,14 +47,13 @@ local function update()
 		if typeof(center) == "Vector3" and typeof(outward) == "Vector3" then
 			local viewport = camera.ViewportSize
 			local aspect = if viewport.Y > 0 then viewport.X / viewport.Y else 1.6
-			-- Tall/narrow screens need the camera further back to fit the table.
-			local back = math.max(1, 1.45 / aspect)
 			camera.CameraType = Enum.CameraType.Scriptable
-			camera.FieldOfView = 55
-			-- Steep, close view; aim past the middle so the coins sit low on
-			-- screen and flying coins + pop numbers stay clear of the top bar.
-			local eye = center - outward * (7 * back) + Vector3.new(0, 16 * back, 0)
-			camera.CFrame = CFrame.lookAt(eye, center + outward * 2.5)
+			camera.FieldOfView = ZOOM_FOV
+			-- The closest spot where all 10 coins and their flips fit between
+			-- the HUD bars on this screen shape (CameraMath, tested in Lune).
+			local view = CameraMath.tableView(aspect, ZOOM_FOV)
+			local eye = center - outward * view.back + Vector3.new(0, view.up, 0)
+			camera.CFrame = CFrame.lookAt(eye, center + outward * view.aim)
 		end
 	end
 	if os.clock() < shakeUntil then
@@ -63,17 +67,36 @@ function CameraView.isTableView(): boolean
 	return enabled
 end
 
+-- Back to the normal camera: behind your avatar, looking a little down at it.
+-- (Just switching to Custom kept the steep ZOOM angle, so the camera sat right
+-- on top of your head looking straight down.)
+local function behindAvatar(camera: Camera)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if humanoid then
+		camera.CameraSubject = humanoid
+	end
+	if root and root:IsA("BasePart") then
+		local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		if look.Magnitude < 0.01 then
+			look = Vector3.new(0, 0, -1)
+		end
+		local focus = root.Position + Vector3.new(0, 1.5, 0)
+		local walk = CameraMath.WALK
+		camera.CFrame = CFrame.lookAt(focus - look.Unit * walk.back + Vector3.new(0, walk.up, 0), focus)
+	end
+end
+
 function CameraView.toggle(): boolean
 	enabled = not enabled
 	if not enabled then
 		local camera = workspace.CurrentCamera
 		camera.CameraType = Enum.CameraType.Custom
-		camera.FieldOfView = 70
-		local character = player.Character
-		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			camera.CameraSubject = humanoid
-		end
+		camera.FieldOfView = WALK_FOV
+		behindAvatar(camera)
+		-- The Roblox camera script reads the camera on its next frame; set it again then.
+		task.defer(behindAvatar, camera)
 	end
 	return enabled
 end

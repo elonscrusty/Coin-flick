@@ -9,7 +9,10 @@ local Config = require(ReplicatedStorage.Shared.Config)
 
 local Plot = {}
 
-local WOOD = Color3.fromRGB(150, 100, 60)
+-- Arch pillars: bright white with colored bands, so a brown or dark avatar
+-- never blends into them (pictures showed one disappearing into brown wood).
+local PILLAR = Color3.fromRGB(255, 252, 245)
+local PILLAR_CAP = Color3.fromRGB(255, 205, 50)
 local FENCE = Color3.fromRGB(255, 250, 240)
 local TRUNK = Color3.fromRGB(120, 80, 45)
 local LEAVES = {
@@ -48,6 +51,7 @@ local function tree(make: PartMaker, parent: Instance, base: CFrame, size: numbe
 end
 
 Plot.tree = tree
+Plot.PILLAR = PILLAR
 Plot.LEAVES = LEAVES
 Plot.FLOWERS = FLOWERS
 
@@ -139,9 +143,28 @@ function Plot.build(
 			Name = "Pillar",
 			Size = Vector3.new(1.6, 9, 1.6),
 			CFrame = plotCFrame * CFrame.new(x, 4.5, -half),
-			Color = WOOD,
+			Color = PILLAR,
 		})
 		pillar.Parent = folder
+		for i = 1, 3 do
+			local band = make({
+				Name = "Band",
+				Size = Vector3.new(1.8, 0.7, 1.8),
+				CFrame = plotCFrame * CFrame.new(x, i * 2.3, -half),
+				Color = look.top,
+				CanCollide = false,
+			})
+			band.Parent = folder
+		end
+		local cap = make({
+			Name = "Cap",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * 2.2,
+			CFrame = plotCFrame * CFrame.new(x, 12, -half),
+			Color = PILLAR_CAP,
+			CanCollide = false,
+		})
+		cap.Parent = folder
 	end
 	local beam = make({
 		Name = "NameSign",

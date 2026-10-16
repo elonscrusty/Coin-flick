@@ -103,7 +103,14 @@ local BUILD: { [string]: (Model) -> () } = {
 	end,
 	speed = function(m) -- lightning bolt
 		local yellow = Color3.fromRGB(255, 215, 40)
-		add(m, { Size = Vector3.new(0.7, 1.8, 0.5), CFrame = CFrame.new(0.3, 0.9, 0) * CFrame.Angles(0, 0, -0.35), Color = yellow })
+		add(
+			m,
+			{
+				Size = Vector3.new(0.7, 1.8, 0.5),
+				CFrame = CFrame.new(0.3, 0.9, 0) * CFrame.Angles(0, 0, -0.35),
+				Color = yellow,
+			}
+		)
 		add(m, { Size = Vector3.new(1.4, 0.5, 0.5), CFrame = CFrame.new(0, 0, 0), Color = yellow })
 		add(m, {
 			Size = Vector3.new(0.7, 1.8, 0.5),
