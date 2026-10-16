@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Config = require(ReplicatedStorage.Shared.Config)
 local PetConfig = require(ReplicatedStorage.Shared.PetConfig)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local PetRules = require(ReplicatedStorage.Shared.Util.PetRules)
@@ -16,7 +17,6 @@ describe("Coin pets: starting pet and saving", function()
 		local p = ProfileSchema.migrate({ version = 2, cash = 5 })
 		expect(p.pets.puppy.level).toBe(1)
 		expect(p.petActive).toBe("puppy")
-		expect(p.petProgress.bestStreak).toBe(0)
 	end)
 
 	it("bad pet data is cleaned: unknown pets, huge levels, bad active pet", function()
@@ -24,15 +24,13 @@ describe("Coin pets: starting pet and saving", function()
 			version = 2,
 			pets = { pig = { level = 99, xp = 7 }, ghost = { level = 3, xp = 0 }, cat = "x" },
 			petActive = "dragon", -- not owned
-			petProgress = { streak = -4, bestStreak = "no", megaBeats = 3.7 },
+			petProgress = { megaBeats = 3.7 },
 		})
 		expect(p.pets.pig.level).toBe(PetConfig.MAX_LEVEL)
 		expect(p.pets.pig.xp).toBe(0)
 		expect(p.pets.ghost).toBe(nil)
 		expect(p.pets.cat).toBe(nil)
 		expect(p.petActive).toBe("puppy")
-		expect(p.petProgress.streak).toBe(0)
-		expect(p.petProgress.bestStreak).toBe(0)
 		expect(p.petProgress.megaBeats).toBe(3)
 	end)
 
@@ -64,21 +62,20 @@ describe("Coin pets: goals unlock the other four", function()
 		expect(p.pets.pig.level).toBe(1)
 	end)
 
-	it("bunny = 10 heads in a row, a skull starts the count over", function()
+	it("bunny = 10 heads in a row (the streak system's best streak)", function()
 		local p = ProfileSchema.default()
-		for _ = 1, 9 do
-			PetRules.recordTap(p, "heads")
-		end
-		PetRules.recordTap(p, "skull")
-		expect(p.petProgress.streak).toBe(0)
-		expect(p.petProgress.bestStreak).toBe(9)
+		p.stats.bestStreak = 9
 		expect(#PetRules.checkUnlocks(p)).toBe(0)
-		for _ = 1, 10 do
-			PetRules.recordTap(p, "heads")
-		end
+		p.stats.bestStreak = Config.STREAK_GOAL
 		expect(PetRules.checkUnlocks(p)[1]).toBe("bunny")
-		PetRules.recordTap(p, "skull") -- the pet stays after a skull
+		p.stats.bestStreak = 0 -- a later skull never takes the pet away
+		expect(#PetRules.checkUnlocks(p)).toBe(0)
 		expect(p.pets.bunny ~= nil).toBeTruthy()
+	end)
+
+	it("bunny goal matches the streak goal", function()
+		local bunny = PetRules.def("bunny") :: PetConfig.PetDef
+		expect(bunny.target).toBe(Config.STREAK_GOAL)
 	end)
 
 	it("dragon = beat the mega coin 10 times", function()

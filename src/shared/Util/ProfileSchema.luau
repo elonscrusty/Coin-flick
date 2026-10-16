@@ -18,11 +18,20 @@ local DEFAULT: Profile = {
 	version = 2,
 	cash = 0,
 	hatPoints = 0,
-	upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0 },
+	upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0, multiFlip = 0 },
 	crew = {},
 	team = {},
 	resets = 0,
-	stats = { flips = 0, heads = 0, skulls = 0, biggestFlip = 0, bestCombo = 0, rares = 0 },
+	stats = {
+		flips = 0,
+		heads = 0,
+		skulls = 0,
+		biggestFlip = 0,
+		bestCombo = 0,
+		rares = 0,
+		bestStreak = 0,
+		streakWins = 0,
+	},
 	lastSeen = 0,
 	hats = {},
 	hat = "",
@@ -31,7 +40,7 @@ local DEFAULT: Profile = {
 	receipts = {},
 	pets = { puppy = { level = 1, xp = 0 } },
 	petActive = "puppy",
-	petProgress = { streak = 0, bestStreak = 0, megaBeats = 0 },
+	petProgress = { megaBeats = 0 },
 }
 
 function ProfileSchema.default(): Profile
@@ -186,6 +195,7 @@ local function reconcile(data: { [string]: any }): Profile
 			bigCoins = cleanInt(up.bigCoins, 0),
 			luck = cleanInt(up.luck, 0),
 			speed = cleanInt(up.speed, 0),
+			multiFlip = math.min(Config.Upgrades.multiFlip.maxLevel, cleanInt(up.multiFlip, 0)),
 		},
 		crew = crew,
 		team = {},
@@ -197,6 +207,8 @@ local function reconcile(data: { [string]: any }): Profile
 			biggestFlip = cleanNumber(st.biggestFlip, 0),
 			bestCombo = cleanInt(st.bestCombo, 0),
 			rares = cleanInt(st.rares, 0),
+			bestStreak = cleanInt(st.bestStreak, 0),
+			streakWins = cleanInt(st.streakWins, 0),
 		},
 		lastSeen = cleanInt(data.lastSeen, d.lastSeen),
 		hats = hats,
@@ -209,8 +221,6 @@ local function reconcile(data: { [string]: any }): Profile
 			then data.petActive
 			else PetConfig.FREE_PET,
 		petProgress = {
-			streak = cleanInt(pp.streak, 0),
-			bestStreak = cleanInt(pp.bestStreak, 0),
 			megaBeats = cleanInt(pp.megaBeats, 0),
 		},
 	}

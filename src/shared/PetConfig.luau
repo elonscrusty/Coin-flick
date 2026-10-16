@@ -49,7 +49,7 @@ local Pets: { PetDef } = {
 		name = "Bunny",
 		icon = "🐰",
 		goal = "headsInRow",
-		target = 10,
+		target = 10, -- same number as Config.STREAK_GOAL
 		goalText = "Get 10 heads in a row",
 		interval = 3,
 		mult = 0.9,
@@ -90,7 +90,6 @@ return table.freeze({
 	LEVEL_CASH = 0.15, -- each level: +15% cash per pet flip
 	LEVEL_SPEED = 0.96, -- each level: flips 4% sooner
 	SPACE_PLOT_RESETS = 4,
-	STREAK_TO_COUNT = 10, -- the bunny's heads-in-a-row goal
 	EQUIP_RATE = 3, -- pet swaps per second per player (token bucket)
 	EQUIP_BURST = 5,
 	FREE_PET = "puppy",

@@ -1,13 +1,14 @@
 --!strict
 -- Types that cross the client/server boundary or get saved.
 
-export type UpgradeId = "moreCoins" | "bigCoins" | "luck" | "speed"
+export type UpgradeId = "moreCoins" | "bigCoins" | "luck" | "speed" | "multiFlip"
 
 export type Upgrades = {
 	moreCoins: number,
 	bigCoins: number,
 	luck: number,
 	speed: number,
+	multiFlip: number,
 }
 
 export type Stats = {
@@ -17,6 +18,8 @@ export type Stats = {
 	biggestFlip: number,
 	bestCombo: number,
 	rares: number,
+	bestStreak: number, -- most heads in a row
+	streakWins: number, -- times you hit the streak goal
 }
 
 -- One coin pet you own.
@@ -25,10 +28,8 @@ export type PetOwned = {
 	xp: number, -- toward the next level
 }
 
--- Goal counters for unlocking pets (flips and resets already live elsewhere).
+-- Goal counters for unlocking pets (flips, streak and resets already live elsewhere).
 export type PetProgress = {
-	streak: number, -- heads in a row on your own taps right now
-	bestStreak: number, -- your best heads in a row ever
 	megaBeats: number, -- times you helped flip the MEGA coin
 }
 
@@ -69,6 +70,10 @@ export type FlipEvent = {
 	helper: string?, -- which helper flipped it
 	rarity: Rarity,
 	combo: number, -- 0 for helper/auto flips
+	streak: number, -- heads in a row after this flip (0 for helper flips and skulls)
+	streakWin: boolean, -- true when this flip hit the streak goal
+	streakCash: number, -- prize paid on a streak win
+	streakHats: number,
 }
 
 -- Server -> one client: everything the HUD needs.
@@ -87,6 +92,9 @@ export type Snapshot = {
 	headsChance: number,
 	resetBonus: number,
 	bestCombo: number,
+	bestStreak: number,
+	streakGoal: number,
+	flipsPerTap: number,
 	hats: { string }, -- owned hat ids
 	hat: string,
 	skin: string,

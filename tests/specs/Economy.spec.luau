@@ -37,8 +37,8 @@ describe("Economy", function()
 		expect(Economy.upgradeCost("freeMoney", 0)).toBeNil()
 	end)
 
-	it("heads chance starts at 50% and never passes the cap", function()
-		expect(Economy.headsChance(0)).toBeNear(0.5)
+	it("heads chance starts at 35% and never passes the cap", function()
+		expect(Economy.headsChance(0)).toBeNear(0.35)
 		for level = 0, 100 do
 			expect(Economy.headsChance(level)).toBeAtMost(Config.MAX_HEADS_CHANCE)
 		end

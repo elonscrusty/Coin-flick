@@ -39,15 +39,6 @@ local function announceUnlocks(player: Player, profile: Types.Profile)
 	end
 end
 
--- Hook: the player tapped a coin and it landed (called by Tables, taps only).
-function Pets.onTap(player: Player, result: Types.FlipResult)
-	local profile = PlayerData.get(player)
-	if profile then
-		PetRules.recordTap(profile, result)
-		announceUnlocks(player, profile)
-	end
-end
-
 -- Hook: this player helped flip the MEGA coin (called by Mega).
 function Pets.onMegaBeat(player: Player)
 	local profile = PlayerData.get(player)

@@ -16,7 +16,6 @@ local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
-local Pets = require(script.Parent.Pets)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
 local Plot = require(script.Parent.Parent.Builders.Plot)
@@ -38,6 +37,7 @@ type TableState = {
 	combo: number, -- chain flips: taps in a row, each within COMBO_WINDOW
 	lastTapAt: number,
 	yaw: number, -- turns the coins so they spin toward the ZOOM camera (FlipArc.spinYaw)
+	streak: number, -- heads in a row from your own taps (helpers and auto-flip never count)
 	characterConn: RBXScriptConnection?,
 }
 
@@ -358,6 +358,13 @@ local function flip(
 		combo
 	)
 
+	-- Only a real tap (combo >= 1) plays the streak game.
+	local streak: GameLogic.StreakOutcome = { streak = 0, nextStreak = state.streak, won = false, cash = 0, hats = 0 }
+	if combo >= 1 then
+		streak = GameLogic.applyStreak(profile, state.streak, outcome.result, Boosts.cashMult(player, now))
+		state.streak = streak.nextStreak
+	end
+
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,
 		coin = index,
@@ -369,6 +376,10 @@ local function flip(
 		helper = helperId,
 		rarity = outcome.rarity,
 		combo = combo,
+		streak = streak.streak,
+		streakWin = streak.won,
+		streakCash = streak.cash,
+		streakHats = streak.hats,
 	}
 	-- Only players who can actually see this table get the event.
 	local tablePos = state.center
@@ -377,9 +388,6 @@ local function flip(
 		if other == player or (root and (root.Position - tablePos).Magnitude <= SEE_FLIPS_DISTANCE) then
 			flipRemote:FireClient(other, event)
 		end
-	end
-	if combo > 0 then
-		Pets.onTap(player, outcome.result) -- heads-in-a-row goal counts your own taps only
 	end
 	shoutIfRare(player, outcome)
 
@@ -417,7 +425,11 @@ local function onTap(player: Player, rawIndex: unknown)
 	end
 	state.combo = GameLogic.nextCombo(state.combo, state.lastTapAt, now)
 	state.lastTapAt = now
-	flip(player, state, profile, index, false, state.combo)
+	-- Multi Flip: the tapped coin plus the next ready coins, one tap.
+	local flipCoins = GameLogic.pickTapCoins(index, state.busyUntil, now, Economy.flipsPerTap(profile))
+	for _, coinIndex in flipCoins do
+		flip(player, state, profile, coinIndex, false, state.combo)
+	end
 end
 
 local function placeCharacter(player: Player)
@@ -463,6 +475,7 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 		combo = 0,
 		lastTapAt = 0,
 		yaw = FlipArc.spinYaw(outward.X, outward.Z),
+		streak = 0,
 	}
 	model:SetAttribute("SpinYaw", state.yaw)
 	states[player] = state

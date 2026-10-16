@@ -51,7 +51,7 @@ function PetRules.progress(profile: Profile, def: PetDef): (number, number)
 	elseif def.goal == "flips" then
 		current = profile.stats.flips
 	elseif def.goal == "headsInRow" then
-		current = profile.petProgress.bestStreak
+		current = profile.stats.bestStreak -- the one streak system (GameLogic.applyStreak)
 	elseif def.goal == "megaBeats" then
 		current = profile.petProgress.megaBeats
 	elseif def.goal == "resets" then
@@ -92,19 +92,6 @@ function PetRules.setActive(profile: Profile, id: unknown): boolean
 	end
 	profile.petActive = id
 	return true
-end
-
--- One of YOUR tapped flips happened (not helper or auto flips). Counts the heads streak.
-function PetRules.recordTap(profile: Profile, result: Types.FlipResult)
-	local pp = profile.petProgress
-	if result == "heads" then
-		pp.streak += 1
-		if pp.streak > pp.bestStreak then
-			pp.bestStreak = pp.streak
-		end
-	else
-		pp.streak = 0
-	end
 end
 
 -- You helped flip the MEGA coin.
