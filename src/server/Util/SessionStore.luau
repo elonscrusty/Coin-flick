@@ -79,7 +79,11 @@ function SessionStore.new(deps: Deps): SessionStore
 					end
 					local now = deps.now()
 					local lock = record and record.lock
-					if typeof(lock) == "table" and lock.jobId ~= deps.jobId and now - (tonumber(lock.time) or 0) < stale then
+					if
+						typeof(lock) == "table"
+						and lock.jobId ~= deps.jobId
+						and now - (tonumber(lock.time) or 0) < stale
+					then
 						lockedByOther = true
 						return nil -- don't write anything
 					end
@@ -114,7 +118,11 @@ function SessionStore.new(deps: Deps): SessionStore
 						return nil
 					end
 					local stored = record.data
-					if typeof(stored) == "table" and typeof(stored.version) == "number" and stored.version > copy.version then
+					if
+						typeof(stored) == "table"
+						and typeof(stored.version) == "number"
+						and stored.version > copy.version
+					then
 						lost = true -- a newer game version saved this; never downgrade
 						return nil
 					end

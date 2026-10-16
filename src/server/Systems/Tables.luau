@@ -319,10 +319,13 @@ end
 local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 	local slot = World.claimPlot(player)
 	if not slot then
-		Net.event("Notice"):FireClient(player, {
-			kind = "full",
-			text = "All tables are taken here. Try another server!",
-		} :: Types.Notice)
+		Net.event("Notice"):FireClient(
+			player,
+			{
+				kind = "full",
+				text = "All tables are taken here. Try another server!",
+			} :: Types.Notice
+		)
 		return
 	end
 	local center, outward = World.plotCenter(slot)
@@ -350,10 +353,13 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 	placeCharacter(player)
 
 	if offlineCash > 0 then
-		Net.event("Notice"):FireClient(player, {
-			kind = "offline",
-			text = `Your helper earned ${offlineCash} while you were away!`,
-		} :: Types.Notice)
+		Net.event("Notice"):FireClient(
+			player,
+			{
+				kind = "offline",
+				text = `Your helper earned ${offlineCash} while you were away!`,
+			} :: Types.Notice
+		)
 	end
 	PlayerData.changed(player)
 end

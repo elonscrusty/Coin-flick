@@ -388,7 +388,8 @@ local function render(s: Snapshot)
 	if s.hatPoints > oldHats then
 		popScale(hatScale, 1.15)
 	end
-	infoLabel.Text = `${Format.short(s.cashPerHeads)} per heads  •  {Format.percent(s.headsChance)} heads  •  {s.coinCount}/{Config.MAX_COINS} coins`
+	infoLabel.Text =
+		`${Format.short(s.cashPerHeads)} per heads  •  {Format.percent(s.headsChance)} heads  •  {s.coinCount}/{Config.MAX_COINS} coins`
 
 	for id, card in shopCards do
 		local level = s.upgrades[id :: Types.UpgradeId]
@@ -413,7 +414,8 @@ local function render(s: Snapshot)
 		helperCard.buy.BackgroundColor3 = BLUE
 	end
 
-	resetBody.Text = `You LOSE: cash and upgrades\nYou KEEP: helper guys and 🎩\nYou GET: cash x{s.resetBonus} forever + a new table!`
+	resetBody.Text =
+		`You LOSE: cash and upgrades\nYou KEEP: helper guys and 🎩\nYou GET: cash x{s.resetBonus} forever + a new table!`
 	resetButton.BackgroundColor3 = if s.tableFull then ORANGE else GREY
 	if s.tableFull and not resetPulse then
 		local scale = resetButton:FindFirstChildOfClass("UIScale")

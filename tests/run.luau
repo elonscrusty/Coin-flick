@@ -115,7 +115,6 @@ makeEnv = function(scriptNode)
 		task = task,
 		typeof = typeof,
 		warn = function() end, -- quiet: tests check warnings through injected deps
-
 	}
 	for k, v in extraGlobals do
 		env[k] = v
