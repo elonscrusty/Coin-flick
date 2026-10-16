@@ -31,7 +31,7 @@ CoinLook.SPARKLE_LIGHT = 0.35
 
 -- Warm coin gold. Rare GOLD is a brighter lemon gold so the two never look alike.
 CoinLook.NORMAL = table.freeze({
-	color = Color3.fromRGB(250, 205, 50),
+	color = Color3.fromRGB(240, 185, 40), -- warm gold, a bit darker than before so silver and lemon never match it
 	material = "SmoothPlastic",
 	reflectance = 0.15,
 	text = Color3.fromRGB(110, 55, 0),
@@ -46,15 +46,16 @@ CoinLook.NORMAL = table.freeze({
 
 local RARE: { [string]: Look } = {
 	silver = table.freeze({
-		color = Color3.fromRGB(178, 194, 216), -- steel blue-grey: never flat white
+		color = Color3.fromRGB(195, 220, 255), -- cool blue-white: the opposite of the warm plain gold
 		material = "Foil",
 		reflectance = 0.4,
-		text = Color3.fromRGB(30, 50, 100),
-		rim = Color3.fromRGB(105, 120, 150),
-		sparkle = { Color3.fromRGB(200, 230, 255), Color3.fromRGB(255, 255, 255) },
+		text = Color3.fromRGB(30, 60, 130),
+		rim = Color3.fromRGB(255, 255, 255), -- bright white ridge
+		sparkle = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 225, 255) },
 		sparkleSize = 0.7,
 		landBurst = 30,
 		trail = 10,
+		outline = Color3.fromRGB(60, 110, 200), -- thin blue outline
 		rainbow = false,
 		stars = false,
 	} :: Look),

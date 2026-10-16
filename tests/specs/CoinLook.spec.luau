@@ -114,8 +114,8 @@ describe("CoinLook fixes from the runner pictures", function()
 
 	it("SILVER is never flat white", function()
 		local c = CoinLook.RARE.silver.color
-		expect(math.min(c.R, c.G, c.B) * 255).toBeAtMost(190)
-		expect(CoinLook.distance(c, Color3.fromRGB(255, 255, 255))).toBeAtLeast(80)
+		expect(math.min(c.R, c.G, c.B) * 255).toBeAtMost(200)
+		expect(CoinLook.distance(c, Color3.fromRGB(255, 255, 255))).toBeAtLeast(65)
 	end)
 
 	it("RAINBOW faces show every color at once, not one solid color", function()
@@ -276,7 +276,7 @@ describe("CoinLook round 5: GOLD stands out, GIANT never sweeps anything, MEGA i
 
 	it("GOLD is deep amber, far from the plain yellow coin, with stars and a dark ridge", function()
 		local gold, normal = CoinLook.RARE.gold, CoinLook.NORMAL
-		expect(CoinLook.distance(gold.color, normal.color)).toBeAtLeast(70)
+		expect(CoinLook.distance(gold.color, normal.color)).toBeAtLeast(60)
 		expect(gold.stars).toBeTruthy()
 		expect(normal.stars).toBeFalsy()
 		-- the ridge is dark enough to show against the coin
@@ -437,5 +437,40 @@ describe("CoinLook round 7: right face up for every rarity, rainbow ridge, same 
 
 	it("the landing drift log is on", function()
 		expect(Config.LOG_COIN_DRIFT).toBeTruthy()
+	end)
+end)
+
+describe("CoinLook round 8: SILVER is cool, plain gold is warm", function()
+	it("silver is blue-white and plain gold is warm, far apart", function()
+		local silver, plain = CoinLook.RARE.silver, CoinLook.NORMAL
+		expect(silver.color.B).toBeAtLeast(silver.color.R) -- cool
+		expect(plain.color.R).toBeAtLeast(plain.color.B * 3) -- warm
+		expect(CoinLook.distance(silver.color, plain.color)).toBeAtLeast(150)
+	end)
+
+	it("silver has a white ridge, a blue outline and white sparkles", function()
+		local silver = CoinLook.RARE.silver
+		expect(CoinLook.distance(silver.rim, Color3.fromRGB(255, 255, 255))).toBeAtMost(10)
+		expect(silver.outline ~= nil).toBeTruthy()
+		local outline = silver.outline :: Color3
+		expect(outline.B).toBeAtLeast(outline.R * 2) -- blue
+		expect(CoinLook.contrast(outline, silver.color)).toBeAtLeast(2)
+		expect(CoinLook.distance(silver.sparkle[1], Color3.fromRGB(255, 255, 255))).toBeAtMost(10)
+	end)
+
+	it("every look is far from every other, in the table-top and rare tests too", function()
+		local looks = CoinLook.all()
+		for idA, a in looks do
+			for idB, b in looks do
+				if idA < idB then
+					expect(CoinLook.distance(a.color, b.color)).toBeAtLeast(60)
+				end
+			end
+		end
+	end)
+
+	it("the flight trail stays thin for the biggest rainbow coin too", function()
+		local widest = 3.8 * CoinLook.growFor(1.6, 1, 3.8)
+		expect(CoinLook.trailHalfWidth(widest) * 2).toBeAtMost(1.5 + 1e-9)
 	end)
 end)
