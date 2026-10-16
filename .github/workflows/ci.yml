@@ -22,10 +22,23 @@ jobs:
       - name: Lint
         run: selene src
 
+      - name: Install luau-lsp (latest release, with matching Roblox types)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh release view -R JohnnyMorganz/luau-lsp --json tagName -q .tagName)
+          echo "luau-lsp $TAG"
+          mkdir -p "$RUNNER_TEMP/luau-lsp"
+          gh release download "$TAG" -R JohnnyMorganz/luau-lsp -p 'luau-lsp-linux*.zip' -D "$RUNNER_TEMP/luau-lsp"
+          ZIP=$(ls "$RUNNER_TEMP"/luau-lsp/*.zip | grep -v -i arm | head -n 1)
+          unzip -o "$ZIP" -d "$RUNNER_TEMP/luau-lsp/bin"
+          chmod +x "$RUNNER_TEMP/luau-lsp/bin/luau-lsp"
+          echo "$RUNNER_TEMP/luau-lsp/bin" >> "$GITHUB_PATH"
+          curl -sSfL -o globalTypes.d.luau "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/$TAG/scripts/globalTypes.d.luau"
+
       - name: Type check (strict Luau)
         run: |
           rojo sourcemap default.project.json -o sourcemap.json
-          curl -sSfL -o globalTypes.d.luau https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/main/scripts/globalTypes.d.luau
           luau-lsp analyze --sourcemap=sourcemap.json --definitions=globalTypes.d.luau --no-strict-dm-types src
 
       - name: Automated tests
