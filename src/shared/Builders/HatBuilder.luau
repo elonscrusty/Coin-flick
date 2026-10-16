@@ -78,13 +78,13 @@ local function discs(m: Model, make: Make, list: { Disc }, y0: number)
 	end
 end
 
-local PARTY = HatBuilder.cone(8, 1.0, 0.1, 1.3, { PINK, YELLOW }, 2)
-local TRAFFIC_CONE = HatBuilder.cone(7, 0.95, 0.22, 0.95, { ORANGE, ORANGE, WHITE, WHITE, ORANGE, ORANGE, ORANGE }, 1)
+local PARTY = HatBuilder.cone(10, 0.95, 0.08, 1.7, { PINK, BLUE, YELLOW }, 1)
+local TRAFFIC_CONE = HatBuilder.cone(6, 1.1, 0.3, 0.75, { ORANGE, ORANGE, WHITE, WHITE, ORANGE, ORANGE }, 1)
 
 local BUILDERS: { [string]: (Model, Make) -> () } = {
 	party = function(m, make)
 		discs(m, make, PARTY, 0)
-		ball(m, make, 0.3, Vector3.new(0, 1.38, 0), YELLOW)
+		ball(m, make, 0.3, Vector3.new(0, 1.78, 0), YELLOW)
 	end,
 	cone = function(m, make)
 		block(m, make, Vector3.new(1.3, 0.12, 1.3), CFrame.new(0, 0.06, 0), ORANGE)

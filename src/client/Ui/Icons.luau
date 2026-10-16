@@ -139,8 +139,13 @@ local BUILD: { [string]: (Model) -> () } = {
 		end
 	end,
 	bigCoins = function(m)
-		coin(m, CFrame.new(-0.6, 0, 0) * CFrame.Angles(0, 0, 0.25), 3)
-		coin(m, CFrame.new(1.6, -0.3, 0.6), 1.3)
+		-- one fat coin facing you, a small one beside it, and a green "up" arrow
+		local tilt = CFrame.Angles(math.pi / 2.4, 0, 0)
+		coin(m, CFrame.new(-0.5, 0, 0) * tilt, 3)
+		coin(m, CFrame.new(1.9, -0.9, -0.3) * tilt, 1.2)
+		local green = Color3.fromRGB(70, 210, 110)
+		add(m, { Size = Vector3.new(0.5, 1.1, 0.4), CFrame = CFrame.new(1.9, 0.5, -0.3), Color = green })
+		add(m, { Size = Vector3.new(1.0, 0.4, 0.4), CFrame = CFrame.new(1.9, 1.15, -0.3), Color = green })
 	end,
 	luck = function(m) -- four-leaf clover, standing up so it faces the camera
 		local green = Color3.fromRGB(70, 200, 90)
@@ -148,29 +153,37 @@ local BUILD: { [string]: (Model) -> () } = {
 			local a = k * math.pi / 2 + math.pi / 4
 			add(m, {
 				Shape = Enum.PartType.Ball,
-				Size = Vector3.new(1.4, 1.4, 0.45),
-				CFrame = CFrame.new(math.cos(a) * 0.7, math.sin(a) * 0.7 + 0.4, 0),
+				Size = Vector3.new(1.1, 1.1, 0.4),
+				CFrame = CFrame.new(math.cos(a) * 0.55, math.sin(a) * 0.55 + 0.3, 0),
 				Color = green,
 			})
 		end
 		add(m, {
 			Size = Vector3.new(0.25, 1.5, 0.25),
-			CFrame = CFrame.new(0.25, -0.9, 0) * CFrame.Angles(0, 0, 0.3),
+			CFrame = CFrame.new(0.2, -0.75, 0) * CFrame.Angles(0, 0, 0.3),
 			Color = Color3.fromRGB(50, 150, 60),
 		})
 	end,
-	speed = function(m) -- stopwatch
-		local at = CFrame.Angles(math.pi / 2.4, 0, 0)
-		coin(m, at, 2.6, Color3.fromRGB(255, 255, 255), Color3.fromRGB(235, 70, 70))
+	speed = function(m) -- a coin racing right, with speed streaks and a lightning bolt
+		local tilt = CFrame.Angles(math.pi / 2.4, 0, 0)
+		coin(m, CFrame.new(0.6, 0, 0) * tilt, 2.4)
+		for k = 0, 2 do
+			add(m, {
+				Size = Vector3.new(1.2 - k * 0.25, 0.22, 0.22),
+				CFrame = CFrame.new(-1.4 - k * 0.15, 0.7 - k * 0.7, -0.3),
+				Color = Color3.fromRGB(255, 255, 255),
+			})
+		end
+		local yellow = Color3.fromRGB(255, 215, 40)
 		add(m, {
-			Size = Vector3.new(0.18, 0.12, 1.0),
-			CFrame = at * CFrame.new(0.25, 0.3, -0.3) * CFrame.Angles(0, -0.5, 0),
-			Color = Color3.fromRGB(45, 30, 20),
+			Size = Vector3.new(0.4, 1.0, 0.3),
+			CFrame = CFrame.new(0.8, 1.5, -0.5) * CFrame.Angles(0, 0, -0.4),
+			Color = yellow,
 		})
 		add(m, {
-			Size = Vector3.new(0.5, 0.4, 0.5),
-			CFrame = at * CFrame.new(0, 0.1, -1.55),
-			Color = Color3.fromRGB(235, 70, 70),
+			Size = Vector3.new(0.4, 1.0, 0.3),
+			CFrame = CFrame.new(0.5, 0.8, -0.5) * CFrame.Angles(0, 0, -0.4),
+			Color = yellow,
 		})
 	end,
 	doubleCash = function(m)
@@ -212,7 +225,7 @@ local function frame(viewport: ViewportFrame, model: Model, yaw: number)
 		camera.Parent = viewport
 		viewport.CurrentCamera = camera
 	end
-	local distance = radius / math.sin(math.rad(camera.FieldOfView / 2)) * 1.02
+	local distance = radius / math.sin(math.rad(camera.FieldOfView / 2)) * 1.2
 	local dir = CFrame.Angles(0, yaw, 0) * CFrame.Angles(math.rad(-22), 0, 0)
 	local center = box.Position
 	camera.CFrame = CFrame.new(center - dir.LookVector * distance, center)
