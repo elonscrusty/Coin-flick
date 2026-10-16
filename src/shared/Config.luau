@@ -376,7 +376,7 @@ return table.freeze({
 		Skull = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Pickup
 		Buy = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Purchase
 		Reset = { id = 0, fallback = "rbxasset://sounds/snap.wav" }, -- to try: LevelUp
-		Rare = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: RarityAccent
+		Rare = { id = 109340819460170, fallback = "rbxasset://sounds/victory.wav" }, -- RarityAccent, trying now
 		Combo = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: LuckyMeter
 		Mega = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: MatchWin
 		Daily = { id = 0, fallback = "rbxasset://sounds/victory.wav" }, -- to try: DailyClaim
