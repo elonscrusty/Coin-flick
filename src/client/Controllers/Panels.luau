@@ -107,6 +107,7 @@ local shopHeaders: { [string]: TextLabel } = {} -- one-line captions above the C
 local lastPressed: CardUi? = nil
 
 local boards: Types.Leaderboards = {}
+local eventWeekEnds: number? = nil -- when the weekly board resets (from EventState)
 local boardShown = "flips"
 local boardTabs: { [string]: TextButton } = {}
 local boardRows: { { frame: Frame, medal: TextLabel, name: TextLabel, value: TextLabel } } = {}
@@ -1013,7 +1014,8 @@ local fitBoard: () -> ()
 
 local function renderBoard()
 	local s = State.get()
-	local mine = if s then PanelView.myValue(boardShown, s) else nil
+	local week = PanelView.weekValueOf(boards.weekFlips, player.DisplayName)
+	local mine = if s then PanelView.myValue(boardShown, s, week) else nil
 	local rows = PanelView.boardRows(boardShown, boards[boardShown], player.DisplayName, mine)
 	boardWanted = #rows
 	boardReal = 0
@@ -1041,7 +1043,9 @@ local function renderBoard()
 	fitBoard()
 	if s and myRow then
 		local unit = PanelView.BOARD_UNITS[boardShown]
-		myRow.Text = `YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}`
+		local text = `YOU: {PanelView.myValue(boardShown, s, week)}{if unit ~= "" then " " .. unit else ""}`
+		local clock = PanelView.boardNote(boardShown, eventWeekEnds, os.time())
+		myRow.Text = if clock ~= "" then `{text} • {clock}` else text
 	end
 end
 
@@ -1525,6 +1529,10 @@ function Panels.start()
 	end)
 	GoalsPanel.start(function(show: boolean)
 		tabDots.goals.Visible = show
+	end)
+	ClientNet.event("EventState").OnClientEvent:Connect(function(ev: Types.EventView)
+		eventWeekEnds = ev.weekEndsAt
+		renderBoard()
 	end)
 	ClientNet.event("Leaderboards").OnClientEvent:Connect(function(data: Types.Leaderboards)
 		boards = data

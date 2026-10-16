@@ -49,6 +49,10 @@ local petUis: { [string]: PetUi } = {}
 local giftButton: TextButton
 local timerLabel: TextLabel
 local dailyList: ScrollingFrame
+local playHeader: TextLabel
+local playView: Types.PlayGiftView? = nil
+local playAt = 0
+local playUis: { JobUi } = {}
 local petList: ScrollingFrame
 local dotHook: { fn: (boolean) -> () } = { fn = function() end }
 
@@ -120,6 +124,11 @@ local function buildDaily(list: ScrollingFrame)
 	timerLabel.TextColor3 = Kit.MUTED
 	timerLabel.Parent = list
 
+	playHeader = label({ Text = GiftPetView.PLAY_HEADER, Size = UDim2.new(1, -10, 0, 28), LayoutOrder = 20 }, 22, true)
+	playHeader.TextXAlignment = Enum.TextXAlignment.Left
+	playHeader.Visible = false
+	playHeader.Parent = list
+
 	local claimJob = ClientNet.event("ClaimJob")
 	for slot = 1, 3 do
 		local frame = card(list, `Job{slot}`, JOB_H, 3 + slot)
@@ -187,6 +196,61 @@ local function renderDaily()
 			ui.reward.Text = job.reward
 			ui.bar.fill.BackgroundColor3 = if job.canClaim then Kit.GOLD else Kit.GREEN
 		end
+	end
+end
+
+-- PLAY GIFTS (a few gifts for time played today; rows are made when the first view arrives) ------
+
+local function addPlayRow(slot: number)
+	local frame = card(dailyList, `Play{slot}`, 54, 20 + slot)
+	local title = label({
+		Name = "Title",
+		Position = UDim2.fromOffset(10, 4),
+		Size = UDim2.new(0.6, -10, 0.5, 0),
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, 20, true)
+	title.Parent = frame
+	local reward = label({
+		Name = "Reward",
+		Position = UDim2.new(0, 10, 0.52, 0),
+		Size = UDim2.new(0.6, -10, 0.4, 0),
+		TextXAlignment = Enum.TextXAlignment.Left,
+	}, 16, true)
+	reward.TextColor3 = Kit.MUTED
+	reward.Parent = frame
+	local button = Kit.button("", Kit.GREEN, function() end)
+	button.Name = "Claim"
+	button.AnchorPoint = Vector2.new(1, 0.5)
+	button.Position = UDim2.new(1, -8, 0.5, 0)
+	button.Size = UDim2.new(0.34, -8, 1, -14)
+	button.ZIndex = 8
+	Kit.textLimit(button, 20)
+	button.Parent = frame
+	local claim = ClientNet.event("ClaimPlayGift")
+	guard(dailyList, button, function()
+		claim:FireServer(slot)
+	end)
+	local bar = makeBar(frame, UDim2.fromScale(2, 2), UDim2.fromScale(0, 0), Kit.GREEN) -- unused, keeps JobUi shape
+	bar.track.Visible = false
+	playUis[slot] = { frame = frame, title = title, bar = bar, button = button, reward = reward }
+end
+
+local function renderPlay()
+	local view = playView
+	if not view then
+		return
+	end
+	playHeader.Visible = #view.gifts > 0
+	local rows = GiftPetView.playGiftRows(view, os.time() - playAt)
+	for _, row in rows do
+		if not playUis[row.slot] then
+			addPlayRow(row.slot)
+		end
+		local ui = playUis[row.slot]
+		ui.title.Text = row.text
+		ui.reward.Text = row.reward
+		ui.button.Text = row.button.text
+		Kit.applyLook(ui.button, row.button.look)
 	end
 end
 
@@ -285,7 +349,13 @@ function GiftPets.start(dot: (boolean) -> ())
 	ClientNet.event("DailyState").OnClientEvent:Connect(function(view: Types.DailyView)
 		daily = view
 		renderDaily()
-		dotHook.fn(GiftPetView.dailyDot(view))
+		dotHook.fn(GiftPetView.dailyDot(view, playView))
+	end)
+	ClientNet.event("PlayGiftState").OnClientEvent:Connect(function(view: Types.PlayGiftView)
+		playView = view
+		playAt = os.time()
+		renderPlay()
+		dotHook.fn(GiftPetView.dailyDot(daily, view))
 	end)
 	ClientNet.event("PetState").OnClientEvent:Connect(function(views: { PetRules.PetView })
 		pets = views
@@ -296,6 +366,9 @@ function GiftPets.start(dot: (boolean) -> ())
 			task.wait(1)
 			if daily and dailyList.Visible then
 				timerLabel.Text = GiftPetView.dailyRows(daily, os.time()).timer
+			end
+			if playView and dailyList.Visible then
+				renderPlay()
 			end
 		end
 	end)

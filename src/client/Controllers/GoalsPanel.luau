@@ -6,6 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Types = require(ReplicatedStorage.Shared.Types)
 local GoalsConfig = require(ReplicatedStorage.Shared.GoalsConfig)
 local GoalRules = require(ReplicatedStorage.Shared.Util.Goals)
 local GoalsPanelView = require(ReplicatedStorage.Shared.Util.GoalsPanelView)
@@ -20,6 +21,7 @@ local ROW_H = 62
 local HEAD_H = 28
 local NOTE_H = 24
 local PAGE_H = 54
+local BADGE_H = 54
 
 type LadderUi = { frame: Frame, outline: UIStroke, name: TextLabel, line: TextLabel, button: TextButton }
 type ChallengeUi = { frame: Frame, title: TextLabel, bar: Widgets.Bar, button: TextButton, reward: TextLabel }
@@ -35,6 +37,9 @@ local bookBar: Widgets.Bar
 local bookBonus: TextLabel
 local pageUis: { [string]: PageUi } = {}
 local goalsList: ScrollingFrame
+local badgeHeader: TextLabel
+local badgeGrid: Frame
+local badgeUis: { [string]: { frame: Frame, name: TextLabel, line: TextLabel } } = {}
 
 local function header(list: ScrollingFrame, text: string, order: number): TextLabel
 	local l = label({ Text = text, Size = UDim2.new(1, -10, 0, HEAD_H), LayoutOrder = order }, 22, true)
@@ -147,6 +152,22 @@ local function build(list: ScrollingFrame)
 			{ frame = frame, title = title, bar = bar, button = button, reward = reward }
 	end
 
+	-- Badges: a 2-column grid, filled when BadgeState arrives.
+	badgeHeader = header(list, "BADGES", 40)
+	badgeGrid = Instance.new("Frame")
+	badgeGrid.Name = "BadgeGrid"
+	badgeGrid.LayoutOrder = 41
+	badgeGrid.Size = UDim2.new(1, -10, 0, 0)
+	badgeGrid.AutomaticSize = Enum.AutomaticSize.Y
+	badgeGrid.BackgroundTransparency = 1
+	badgeGrid.ZIndex = 6
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.new(0.5, -4, 0, BADGE_H)
+	grid.CellPadding = UDim2.fromOffset(8, 8)
+	grid.SortOrder = Enum.SortOrder.LayoutOrder
+	grid.Parent = badgeGrid
+	badgeGrid.Parent = list
+
 	-- Coin book.
 	header(list, GoalsPanelView.BOOK_HEADER, 20)
 	local summary = Instance.new("Frame")
@@ -185,6 +206,44 @@ local function build(list: ScrollingFrame)
 		}, 18, true)
 		prize.Parent = frame
 		pageUis[def.id] = { frame = frame, title = title, line = line, prize = prize }
+	end
+end
+
+-- BADGES (cards are made when the first view arrives) ----------------------------------------
+
+local function renderBadges(badges: Types.BadgeView)
+	badgeHeader.Text = GoalsPanelView.badgeHeader(badges)
+	for i, b in GoalsPanelView.badgeCards(badges) do
+		local ui = badgeUis[b.id]
+		if not ui then
+			local frame = Instance.new("Frame")
+			frame.Name = b.id
+			frame.BackgroundColor3 = Kit.CARD
+			frame.ZIndex = 6
+			Kit.corner(frame, 0.18)
+			Kit.stroke(frame, 2)
+			local name = label({
+				Name = "Title",
+				Position = UDim2.fromOffset(8, 4),
+				Size = UDim2.new(1, -16, 0.5, 0),
+			}, 18, true)
+			name.Parent = frame
+			local line = label({
+				Name = "Line",
+				Position = UDim2.new(0, 8, 0.52, 0),
+				Size = UDim2.new(1, -16, 0.4, 0),
+			}, 14, true)
+			line.Parent = frame
+			frame.Parent = badgeGrid
+			ui = { frame = frame, name = name, line = line }
+			badgeUis[b.id] = ui
+		end
+		ui.frame.LayoutOrder = i
+		ui.frame.BackgroundColor3 = if b.earned then Color3.fromRGB(255, 244, 190) else Color3.fromRGB(226, 224, 232)
+		ui.name.Text = if b.earned then `★ {b.name}` else b.name
+		ui.name.TextColor3 = if b.earned then Kit.INK else Kit.MUTED
+		ui.line.Text = b.text
+		ui.line.TextColor3 = Kit.MUTED
 	end
 end
 
@@ -246,6 +305,9 @@ function GoalsPanel.start(dot: (boolean) -> ())
 		receivedAt = os.time()
 		render()
 		dot(GoalsPanelView.dot(goals))
+	end)
+	ClientNet.event("BadgeState").OnClientEvent:Connect(function(badges: Types.BadgeView)
+		renderBadges(badges)
 	end)
 	task.spawn(function()
 		while true do
