@@ -27,6 +27,16 @@ function FlipArc.restRoll(face: unknown): number
 	return if face == "heads" then math.pi / 2 else -math.pi / 2
 end
 
+-- Which cap of the coin points up at a given roll: the Right (+X) face when sin(roll) > 0, else the Left face.
+-- The coin art is "$" on Right and the hat on Left (see Tables.coinFace), so this tells what a player sees.
+FlipArc.FACE_ART = table.freeze({ Right = "$", Left = "hat" })
+function FlipArc.upFace(roll: number): string
+	return if math.sin(roll) > 0 then "Right" else "Left"
+end
+function FlipArc.visibleArt(roll: number): string
+	return FlipArc.FACE_ART[FlipArc.upFace(roll)]
+end
+
 -- How many full spins a flip of `duration` seconds makes (faster flips still spin a lot).
 function FlipArc.spins(duration: number): number
 	return 3 + math.floor(math.max(0, duration) * 2)

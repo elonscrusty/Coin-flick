@@ -296,6 +296,7 @@ return table.freeze({
 	BASE_FLIP_TIME = 1.2,
 	FLIP_TIME_PER_LEVEL = 0.075,
 	MIN_FLIP_TIME = 0.45,
+	LOG_COIN_DRIFT = true, -- warn when a landed coin was more than 0.3 studs off its slot (it is snapped back either way)
 	FLIP_HEIGHT = 6, -- studs a coin jumps at the top of its flip (ZOOM camera fits this)
 	CASH_PER_BIG_LEVEL = 0.5,
 
