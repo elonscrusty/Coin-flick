@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+local Plot = require(script.Parent.Parent.Builders.Plot)
 
 local World = {}
 
@@ -69,6 +70,7 @@ function World.init()
 		Color = Color3.fromRGB(110, 210, 90),
 	})
 	ground.Parent = workspace
+	World.decorate()
 
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "Spawn"
@@ -85,6 +87,64 @@ function World.init()
 	tablesFolder.Parent = workspace
 
 	Players.PlayerRemoving:Connect(World.releasePlot)
+end
+
+-- The park around the yards: a sandy plaza with paths to every yard, trees
+-- between the yards, and a forest + flowers further out. Same every server.
+function World.decorate()
+	local folder = Instance.new("Folder")
+	folder.Name = "Park"
+	local rng = Random.new(7)
+	local SAND = Color3.fromRGB(245, 222, 160)
+	local plaza = makePart({
+		Name = "Plaza",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.2, 46, 46),
+		CFrame = CFrame.new(0, 0.1, 0) * CFrame.Angles(0, 0, math.pi / 2),
+		Color = SAND,
+	})
+	plaza.Parent = folder
+	local inner = 22
+	local outer = Config.PLOT_RING_RADIUS - Config.PLOT_SIZE / 2
+	for slot = 1, Config.MAX_PLOTS do
+		local x, z = TableLayout.plotPosition(slot, Config.MAX_PLOTS, Config.PLOT_RING_RADIUS)
+		local dir = Vector3.new(x, 0, z).Unit
+		local mid = dir * ((inner + outer) / 2) + Vector3.new(0, 0.1, 0)
+		local path = makePart({
+			Name = "Path",
+			Size = Vector3.new(6, 0.2, outer - inner + 2),
+			CFrame = CFrame.lookAt(mid, mid + dir),
+			Color = SAND,
+		})
+		path.Parent = folder
+		-- Two trees in the gap between this yard and the next.
+		local gapAngle = math.atan2(z, x) + math.pi / Config.MAX_PLOTS
+		for _, radius in { Config.PLOT_RING_RADIUS - 6, Config.PLOT_RING_RADIUS + 10 } do
+			local at = Vector3.new(math.cos(gapAngle) * radius, 0, math.sin(gapAngle) * radius)
+			local leaves = Plot.LEAVES[rng:NextInteger(1, #Plot.LEAVES)]
+			Plot.tree(makePart, folder, CFrame.new(at), rng:NextNumber(1.2, 1.6), leaves)
+		end
+	end
+	-- Forest ring outside the yards.
+	for _ = 1, 48 do
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local radius = rng:NextNumber(Config.PLOT_RING_RADIUS + 30, 200)
+		local at = Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+		local leaves = Plot.LEAVES[rng:NextInteger(1, #Plot.LEAVES)]
+		Plot.tree(makePart, folder, CFrame.new(at) * CFrame.Angles(0, angle, 0), rng:NextNumber(1.3, 2.2), leaves)
+	end
+	-- Flower patches.
+	for _ = 1, 40 do
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local radius = rng:NextNumber(Config.PLOT_RING_RADIUS + 22, 190)
+		local center = Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+		local color = Plot.FLOWERS[rng:NextInteger(1, #Plot.FLOWERS)]
+		for _ = 1, 5 do
+			local offset = Vector3.new(rng:NextNumber(-3, 3), 0, rng:NextNumber(-3, 3))
+			Plot.flower(makePart, folder, CFrame.new(center + offset), color)
+		end
+	end
+	folder.Parent = workspace
 end
 
 function World.tablesFolder(): Folder

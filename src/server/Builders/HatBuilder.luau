@@ -113,6 +113,9 @@ function HatBuilder.build(id: string, make: Make): Model?
 	local model = Instance.new("Model")
 	model.Name = "CoinFlickHat"
 	builder(model, make)
+	-- Pivot at the head-top point (not the middle of the hat), so moving and
+	-- scaling keeps the brim sitting on the head.
+	model.WorldPivot = CFrame.new()
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") then
 			part.CanCollide = false

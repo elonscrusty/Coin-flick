@@ -155,16 +155,22 @@ local shownCash = Instance.new("NumberValue")
 local render: (Snapshot) -> ()
 local toastToken = 0
 
+local function anyPanelOpen(): boolean
+	return shopPanel.Visible or resetPanel.Visible or topPanel.Visible
+end
+
 local function toast(text: string, color: Color3?)
 	toastToken += 1
 	local token = toastToken
 	toastLabel.Text = text
 	toastLabel.TextColor3 = color or WHITE
 	toastLabel.Visible = true
-	toastLabel.Position = UDim2.fromScale(0.5, 0.79)
+	-- Below an open panel, else low in the middle (never over coins or cards).
+	local toastY = if anyPanelOpen() then 0.9 else 0.79
+	toastLabel.Position = UDim2.fromScale(0.5, toastY)
 	toastLabel.TextTransparency = 0
 	toastLabel.TextStrokeTransparency = 0.2
-	TweenService:Create(toastLabel, BOUNCY, { Position = UDim2.fromScale(0.5, 0.82) }):Play()
+	TweenService:Create(toastLabel, BOUNCY, { Position = UDim2.fromScale(0.5, toastY + 0.02) }):Play()
 	task.delay(2.6, function()
 		if token ~= toastToken then
 			return
@@ -213,8 +219,13 @@ local function shout(notice: Types.Notice)
 	end)
 end
 
+local onShopOpen: (() -> ())? = nil -- set by buildShop: back to the first tab, scrolled to the top
+
 local function openPanel(panel: Frame)
 	local scale = panel:FindFirstChildOfClass("UIScale")
+	if panel == shopPanel and onShopOpen then
+		onShopOpen()
+	end
 	panel.Visible = true
 	if scale then
 		scale.Scale = 0.6
@@ -232,8 +243,8 @@ local function makePanel(name: string, title: string): (Frame, Frame)
 	local panel = Instance.new("Frame")
 	panel.Name = name
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.55)
-	panel.Size = UDim2.fromScale(0.62, 0.8)
+	panel.Position = UDim2.fromScale(0.5, 0.52)
+	panel.Size = UDim2.fromScale(0.62, 0.74) -- leaves a strip below for toasts
 	panel.BackgroundColor3 = PANEL
 	panel.Visible = false
 	panel.ZIndex = 5
@@ -439,7 +450,7 @@ local function buildShop()
 	local tabs: { [string]: TextButton } = {}
 	tabs = tabRow(
 		body,
-		{ { "upgrades", "🪙 COINS" }, { "helpers", "👷 CREW" }, { "hats", "🎩 HATS" }, { "robux", "💎 MORE" } },
+		{ { "upgrades", "💰 COINS" }, { "helpers", "👷 CREW" }, { "hats", "🎩 HATS" }, { "robux", "💎 MORE" } },
 		function(key)
 			pickTab(tabs, lists, key)
 		end
@@ -540,6 +551,14 @@ local function buildShop()
 	robuxPrice("autoFlip", Config.Products.AutoFlipPassId, Enum.InfoType.GamePass)
 	robuxPrice("helperSlot", Config.Products.ExtraHelperSlotProductId, Enum.InfoType.Product)
 	pickTab(tabs, lists, "upgrades")
+	onShopOpen = function()
+		pickTab(tabs, lists, "upgrades")
+		for _, l in lists do
+			if l:IsA("ScrollingFrame") then
+				l.CanvasPosition = Vector2.zero
+			end
+		end
+	end
 end
 
 -- Top 10 boards ----------------------------------------------------------
@@ -672,8 +691,9 @@ local function buildCheats(parent: ScreenGui)
 	local frame = Instance.new("Frame")
 	frame.Name = "StudioCheats"
 	frame.BackgroundTransparency = 1
-	frame.Position = UDim2.new(0, 8, 0.2, 0)
-	frame.Size = UDim2.fromOffset(90, 250)
+	-- Top-left, under the Roblox menu, clear of the combo counter and thumbstick.
+	frame.Position = UDim2.fromOffset(8, 56)
+	frame.Size = UDim2.fromOffset(72, 190)
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 6)
 	layout.Parent = frame
@@ -681,7 +701,7 @@ local function buildCheats(parent: ScreenGui)
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)
-		b.Size = UDim2.fromOffset(90, 40)
+		b.Size = UDim2.fromOffset(72, 32)
 		b.Parent = frame
 	end
 	frame.Parent = parent
@@ -765,7 +785,7 @@ render = function(s: Snapshot)
 			card.buy.Text = "WEAR"
 			card.buy.BackgroundColor3 = BLUE
 		else
-			card.level.Text = "Buy with hat points from 💀 flips"
+			card.level.Text = "Buy with hat points from 🎩 flips"
 			card.buy.Text = `🎩 {def.cost}`
 			card.buy.BackgroundColor3 = if s.hatPoints >= def.cost then GREEN else GREY
 		end
@@ -778,7 +798,7 @@ render = function(s: Snapshot)
 			card.buy.BackgroundColor3 = BLUE
 		elseif id <= 0 then
 			card.buy.Text = "SOON"
-			card.buy.BackgroundColor3 = GREY
+			card.buy.BackgroundColor3 = Color3.fromRGB(185, 160, 235)
 		else
 			card.buy.Text = prices[key] or "BUY"
 			card.buy.BackgroundColor3 = GREEN
@@ -819,7 +839,8 @@ render = function(s: Snapshot)
 
 	resetBody.Text =
 		`You LOSE: cash and upgrades\nYou KEEP: helper guys and 🎩\nYou GET: cash x{s.resetBonus} forever + a new table!`
-	resetButton.BackgroundColor3 = if s.tableFull then ORANGE else GREY
+	resetButton.BackgroundColor3 = if s.tableFull then ORANGE else Color3.fromRGB(205, 150, 90)
+	resetButton.Text = if s.tableFull then "🔄\nRESET!" else `🔄\n{s.coinCount}/{Config.MAX_COINS}`
 	-- Glow the RESET button's outline when the table is full. (Pulsing the
 	-- outline, not the size, so the press-pop animation can't cancel it.)
 	local outline = resetButton:FindFirstChildOfClass("UIStroke")
@@ -895,6 +916,10 @@ function Hud.init()
 		Text = "Tap a coin to flip it!",
 	})
 	textLimit(infoLabel, 20)
+	-- Dark see-through strip so the white text reads on bright sky.
+	infoLabel.BackgroundColor3 = INK
+	infoLabel.BackgroundTransparency = 0.45
+	corner(infoLabel, 0.5)
 	infoLabel.Parent = gui
 
 	toastLabel = label({
@@ -928,14 +953,17 @@ function Hud.init()
 		TextColor3 = Color3.fromRGB(255, 220, 60),
 		Visible = false,
 	})
-	textLimit(boostLabel, 24)
+	textLimit(boostLabel, 20)
+	boostLabel.BackgroundColor3 = INK
+	boostLabel.BackgroundTransparency = 0.45
+	corner(boostLabel, 0.5)
 	boostLabel.Parent = gui
 
 	-- Left side, above the phone thumbstick.
 	comboLabel = label({
 		Name = "Combo",
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 14, 0.38, 0),
+		Position = UDim2.new(0, 14, 0.56, 0),
 		Size = UDim2.fromScale(0.16, 0.16),
 		Visible = false,
 		ZIndex = 9,
@@ -1013,16 +1041,22 @@ function Hud.start()
 			showCombo(ev.combo)
 		end
 	end)
+	local megaText = ""
 	ClientNet.event("MegaState").OnClientEvent:Connect(function(state: Types.MegaState)
 		boostEnds = os.clock() + state.boostLeft
+		megaText = `🌟 Mega coin {state.taps}/{state.goal}  •  tap it together!`
 	end)
 	task.spawn(function()
 		while true do
 			local left = math.ceil(boostEnds - os.clock())
-			boostLabel.Visible = left > 0
 			if left > 0 then
 				boostLabel.Text = `⚡ MEGA BOOST: 2x CASH  {left // 60}:{string.format("%02d", left % 60)}`
+				boostLabel.TextColor3 = Color3.fromRGB(255, 220, 60)
+			else
+				boostLabel.Text = megaText
+				boostLabel.TextColor3 = WHITE
 			end
+			boostLabel.Visible = boostLabel.Text ~= ""
 			task.wait(0.25)
 		end
 	end)
@@ -1037,7 +1071,15 @@ function Hud.start()
 			toast(notice.text, Color3.fromRGB(255, 220, 60))
 		elseif notice.kind == "bought" then
 			Sounds.play("Buy", 0.6)
-			toast(notice.text, Color3.fromRGB(150, 255, 150))
+			if anyPanelOpen() then
+				-- The card already changed; a toast here would cover the cards.
+				local panelScale = shopPanel:FindFirstChildOfClass("UIScale")
+				if panelScale then
+					popScale(panelScale, 1.03)
+				end
+			else
+				toast(notice.text, Color3.fromRGB(150, 255, 150))
+			end
 		else
 			toast(notice.text)
 		end
