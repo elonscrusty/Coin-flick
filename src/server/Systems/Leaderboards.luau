@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local WeeklyBoard = require(ReplicatedStorage.Shared.Util.WeeklyBoard)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 
@@ -19,12 +20,40 @@ type Profile = Types.Profile
 local Leaderboards = {}
 
 local stores: { [string]: OrderedDataStore } = {}
+local storePrefix = ""
 local useStores = false
 local latest: Types.Leaderboards = {}
 local names: { [number]: string } = {}
 
+local function isWeekly(key: string): boolean
+	return table.find(Config.WEEKLY_LEADERBOARDS, key) ~= nil
+end
+
+-- Every board's key, weekly ones last.
+local function allKeys(): { string }
+	local keys = table.clone(Config.LEADERBOARDS) :: { string }
+	for _, key in Config.WEEKLY_LEADERBOARDS do
+		table.insert(keys, key)
+	end
+	return keys
+end
+
+-- Weekly boards are a new ordered store every Monday (UTC), so they start empty on their own.
+local function storeFor(key: string): OrderedDataStore
+	if isWeekly(key) then
+		return DataStoreService:GetOrderedDataStore(
+			WeeklyBoard.storeName(storePrefix, key, WeeklyBoard.week(os.time()))
+		)
+	end
+	return stores[key]
+end
+
 local function valueOf(profile: Profile, key: string): number
-	if key == "flips" then
+	if key == "weekFlips" then
+		local week = WeeklyBoard.week(os.time())
+		WeeklyBoard.sync(profile.week, week, profile.stats.flips)
+		return WeeklyBoard.score(profile.week, week, profile.stats.flips)
+	elseif key == "flips" then
 		return profile.stats.flips
 	elseif key == "biggestFlip" then
 		return profile.stats.biggestFlip
@@ -54,11 +83,11 @@ local function writeAll()
 	for _, player in Players:GetPlayers() do
 		local profile = PlayerData.get(player)
 		if profile then
-			for _, key in Config.LEADERBOARDS do
+			for _, key in allKeys() do
 				local value = Economy.leaderboardValue(valueOf(profile, key))
 				if value > 0 then
 					local ok, err = pcall(function()
-						stores[key]:SetAsync(tostring(player.UserId), value)
+						storeFor(key):SetAsync(tostring(player.UserId), value)
 					end)
 					if not ok then
 						warn(`[Leaderboards] write {key} failed: {err}`)
@@ -72,7 +101,7 @@ end
 
 local function readStore(key: string): { Types.LeaderRow }?
 	local ok, result = pcall(function()
-		return stores[key]:GetSortedAsync(false, Config.LEADERBOARD_SIZE):GetCurrentPage()
+		return storeFor(key):GetSortedAsync(false, Config.LEADERBOARD_SIZE):GetCurrentPage()
 	end)
 	if not ok then
 		warn(`[Leaderboards] read {key} failed: {result}`)
@@ -107,7 +136,7 @@ local function readLocal(key: string): { Types.LeaderRow }
 end
 
 local function refresh()
-	for _, key in Config.LEADERBOARDS do
+	for _, key in allKeys() do
 		local rows = if useStores then readStore(key) else readLocal(key)
 		if rows then
 			latest[key] = rows
@@ -119,17 +148,30 @@ end
 function Leaderboards.init()
 	useStores = not RunService:IsStudio() or Config.STUDIO_USE_REAL_TEST_STORE
 	if useStores then
-		local prefix = if RunService:IsStudio() then "CoinFlick_STUDIO_Top_" else "CoinFlick_Top_"
+		storePrefix = if RunService:IsStudio() then "CoinFlick_STUDIO_Top_" else "CoinFlick_Top_"
 		for _, key in Config.LEADERBOARDS do
-			stores[key] = DataStoreService:GetOrderedDataStore(`{prefix}{key}_v1`)
+			stores[key] = DataStoreService:GetOrderedDataStore(`{storePrefix}{key}_v1`)
 		end
 	end
-	PlayerData.onLoaded(function(player: Player)
+	PlayerData.onLoaded(function(player: Player, profile: Profile)
+		valueOf(profile, "weekFlips") -- starts this week's baseline
 		Net.event("Leaderboards"):FireClient(player, latest)
 	end)
 end
 
 function Leaderboards.start()
+	-- Start a new week for everyone online the moment Monday (UTC) comes.
+	task.spawn(function()
+		while true do
+			task.wait(10)
+			for _, player in Players:GetPlayers() do
+				local profile = PlayerData.get(player)
+				if profile then
+					valueOf(profile, "weekFlips")
+				end
+			end
+		end
+	end)
 	task.wait(10) -- let the first players load
 	if useStores then
 		task.spawn(function()

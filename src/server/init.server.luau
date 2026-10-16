@@ -18,7 +18,13 @@ local ORDER = {
 	"Robux",
 	"Leaderboards",
 	"Daily",
+<<<<<<< HEAD
 	"Goals",
+=======
+	"PlayGifts",
+	"Badges",
+	"Events",
+>>>>>>> origin/claude/project-thread-exhqff
 	"Friends",
 	"Cheats",
 }
