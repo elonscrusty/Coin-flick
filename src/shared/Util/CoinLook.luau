@@ -16,7 +16,7 @@ export type Look = {
 	sparkle: { Color3 }, -- sparkle colors, first to last
 	sparkleSize: number,
 	landBurst: number, -- sparkles thrown when the coin lands on heads
-	trail: number, -- sparkles per second while 
+	trail: number, -- sparkles per second while
 	outline: Color3?, -- dark outline drawn around the coin in the air (stays on the coin, never lights the table)
 	rainbow: boolean, -- color cycles through the rainbow while in the air
 }
