@@ -25,8 +25,9 @@ function HudText.info(cashPerHeads: number, headsChance: number): string
 	return `Heads = ${HudText.pay(cashPerHeads)}\nLuck {Format.percent(headsChance)}`
 end
 
--- Boost strip: the 2x timer while it runs, the mega coin count once someone
--- has started tapping it, else nothing (strip hidden).
+-- Right-band chip: the 2x timer while it runs, else the mega coin count once
+-- someone has started tapping it, else nothing (chip hidden). The count is
+-- shown here only; the 3D sign says just "tap it".
 function HudText.boost(taps: number, goal: number, boostLeft: number): string
 	local left = math.ceil(boostLeft)
 	if left > 0 then

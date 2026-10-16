@@ -215,6 +215,15 @@ render = function(s: Snapshot)
 	local full = s.tableFull
 	resetButton.BackgroundColor3 = if full then ORANGE else Color3.fromRGB(214, 120, 40)
 	resetBar.Visible = not full
+	resetIcon.Visible = full
+	if full then
+		resetIcon.Size = UDim2.fromScale(1, 0.55)
+		resetWord.Position = UDim2.fromScale(0, 0.55)
+		resetWord.Size = UDim2.fromScale(1, 0.4)
+	else
+		resetWord.Position = UDim2.fromScale(0, 0.04)
+		resetWord.Size = UDim2.fromScale(1, 0.42)
+	end
 	resetFill.Size =
 		UDim2.fromScale(if s.coinCount <= 0 then 0 else math.clamp(s.coinCount / Config.MAX_COINS, 0.12, 1), 1)
 	resetCount.Text = HudText.resetCount(s.coinCount, Config.MAX_COINS)
@@ -235,7 +244,7 @@ render = function(s: Snapshot)
 	-- Glow the RESET button's outline when the table is full. (Pulsing the
 	-- outline, not the size, so the press-pop animation can't cancel it.)
 	local outline = resetButton:FindFirstChildOfClass("UIStroke")
-	if s.tableFull and not resetPulse and outline then
+	if s.tableFull and not resetPulse and outline and not anyPanelOpen() then
 		local tween = TweenService:Create(
 			outline,
 			TweenInfo.new(0.45, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
@@ -433,15 +442,12 @@ function Hud.init()
 		end
 	end)
 	resetButton, resetIcon, resetWord = resetB, resetI, resetW
-	-- Icon on top, word in the middle, a gold progress bar with the coin count
-	-- along the bottom.
-	resetIcon.Size = UDim2.fromScale(1, 0.44)
-	resetWord.Position = UDim2.fromScale(0, 0.44)
-	resetWord.Size = UDim2.fromScale(1, 0.26)
+	-- Filling: the word sits on top and a roomy gold bar with the coin count
+	-- fills the bottom. Ready (full): the spinning icon and RESET! take over.
 	resetBar = Instance.new("Frame")
 	resetBar.Name = "Bar"
-	resetBar.Position = UDim2.fromScale(0.02, 0.74)
-	resetBar.Size = UDim2.fromScale(0.96, 0.24)
+	resetBar.Position = UDim2.fromScale(0.04, 0.5)
+	resetBar.Size = UDim2.fromScale(0.92, 0.42)
 	resetBar.BackgroundColor3 = INK
 	resetBar.BackgroundTransparency = 0.25
 	resetBar.ZIndex = 2
@@ -456,7 +462,7 @@ function Hud.init()
 	corner(resetFill, 0.5)
 	resetFill.Parent = resetBar
 	resetCount = label({ Name = "Count", Size = UDim2.fromScale(1, 1), ZIndex = 4 })
-	textLimit(resetCount, 16)
+	textLimit(resetCount, 20)
 	resetCount.Parent = resetBar
 	local topButton = sideButton("🏆", "TOP", PURPLE, function()
 		Sounds.play("Tap", 0.4)
@@ -483,6 +489,21 @@ function Hud.init()
 	Panels.onOpenChanged(function(open: boolean)
 		if cheatFrame then
 			cheatFrame.Visible = not open
+		end
+		-- The RESET glow would shine through the dim, so pause it behind panels.
+		if open and resetPulse then
+			resetPulse:Cancel()
+			resetPulse = nil
+			local outline = resetButton:FindFirstChildOfClass("UIStroke")
+			if outline then
+				outline.Thickness = 3
+				outline.Color = INK
+			end
+		elseif not open then
+			local s = State.get()
+			if s then
+				render(s)
+			end
 		end
 		if open then
 			infoLabel.Visible = false

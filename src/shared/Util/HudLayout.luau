@@ -141,25 +141,19 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 		cheats = rect(left + (right - left - rowW) / 2, h - 8 - cheatH, rowW, cheatH)
 	end
 
-	-- While a panel is open, toasts go low in the middle (between the
-	-- thumbstick and the jump button, above the Studio test row).
-	local toastH = clamp(44 * s, 40, 64)
-	local lowLeft = if reserved.thumbstick then reserved.thumbstick.w + 8 else 12
-	local lowRight = if reserved.jump then reserved.jump.x - 8 else side.x - 12
-	local lowBottom = if cheats.y > h / 2 then cheats.y - gap else h - 8
-	local lowW = math.min(520 * s, lowRight - lowLeft)
-	local toastLow = rect(lowLeft + (lowRight - lowLeft - lowW) / 2, lowBottom - toastH, lowW, toastH)
+	-- While a panel is open the left band under the pills is free (the panel
+	-- starts to its right), so toasts use the same message spot.
+	local toastLow = rect(msg.x, msg.y, msg.w, msg.h)
 
-	-- Room for shop / reset / top 10 panels: between the two side bands (right
-	-- of the pills and cards, left of the side buttons and combo), under
-	-- Roblox's top bar, above the low toast. Touch controls hide while a panel
-	-- is open, so it may reach over them. Panels pop in with a little
-	-- overshoot, so the box is 5% smaller each side than the free gap.
+	-- Panels are modal (the screen is dimmed), so they take nearly all the
+	-- room between the two side bands: right of the pills and cards, left of
+	-- the side buttons and combo, from just under Roblox's top bar to 4% above
+	-- the bottom. Touch controls hide while one is open. A 2% side inset
+	-- leaves room for the pop-in.
 	local panelLeft = x0 + colW + 10
-	local panelTop = TOPBAR_H + gap
+	local panelTop = TOPBAR_H + gap + h * 0.02
 	local rawW = side.x - 10 - panelLeft
-	local rawH = toastLow.y - gap - panelTop
-	local panel = rect(panelLeft + rawW * 0.05, panelTop + rawH * 0.05, rawW * 0.9, rawH * 0.9)
+	local panel = rect(panelLeft + rawW * 0.02, panelTop, rawW * 0.96, h * 0.96 - panelTop)
 
 	return {
 		scale = s,
