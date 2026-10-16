@@ -40,10 +40,18 @@ describe("TableLayout", function()
 			end
 		end
 	end)
-	it("tables don't overlap each other", function()
+	it("player yards don't overlap each other (even at the corners)", function()
 		local x1, z1 = TableLayout.plotPosition(1, Config.MAX_PLOTS, Config.PLOT_RING_RADIUS)
 		local x2, z2 = TableLayout.plotPosition(2, Config.MAX_PLOTS, Config.PLOT_RING_RADIUS)
 		local gap = math.sqrt((x1 - x2) ^ 2 + (z1 - z2) ^ 2)
-		expect(gap).toBeAtLeast(Config.TABLE_RADIUS * 2 + 12)
+		local halfDiagonal = Config.PLOT_SIZE / 2 * math.sqrt(2) + 1
+		expect(gap).toBeAtLeast(halfDiagonal * 2)
+	end)
+	it("table and walking helpers fit inside the yard", function()
+		local helperOrbit = Config.TABLE_RADIUS + 2 + 1 -- orbit radius + helper size
+		expect(helperOrbit).toBeAtMost(Config.PLOT_SIZE / 2 - 2)
+	end)
+	it("the whole map fits on the ground", function()
+		expect(Config.PLOT_RING_RADIUS + Config.PLOT_SIZE).toBeAtMost(256)
 	end)
 end)

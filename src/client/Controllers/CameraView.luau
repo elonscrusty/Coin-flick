@@ -1,6 +1,6 @@
 --!strict
--- "Table view": the camera looks down at your own table so coins are big,
--- easy tap targets on a phone. The VIEW button switches back to normal.
+-- Normal Roblox 3D camera by default (behind your avatar). The ZOOM button
+-- swoops to a close "table view" of your own coins, great for fast tapping.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -8,7 +8,7 @@ local RunService = game:GetService("RunService")
 local CameraView = {}
 
 local player = Players.LocalPlayer
-local enabled = true
+local enabled = false
 local shakeUntil = 0
 local shakePower = 0
 local rng = Random.new()
@@ -46,8 +46,8 @@ local function update()
 			local back = math.max(1, 1.45 / aspect)
 			camera.CameraType = Enum.CameraType.Scriptable
 			camera.FieldOfView = 55
-			local eye = center + outward * (15 * back) + Vector3.new(0, 20 * back, 0)
-			camera.CFrame = CFrame.lookAt(eye, center + outward * 1.5)
+			local eye = center - outward * (15 * back) + Vector3.new(0, 18 * back, 0)
+			camera.CFrame = CFrame.lookAt(eye, center - outward * 1.5)
 		end
 	end
 	if os.clock() < shakeUntil then

@@ -535,9 +535,10 @@ function Hud.init()
 		end
 	end)
 	resetButton.Parent = side
-	local viewButton = sideButton(3, "👀\nVIEW", BLUE, function()
+	local viewButton: TextButton
+	viewButton = sideButton(3, "🔍\nZOOM", BLUE, function()
 		local tableView = CameraView.toggle()
-		toast(if tableView then "Table view" else "Walk around view")
+		viewButton.Text = if tableView then "🏃\nWALK" else "🔍\nZOOM"
 	end)
 	viewButton.Parent = side
 	side.Parent = gui

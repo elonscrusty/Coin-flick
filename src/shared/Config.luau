@@ -90,7 +90,8 @@ local TableLooks: { TableLook } = {
 return table.freeze({
 	-- World
 	MAX_PLOTS = 8,
-	PLOT_RING_RADIUS = 46,
+	PLOT_RING_RADIUS = 72,
+	PLOT_SIZE = 36, -- each player's square yard
 	TABLE_RADIUS = 9,
 	TABLE_HEIGHT = 3.6,
 

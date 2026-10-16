@@ -14,6 +14,7 @@ local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
+local Plot = require(script.Parent.Parent.Builders.Plot)
 local GameLogic = require(script.Parent.Parent.Util.GameLogic)
 local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
 
@@ -220,25 +221,10 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 		leg.Parent = model
 	end
 
-	-- Name sign above the table.
-	local sign = Instance.new("BillboardGui")
-	sign.Name = "Sign"
-	sign.Size = UDim2.fromScale(10, 2)
-	sign.StudsOffsetWorldSpace = Vector3.new(0, 7, 0)
-	sign.MaxDistance = 140
-	sign.LightInfluence = 0
-	sign.Adornee = top
-	sign.Parent = top
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.FredokaOne
-	label.TextScaled = true
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.TextStrokeTransparency = 0
-	label.TextStrokeColor3 = Color3.fromRGB(60, 40, 20)
-	label.Text = `{player.DisplayName}'s table`
-	label.Parent = sign
+	-- The yard around the table (fence, name arch, trees).
+	local center, outward = World.plotCenter(state.slot)
+	local plotCFrame = CFrame.lookAt(center, center - outward)
+	Plot.build(World.makePart, model, plotCFrame, look, player.DisplayName, profile.resets)
 
 	state.coins = {}
 	local count = Economy.coinCount(profile)
@@ -325,7 +311,8 @@ local function placeCharacter(player: Player)
 	end
 	local _, outward = World.plotCenter(state.slot)
 	local ground = state.center - Vector3.new(0, Config.TABLE_HEIGHT, 0)
-	local standAt = ground + outward * (Config.TABLE_RADIUS + 5) + Vector3.new(0, 3, 0)
+	-- Inside the yard, between the entrance and the table, facing the table.
+	local standAt = ground - outward * (Config.TABLE_RADIUS + 6) + Vector3.new(0, 3, 0)
 	character:PivotTo(CFrame.lookAt(standAt, Vector3.new(ground.X, standAt.Y, ground.Z)))
 end
 
