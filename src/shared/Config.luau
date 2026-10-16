@@ -170,7 +170,7 @@ local Rarities: { RarityDef } = {
 		name = "SILVER",
 		chance = 1 / 20,
 		mult = 3,
-		color = Color3.fromRGB(178, 194, 216),
+		color = Color3.fromRGB(195, 220, 255),
 		grow = 1.1,
 		shout = false,
 	},
