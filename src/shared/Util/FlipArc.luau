@@ -54,4 +54,20 @@ function FlipArc.shadowFade(height: number, peak: number?): number
 	return 0.45 + 0.4 * math.clamp(height / top, 0, 1)
 end
 
+-- The mega coin stands on its edge with its faces along world Z. Turning it by this yaw (about
+-- its own up axis) points a face at a viewer standing (dx, dz) away, so it is never seen edge-on.
+function FlipArc.megaFacing(dx: number, dz: number): number
+	if dx == 0 and dz == 0 then
+		return 0
+	end
+	return math.atan2(-dx, -dz)
+end
+
+-- Extra turn of the mega coin `u` (0..1) of the way through its big jump: three fast turns that
+-- ease out and end exactly on a full turn, so it lands facing the viewer again.
+function FlipArc.megaSpin(u: number): number
+	local c = math.clamp(u, 0, 1)
+	return math.pi * 6 * (1 - (1 - c) * (1 - c))
+end
+
 return FlipArc

@@ -126,6 +126,12 @@ local function faceTable()
 	-- sign are behind the camera and not under the top bar.
 	local eye = root.Position - outward * 0.5 + Vector3.new(0, 9, 0)
 	camera.CFrame = CFrame.lookAt(eye, center)
+	-- The Roblox camera script takes over on its next frame; set it again then.
+	task.defer(function()
+		if not enabled then
+			camera.CFrame = CFrame.lookAt(eye, center)
+		end
+	end)
 end
 
 function CameraView.init()
