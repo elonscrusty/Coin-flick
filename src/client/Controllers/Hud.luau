@@ -101,6 +101,7 @@ local comboToken = 0
 local prices: { [string]: string } = {} -- live Robux prices from Roblox
 local layout: HudLayout.Layout = HudLayout.compute(844, 390, true) -- redone in applyLayout
 local cheatFrame: Frame? = nil
+local layoutListeners: { (HudLayout.Layout) -> () } = {}
 
 local shownCash = Instance.new("NumberValue")
 local render: (Snapshot) -> ()
@@ -646,7 +647,16 @@ local function buildCheats(parent: ScreenGui)
 	layoutList.Padding = UDim.new(0, HudLayout.GAP)
 	layoutList.SortOrder = Enum.SortOrder.LayoutOrder
 	layoutList.Parent = frame
-	for i, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "MEGA", "mega" }, { "WIPE", "wipe" } } do
+	local items = {
+		{ "+1M", "cash" },
+		{ "FILL", "fill" },
+		{ "RARE", "rare" },
+		{ "MEGA", "mega" },
+		{ "AWAY", "away" },
+		{ "WIPE", "wipe" },
+	}
+	assert(#items == HudLayout.CHEATS, "HudLayout.CHEATS must match the test buttons")
+	for i, item in items do
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)
@@ -859,7 +869,7 @@ local function applyLayout()
 			list.FillDirection = if row then Enum.FillDirection.Horizontal else Enum.FillDirection.Vertical
 			list.Padding = UDim.new(0, HudLayout.GAP * s)
 		end
-		local count = 5
+		local count = HudLayout.CHEATS
 		for _, b in cheatFrame:GetChildren() do
 			if b:IsA("TextButton") then
 				b.Size = if row
@@ -867,6 +877,10 @@ local function applyLayout()
 					else UDim2.new(1, 0, 1 / count, -HudLayout.GAP * s)
 			end
 		end
+	end
+
+	for _, fn in layoutListeners do
+		task.spawn(fn, layout)
 	end
 
 	-- Panels: centered in the free panel box, never bigger than it.
@@ -880,6 +894,17 @@ local function applyLayout()
 			cap.MinSize = Vector2.new(math.min(300, box.w), math.min(210, box.h))
 		end
 	end
+end
+
+-- Current HUD slots (toast, shout, panel box...) for other screen code.
+function Hud.getLayout(): HudLayout.Layout
+	return layout
+end
+
+-- Called with the new slots whenever the screen size changes.
+function Hud.onLayout(fn: (HudLayout.Layout) -> ())
+	table.insert(layoutListeners, fn)
+	fn(layout)
 end
 
 function Hud.init()

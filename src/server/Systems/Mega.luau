@@ -27,6 +27,7 @@ local flipping = false
 local dirty = true
 
 local GOLD = Color3.fromRGB(255, 200, 40)
+local DEBUG_LEFTOVER = 3 -- Studio MEGA button stops this many taps short first
 
 local function goal(): number
 	return Economy.megaGoal(#Players:GetPlayers())
@@ -158,6 +159,11 @@ end
 -- Studio test button: flip the mega coin now (this player counts as a helper).
 function Mega.debugFlip(player: Player)
 	if flipping then
+		return
+	end
+	if MegaCoin.debugStep(counter.taps, goal(), DEBUG_LEFTOVER) == "charge" then
+		counter.taps = goal() - DEBUG_LEFTOVER
+		dirty = true
 		return
 	end
 	counter:tap(player.UserId, 1)

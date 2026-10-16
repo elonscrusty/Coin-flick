@@ -37,12 +37,16 @@ function World.init()
 	Lighting.EnvironmentDiffuseScale = 0.5
 	Lighting.EnvironmentSpecularScale = 0.5
 
+	-- Cartoon sky: a thick bright-blue haze paints over the realistic default
+	-- skybox and its clouds (no sky pictures needed). Tuned in Config.Sky.
+	local sky = Config.Sky
 	local atmosphere = Instance.new("Atmosphere")
-	atmosphere.Density = 0.22
-	atmosphere.Haze = 0
-	atmosphere.Glare = 0.2
-	atmosphere.Color = Color3.fromRGB(200, 230, 255)
-	atmosphere.Decay = Color3.fromRGB(120, 180, 255)
+	atmosphere.Density = sky.density
+	atmosphere.Offset = sky.offset
+	atmosphere.Haze = sky.haze
+	atmosphere.Glare = 0
+	atmosphere.Color = sky.color
+	atmosphere.Decay = sky.decay
 	atmosphere.Parent = Lighting
 
 	local bloom = Instance.new("BloomEffect")
@@ -56,12 +60,7 @@ function World.init()
 	color.Contrast = 0.08
 	color.Parent = Lighting
 
-	local terrain = workspace.Terrain
-	local clouds = Instance.new("Clouds")
-	clouds.Cover = 0.45
-	clouds.Density = 0.6
-	clouds.Color = Color3.fromRGB(255, 255, 255)
-	clouds.Parent = terrain
+	-- No realistic 3D clouds (they looked off-style next to the chunky cartoon world).
 
 	local ground = makePart({
 		Name = "Ground",
@@ -144,7 +143,66 @@ function World.decorate()
 			Plot.flower(makePart, folder, CFrame.new(center + offset), color)
 		end
 	end
+	-- Bushes and chunky rocks just outside the yards, so the field is never empty.
+	for _ = 1, 70 do
+		local angle = rng:NextNumber(0, math.pi * 2)
+		local radius = rng:NextNumber(Config.PLOT_RING_RADIUS + Config.PLOT_SIZE / 2 + 4, 150)
+		local at = CFrame.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
+			* CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
+		if rng:NextNumber() < 0.6 then
+			World.bush(folder, at, rng:NextNumber(1, 1.8), Plot.LEAVES[rng:NextInteger(1, #Plot.LEAVES)])
+		else
+			World.rock(folder, at, rng:NextNumber(1.2, 3), rng)
+		end
+	end
+	-- Rolling green hills all round the edge close off the horizon.
+	for i = 1, 26 do
+		local angle = (i / 26) * math.pi * 2 + rng:NextNumber(-0.08, 0.08)
+		local radius = rng:NextNumber(205, 235)
+		local size = rng:NextNumber(60, 95)
+		local hill = makePart({
+			Name = "Hill",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * size,
+			CFrame = CFrame.new(math.cos(angle) * radius, -size * 0.3, math.sin(angle) * radius),
+			Color = if i % 2 == 0 then Color3.fromRGB(95, 200, 85) else Color3.fromRGB(125, 215, 80),
+			CastShadow = false,
+		})
+		hill.Parent = folder
+	end
 	folder.Parent = workspace
+end
+
+-- A round, chunky bush: three squashed balls.
+function World.bush(parent: Instance, base: CFrame, size: number, color: Color3)
+	for _, piece in { { 0, 0, 2.2 }, { 1.1, 0.2, 1.6 }, { -1, 0.1, 1.7 } } do
+		local ball = makePart({
+			Name = "Bush",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * piece[3] * size,
+			CFrame = base * CFrame.new(piece[1] * size, piece[3] * size * 0.35 + piece[2], 0),
+			Color = color,
+			CanCollide = false,
+		})
+		ball.Parent = parent
+	end
+end
+
+-- A low-poly rock: a few tilted grey blocks, flat-shaded.
+function World.rock(parent: Instance, base: CFrame, size: number, rng: Random)
+	local greys = { Color3.fromRGB(170, 175, 185), Color3.fromRGB(150, 155, 168), Color3.fromRGB(195, 198, 205) }
+	for i = 1, 3 do
+		local s = size * (1.3 - i * 0.25)
+		local block = makePart({
+			Name = "Rock",
+			Size = Vector3.new(s * 1.4, s, s * 1.1),
+			CFrame = base
+				* CFrame.new((i - 2) * size * 0.6, s * 0.35, rng:NextNumber(-0.3, 0.3) * size)
+				* CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, math.pi), rng:NextNumber(-0.3, 0.3)),
+			Color = greys[i],
+		})
+		block.Parent = parent
+	end
 end
 
 function World.tablesFolder(): Folder

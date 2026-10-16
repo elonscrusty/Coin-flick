@@ -7,9 +7,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
+local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local CameraView = require(script.Parent.CameraView)
@@ -33,6 +35,10 @@ type Anim = {
 	restSize: Vector3,
 	restColor: Color3,
 	restMaterial: Enum.Material,
+	shadow: BasePart?,
+	restReflectance: number,
+	restMarks: { [Instance]: Color3 }, -- face marks/rims and their resting colors
+	dressed: boolean,
 }
 
 local FlipFx = {}
@@ -40,7 +46,7 @@ local FlipFx = {}
 local player = Players.LocalPlayer
 local active: { [BasePart]: Anim } = {}
 local POP_INFO = TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local MAIN = 0.8 -- share of the flip spent in the air before the little bounce
+local MAIN = FlipArc.MAIN
 local OTHERS_MAX_DISTANCE = 220
 
 local function rollFor(face: unknown): number
@@ -49,6 +55,75 @@ end
 
 local function easeOut(u: number): number
 	return 1 - (1 - u) ^ 3
+end
+
+-- Flight extras (made on this client only): a soft glow trail and a shadow
+-- on the table that shrinks as the coin goes up.
+local fxFolder: Folder? = nil
+local function fxParent(): Folder
+	if fxFolder and fxFolder.Parent then
+		return fxFolder
+	end
+	local f = Instance.new("Folder")
+	f.Name = "CoinFlickFx"
+	f.Parent = workspace
+	fxFolder = f
+	return f
+end
+
+local function trailOn(coin: BasePart, on: boolean)
+	local trail = coin:FindFirstChild("FlipTrail")
+	if not trail then
+		if not on then
+			return
+		end
+		-- Attachments on the spin axis, so the ribbon stays smooth while the coin spins.
+		local r = coin.Size.Y * 0.35
+		local a0 = Instance.new("Attachment")
+		a0.Name = "TrailA"
+		a0.Position = Vector3.new(0, 0, -r)
+		a0.Parent = coin
+		local a1 = Instance.new("Attachment")
+		a1.Name = "TrailB"
+		a1.Position = Vector3.new(0, 0, r)
+		a1.Parent = coin
+		local t = Instance.new("Trail")
+		t.Name = "FlipTrail"
+		t.Attachment0 = a0
+		t.Attachment1 = a1
+		t.Lifetime = 0.22
+		t.LightEmission = 0.7
+		t.FaceCamera = true
+		t.Color = ColorSequence.new(Color3.fromRGB(255, 245, 170), Color3.fromRGB(255, 200, 60))
+		t.Transparency = NumberSequence.new(0.25, 1)
+		t.WidthScale = NumberSequence.new(1, 0.2)
+		t.Parent = coin
+		trail = t
+	end
+	if trail and trail:IsA("Trail") then
+		trail.Enabled = on
+	end
+end
+
+local function makeShadow(coin: BasePart, base: Vector3): BasePart
+	local d = coin.Size.Y
+	local shadow = Instance.new("Part")
+	shadow.Name = "CoinShadow"
+	shadow.Shape = Enum.PartType.Cylinder
+	shadow.Anchored = true
+	shadow.CanCollide = false
+	shadow.CanQuery = false
+	shadow.CanTouch = false
+	shadow.CastShadow = false
+	shadow.Material = Enum.Material.SmoothPlastic
+	shadow.Color = Color3.fromRGB(40, 25, 15)
+	shadow.Transparency = FlipArc.shadowFade(0)
+	shadow.Size = Vector3.new(0.04, d, d)
+	-- Just above the table top (the coin's rest centre is half a coin above it).
+	shadow.CFrame = CFrame.new(base - Vector3.new(0, Config.COIN_THICKNESS / 2 - 0.03, 0))
+		* CFrame.Angles(0, 0, math.pi / 2)
+	shadow.Parent = fxParent()
+	return shadow
 end
 
 local function popText(coin: BasePart, text: string, color: Color3)
@@ -91,7 +166,7 @@ local function onLanded(anim: Anim)
 		popText(anim.coin, `{rare.name}! {prize}`, rare.color)
 		local sparkle = anim.coin:FindFirstChild("Sparkle")
 		if sparkle and sparkle:IsA("ParticleEmitter") then
-			sparkle:Emit(if rare.shout then 80 else 30)
+			sparkle:Emit(CoinLook.forRarity(rare.id).landBurst)
 		end
 		return
 	end
@@ -100,12 +175,87 @@ local function onLanded(anim: Anim)
 		popText(anim.coin, `+${Format.short(ev.cash)}`, Color3.fromRGB(120, 255, 120))
 		local sparkle = anim.coin:FindFirstChild("Sparkle")
 		if sparkle and sparkle:IsA("ParticleEmitter") then
-			sparkle:Emit(14)
+			sparkle:Emit(CoinLook.NORMAL.landBurst)
 		end
 	else
 		Sounds.play("Skull", 0.45)
 		popText(anim.coin, `+{ev.hats} 🎩`, Color3.fromRGB(220, 160, 255))
 	end
+end
+
+-- Rare coins wear their CoinLook in the air: color (rainbow cycles), shine,
+-- recolored marks, a sparkle trail and a glow. They grow evenly (never squished).
+local function setMarks(anim: Anim, text: Color3?, rim: Color3?)
+	for inst, restColor in anim.restMarks do
+		if inst:IsA("TextLabel") then
+			inst.TextColor3 = text or restColor
+		elseif inst:IsA("UIStroke") then
+			inst.Color = rim or restColor
+		end
+	end
+end
+
+local function dressRare(anim: Anim, now: number, t: number)
+	local rare = anim.rare
+	if not rare then
+		return
+	end
+	local coin = anim.coin
+	local look = CoinLook.forRarity(rare.id)
+	if not anim.dressed then
+		anim.dressed = true
+		coin.Material = Enum.Material:FromName(look.material) or Enum.Material.SmoothPlastic
+		coin.Reflectance = look.reflectance
+		setMarks(anim, look.text, look.rim)
+		local sparkle = coin:FindFirstChild("Sparkle")
+		if sparkle and sparkle:IsA("ParticleEmitter") then
+			sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[2])
+			sparkle.Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, look.sparkleSize),
+				NumberSequenceKeypoint.new(1, 0),
+			})
+			sparkle.Rate = look.trail
+			sparkle.Enabled = look.trail > 0
+		end
+		if look.glow > 0 and not coin:FindFirstChild("RareGlow") then
+			local glow = Instance.new("PointLight")
+			glow.Name = "RareGlow"
+			glow.Color = look.color
+			glow.Brightness = look.glow
+			glow.Range = 6 + anim.restSize.Y * rare.grow
+			glow.Shadows = false
+			glow.Parent = coin
+		end
+	end
+	coin.Color = if look.rainbow then CoinLook.rainbowColor(now) else look.color
+	coin.Size = CoinLook.size(anim.restSize, CoinLook.scale(rare.grow, t, MAIN))
+end
+
+local function undressRare(anim: Anim)
+	if not anim.dressed then
+		return
+	end
+	local coin = anim.coin
+	coin.Size = anim.restSize
+	coin.Color = anim.restColor
+	coin.Material = anim.restMaterial
+	coin.Reflectance = anim.restReflectance
+	setMarks(anim, nil, nil)
+	local normal = CoinLook.NORMAL
+	local sparkle = coin:FindFirstChild("Sparkle")
+	if sparkle and sparkle:IsA("ParticleEmitter") then
+		sparkle.Enabled = false
+		sparkle.Rate = 0
+		-- Particles already thrown keep their colors; new ones use the plain look.
+		sparkle.Color = ColorSequence.new(normal.sparkle[1], normal.sparkle[2])
+		sparkle.Size =
+			NumberSequence.new({ NumberSequenceKeypoint.new(0, normal.sparkleSize), NumberSequenceKeypoint.new(1, 0) })
+	end
+	local glow = coin:FindFirstChild("RareGlow")
+	if glow then
+		glow:Destroy()
+	end
+	anim.dressed = false
 end
 
 local function onFlipped(ev: FlipEvent)
@@ -122,12 +272,26 @@ local function onFlipped(ev: FlipEvent)
 		return -- too far to see; the server still puts it on the right face
 	end
 	local old = active[coin]
+	if old then
+		undressRare(old) -- a re-flip mid-air starts from the plain coin
+	end
 	local base = if old then old.base else coin.Position
 	local restSize = if old then old.restSize else coin.Size
 	local restColor = if old then old.restColor else coin.Color
 	local restMaterial = if old then old.restMaterial else coin.Material
+	local restReflectance = if old then old.restReflectance else coin.Reflectance
+	local restMarks: { [Instance]: Color3 } = if old then old.restMarks else {}
+	if not old then
+		for _, d in coin:GetDescendants() do
+			if d:IsA("TextLabel") and d.Name == "Mark" then
+				restMarks[d] = d.TextColor3
+			elseif d:IsA("UIStroke") then
+				restMarks[d] = d.Color
+			end
+		end
+	end
 	local fromRoll = rollFor(coin:GetAttribute("Face"))
-	local spins = 2 + math.floor(ev.duration * 2)
+	local spins = FlipArc.spins(ev.duration)
 	local toRoll = rollFor(ev.result)
 	active[coin] = {
 		coin = coin,
@@ -136,7 +300,7 @@ local function onFlipped(ev: FlipEvent)
 		duration = ev.duration,
 		fromRoll = fromRoll,
 		totalRoll = (toRoll - fromRoll) + spins * math.pi * 2,
-		height = 2 + ev.duration * 1.5, -- low arc keeps the coin in view in ZOOM
+		height = Config.FLIP_HEIGHT, -- the ZOOM camera is placed so this always fits (CameraMath)
 		event = ev,
 		landed = false,
 		mine = mine,
@@ -144,34 +308,14 @@ local function onFlipped(ev: FlipEvent)
 		restSize = restSize,
 		restColor = restColor,
 		restMaterial = restMaterial,
+		shadow = if old and old.shadow then old.shadow else makeShadow(coin, base),
+		restReflectance = restReflectance,
+		restMarks = restMarks,
+		dressed = false,
 	}
+	trailOn(coin, true)
 	if mine then
 		Sounds.play("Flip", 0.45)
-	end
-end
-
--- Rare coins change color (rainbow cycles) and puff up while in the air.
-local function dressRare(anim: Anim, now: number, t: number)
-	local rare = anim.rare
-	if not rare then
-		return
-	end
-	local coin = anim.coin
-	if rare.id == "rainbow" or rare.id == "giant" then
-		coin.Material = Enum.Material.Neon
-	end
-	coin.Color = if rare.id == "rainbow" then Color3.fromHSV((now * 1.5) % 1, 0.75, 1) else rare.color
-	-- Grow fast, stay big, shrink back during the bounce.
-	local puff = if t < 0.15 then t / 0.15 elseif t < MAIN then 1 else math.max(0, 1 - (t - MAIN) / (1 - MAIN))
-	local scale = 1 + (rare.grow - 1) * puff
-	coin.Size = Vector3.new(anim.restSize.X * math.sqrt(scale), anim.restSize.Y * scale, anim.restSize.Z * scale)
-end
-
-local function undressRare(anim: Anim)
-	if anim.rare then
-		anim.coin.Size = anim.restSize
-		anim.coin.Color = anim.restColor
-		anim.coin.Material = anim.restMaterial
 	end
 end
 
@@ -179,30 +323,41 @@ local function step()
 	local now = os.clock()
 	for coin, anim in active do
 		if coin.Parent == nil then
+			if anim.shadow then
+				anim.shadow:Destroy()
+			end
 			active[coin] = nil
 			continue
 		end
 		local t = math.clamp((now - anim.start) / anim.duration, 0, 1)
-		local height: number
+		local height = FlipArc.height(t, anim.height)
 		local roll: number
 		if t < MAIN then
-			local u = t / MAIN
-			height = anim.height * 4 * u * (1 - u)
-			roll = anim.fromRoll + anim.totalRoll * easeOut(u)
+			roll = anim.fromRoll + anim.totalRoll * easeOut(t / MAIN)
 		else
 			if not anim.landed then
 				anim.landed = true
+				trailOn(coin, false)
 				onLanded(anim)
 			end
-			local u = (t - MAIN) / (1 - MAIN)
-			height = anim.height * 0.12 * 4 * u * (1 - u) -- little bounce
 			roll = anim.fromRoll + anim.totalRoll
 		end
+		local shadow = anim.shadow
+		if shadow then
+			local d = anim.restSize.Y * FlipArc.shadowScale(height, anim.height)
+			shadow.Size = Vector3.new(shadow.Size.X, d, d)
+			shadow.Transparency = FlipArc.shadowFade(height, anim.height)
+		end
 		dressRare(anim, now, t)
+		-- Never let the spinning (or grown) coin cut into the table top.
+		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X)
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0)) * CFrame.Angles(0, 0, roll)
 		if t >= 1 then
 			undressRare(anim)
 			coin.CFrame = CFrame.new(anim.base) * CFrame.Angles(0, 0, rollFor(anim.event.result))
+			if anim.shadow then
+				anim.shadow:Destroy()
+			end
 			active[coin] = nil
 		end
 	end

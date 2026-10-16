@@ -65,6 +65,11 @@ function Economy.coinCount(profile: Profile): number
 	return math.min(Config.MAX_COINS, Config.START_COINS + profile.upgrades.moreCoins)
 end
 
+-- Coin spots on the table that are still empty (shown as faint "+" circles).
+function Economy.emptySlots(profile: Profile): number
+	return Config.MAX_COINS - Economy.coinCount(profile)
+end
+
 function Economy.isTableFull(profile: Profile): boolean
 	return Economy.coinCount(profile) >= Config.MAX_COINS
 end

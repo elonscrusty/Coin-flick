@@ -48,6 +48,12 @@ local function onCheat(player: Player, command: unknown)
 		nextRare[player] = i
 		Tables.forceNextRarity(player, RARE_CYCLE[i])
 		return
+	elseif command == "away" then
+		-- Pretend you were gone 3 hours, so the welcome-back money can be checked
+		-- (Studio saves are thrown away, so a real rejoin never shows it).
+		profile.lastSeen = os.time() - 3 * 60 * 60
+		local cash = GameLogic.applyOffline(profile, os.time())
+		Tables.offlineNotice(player, cash)
 	elseif command == "wipe" then
 		local fresh = ProfileSchema.default()
 		for key, value in fresh :: any do

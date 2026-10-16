@@ -1,0 +1,183 @@
+--!strict
+-- How every coin looks: plain coins and each rare coin.
+-- Pure numbers and colors only (no Instances), so the rules are tested in Lune.
+-- The server builds coins with NORMAL; the client dresses rare coins in the air.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+
+export type Look = {
+	color: Color3,
+	material: string, -- Enum.Material name; never Neon (sunlight washes Neon to white)
+	reflectance: number,
+	text: Color3, -- "$" and hat marks on the faces
+	rim: Color3, -- painted ring around each face
+	sparkle: { Color3 }, -- start and end color of sparkles
+	sparkleSize: number,
+	landBurst: number, -- sparkles thrown when the coin lands on heads
+	trail: number, -- sparkles per second while in the air (0 = none)
+	glow: number, -- PointLight brightness while in the air (0 = none)
+	rainbow: boolean, -- color cycles through the rainbow while in the air
+}
+
+local CoinLook = {}
+
+-- Warm coin gold. Rare GOLD is a brighter lemon gold so the two never look alike.
+CoinLook.NORMAL = table.freeze({
+	color = Color3.fromRGB(240, 172, 40),
+	material = "SmoothPlastic",
+	reflectance = 0.15,
+	text = Color3.fromRGB(110, 55, 0),
+	rim = Color3.fromRGB(176, 108, 18),
+	sparkle = { Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255) },
+	sparkleSize = 0.6,
+	landBurst = 14,
+	trail = 0,
+	glow = 0,
+	rainbow = false,
+} :: Look)
+
+local RARE: { [string]: Look } = {
+	silver = table.freeze({
+		color = Color3.fromRGB(222, 232, 248),
+		material = "Foil",
+		reflectance = 0.35,
+		text = Color3.fromRGB(40, 70, 130),
+		rim = Color3.fromRGB(120, 140, 175),
+		sparkle = { Color3.fromRGB(200, 230, 255), Color3.fromRGB(255, 255, 255) },
+		sparkleSize = 0.7,
+		landBurst = 30,
+		trail = 10,
+		glow = 0,
+		rainbow = false,
+	} :: Look),
+	gold = table.freeze({
+		color = Color3.fromRGB(255, 232, 40),
+		material = "Foil",
+		reflectance = 0.3,
+		text = Color3.fromRGB(150, 70, 0),
+		rim = Color3.fromRGB(230, 120, 0),
+		sparkle = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 255, 200) },
+		sparkleSize = 0.9,
+		landBurst = 45,
+		trail = 25,
+		glow = 2,
+		rainbow = false,
+	} :: Look),
+	rainbow = table.freeze({
+		color = Color3.fromRGB(255, 120, 220), -- starting color; cycles in the air
+		material = "SmoothPlastic",
+		reflectance = 0.2,
+		text = Color3.fromRGB(45, 20, 80),
+		rim = Color3.fromRGB(255, 255, 255),
+		sparkle = { Color3.fromRGB(255, 120, 220), Color3.fromRGB(120, 220, 255) },
+		sparkleSize = 1.0,
+		landBurst = 80,
+		trail = 45,
+		glow = 3,
+		rainbow = true,
+	} :: Look),
+	giant = table.freeze({
+		color = Color3.fromRGB(255, 100, 25),
+		material = "Foil",
+		reflectance = 0.25,
+		text = Color3.fromRGB(90, 25, 0),
+		rim = Color3.fromRGB(190, 50, 10),
+		sparkle = { Color3.fromRGB(255, 200, 40), Color3.fromRGB(255, 90, 30) },
+		sparkleSize = 1.6,
+		landBurst = 120,
+		trail = 60,
+		glow = 4,
+		rainbow = false,
+	} :: Look),
+}
+CoinLook.RARE = table.freeze(RARE)
+
+function CoinLook.forRarity(id: string?): Look
+	return if id then RARE[id] or CoinLook.NORMAL else CoinLook.NORMAL
+end
+
+-- 0..255 RGB from hue (0..1), saturation and value. Color3.fromHSV without Roblox.
+function CoinLook.hsv(h: number, s: number, v: number): Color3
+	h = (h % 1) * 6
+	local i = math.floor(h)
+	local f = h - i
+	local p, q, t = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
+	local r, g, b
+	if i == 0 then
+		r, g, b = v, t, p
+	elseif i == 1 then
+		r, g, b = q, v, p
+	elseif i == 2 then
+		r, g, b = p, v, t
+	elseif i == 3 then
+		r, g, b = p, q, v
+	elseif i == 4 then
+		r, g, b = t, p, v
+	else
+		r, g, b = v, p, q
+	end
+	return Color3.fromRGB(math.round(r * 255), math.round(g * 255), math.round(b * 255))
+end
+
+-- Soft rainbow: bright enough that the dark marks stay readable at every hue.
+CoinLook.RAINBOW_SATURATION = 0.6
+function CoinLook.rainbowColor(seconds: number): Color3
+	return CoinLook.hsv(seconds * 0.75, CoinLook.RAINBOW_SATURATION, 1)
+end
+
+-- A darker shade (the rim for a skin color).
+function CoinLook.darker(c: Color3, k: number): Color3
+	return Color3.fromRGB(math.round(c.R * 255 * k), math.round(c.G * 255 * k), math.round(c.B * 255 * k))
+end
+
+local function lum(c: Color3): number
+	local function ch(x: number): number
+		return if x <= 0.03928 then x / 12.92 else ((x + 0.055) / 1.055) ^ 2.4
+	end
+	return 0.2126 * ch(c.R) + 0.7152 * ch(c.G) + 0.0722 * ch(c.B)
+end
+
+-- Readability of one color on another (1 = same, 21 = black on white).
+function CoinLook.contrast(a: Color3, b: Color3): number
+	local la, lb = lum(a), lum(b)
+	return (math.max(la, lb) + 0.05) / (math.min(la, lb) + 0.05)
+end
+
+-- How far apart two colors look, in 0..255 RGB steps.
+function CoinLook.distance(a: Color3, b: Color3): number
+	return math.sqrt(((a.R - b.R) * 255) ^ 2 + ((a.G - b.G) * 255) ^ 2 + ((a.B - b.B) * 255) ^ 2)
+end
+
+-- How big a rare coin is during its flip (t = 0..1 of the flip, main = share
+-- spent in the air). Grows fast, stays big, shrinks back during the bounce.
+function CoinLook.scale(grow: number, t: number, main: number): number
+	local puff = if t < 0.15 then t / 0.15 elseif t < main then 1 else math.max(0, 1 - (t - main) / (1 - main))
+	return 1 + (grow - 1) * puff
+end
+
+-- Coins grow evenly in every direction, so a GIANT coin stays a chunky coin
+-- (never a thin squished pancake).
+function CoinLook.size(rest: Vector3, scale: number): Vector3
+	return rest * scale
+end
+
+-- Extra height so a spinning coin never cuts into the table. The coin's round
+-- faces start pointing up; roll turns it on its edge. restThickness is how
+-- high the coin's centre already sits above the table top.
+function CoinLook.lift(roll: number, thickness: number, diameter: number, restThickness: number): number
+	local half = thickness / 2 * math.abs(math.sin(roll)) + diameter / 2 * math.abs(math.cos(roll))
+	return math.max(0, half - restThickness / 2)
+end
+
+-- Every look the coins can wear, for tests and the preview.
+function CoinLook.all(): { [string]: Look }
+	local out: { [string]: Look } = { normal = CoinLook.NORMAL }
+	for _, def in Config.Rarities do
+		out[def.id] = CoinLook.forRarity(def.id)
+	end
+	return out
+end
+
+return CoinLook

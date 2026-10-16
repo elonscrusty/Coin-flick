@@ -30,6 +30,7 @@ local HudLayout = {}
 HudLayout.MIN_TEXT = 14 -- px, smallest readable text
 HudLayout.MIN_TOUCH = 44 -- px, smallest thumb-friendly button
 HudLayout.GAP = 6
+HudLayout.CHEATS = 6 -- Studio test buttons (Hud.buildCheats)
 
 -- Roblox top bar: menu/chat on the left, more buttons on the right.
 local TOPBAR_H = 58
@@ -133,12 +134,13 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local cheatH = 30
 	local colTop = combo.y + combo.h + gap
 	local cheats: Rect
-	if colTop + 5 * cheatH + 4 * gap <= stickTop - 8 then
-		cheats = rect(12, colTop, 72, 5 * cheatH + 4 * gap)
+	local n = HudLayout.CHEATS
+	if colTop + n * cheatH + (n - 1) * gap <= stickTop - 8 then
+		cheats = rect(12, colTop, 72, n * cheatH + (n - 1) * gap)
 	else
 		local left = if reserved.thumbstick then reserved.thumbstick.w + 8 else 12
 		local right = if reserved.jump then reserved.jump.x - 8 else w - 12
-		local rowW = math.min(5 * 64 + 4 * gap, right - left)
+		local rowW = math.min(n * 64 + (n - 1) * gap, right - left)
 		cheats = rect(left + (right - left - rowW) / 2, h - 8 - cheatH, rowW, cheatH)
 	end
 
