@@ -351,7 +351,7 @@ describe("CoinLook round 6: thin trail, heads land heads-up, nothing stays dress
 		expect(CoinLook.trailHalfWidth(1)).toBeNear(0.5, 1e-9) -- never wider than the coin itself
 	end)
 
-	it("heads rests on the \"$\" face (Right face up), tails on the hat face", function()
+	it('heads rests on the "$" face (Right face up), tails on the hat face', function()
 		-- Rz(roll) turns local +X (the Right face) toward world up when roll = +90 degrees
 		expect(math.sin(FlipArc.restRoll("heads"))).toBe(1)
 		expect(math.sin(FlipArc.restRoll("skull"))).toBe(-1)

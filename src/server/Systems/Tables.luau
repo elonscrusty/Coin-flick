@@ -362,9 +362,10 @@ local function flip(
 	local forced = forcedRarity[player]
 	forcedRarity[player] = nil
 	local rarityRoll = if forced then Economy.rarityRollFor(forced) else rng:NextNumber()
+	-- The Studio RARE button always lands heads, so the rare look and the $ banner match.
 	local outcome = GameLogic.applyFlip(
 		profile,
-		rng:NextNumber(),
+		if forced then 0 else rng:NextNumber(),
 		rarityRoll,
 		Boosts.cashMult(player, now) * (helperMult or 1),
 		combo

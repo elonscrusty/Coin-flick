@@ -5,6 +5,16 @@ local GameLogic = require(ServerScriptService.Server.Util.GameLogic)
 local MegaCoin = require(ServerScriptService.Server.Util.MegaCoin)
 
 describe("Studio test buttons", function()
+	it("RARE: a heads roll of 0 always lands heads, for every rarity", function()
+		local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+		for _, id in { "silver", "gold", "rainbow", "giant" } do
+			local p = ProfileSchema.default()
+			local result, cash = Economy.resolveFlip(p, 0, Economy.rarityRollFor(id), 1)
+			expect(result).toBe("heads")
+			expect(cash).toBeAtLeast(1)
+		end
+	end)
+
 	it("MEGA: first press charges the coin 3 taps short, second press flips", function()
 		expect(MegaCoin.debugStep(0, 90, 3)).toBe("charge")
 		expect(MegaCoin.debugStep(86, 90, 3)).toBe("charge")
