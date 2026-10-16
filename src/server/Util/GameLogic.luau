@@ -291,10 +291,11 @@ function GameLogic.fillTable(profile: Profile)
 	profile.upgrades.moreCoins = Config.MAX_COINS - Config.START_COINS
 end
 
--- The server-wide shout for a super rare flip (RAINBOW, GIANT), or nil.
+-- The shout for a rare flip, or nil for a normal coin. RAINBOW and GIANT go to the
+-- whole server (`everyone`); SILVER and GOLD only label the flipper's own coin.
 function GameLogic.shoutNotice(displayName: string, userId: number, outcome: FlipOutcome): Types.Notice?
 	local def = Economy.rarityDef(outcome.rarity)
-	if not def or not def.shout then
+	if not def then
 		return nil
 	end
 	local prize = if outcome.cash > 0 then `+${Format.short(outcome.cash)}` else `+{outcome.hats} 🎩`
@@ -303,6 +304,7 @@ function GameLogic.shoutNotice(displayName: string, userId: number, outcome: Fli
 		text = `{displayName} flipped a {def.name} coin! {prize}`,
 		rarity = outcome.rarity,
 		ownerId = userId,
+		everyone = def.shout,
 	}
 end
 

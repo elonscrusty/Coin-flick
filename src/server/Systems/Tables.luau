@@ -325,11 +325,16 @@ end
 local flipRemote: RemoteEvent
 
 -- Super rare coins get shouted to the whole server the moment they are flipped,
--- while everyone can still see the big coin in the air.
+-- while everyone can still see the big coin in the air. Silver and gold only
+-- label the flipper's own coin.
 local function shoutIfRare(player: Player, outcome: GameLogic.FlipOutcome)
 	local notice = GameLogic.shoutNotice(player.DisplayName, player.UserId, outcome)
 	if notice then
-		Net.event("Notice"):FireAllClients(notice)
+		if notice.everyone then
+			Net.event("Notice"):FireAllClients(notice)
+		else
+			Net.event("Notice"):FireClient(player, notice)
+		end
 	end
 end
 

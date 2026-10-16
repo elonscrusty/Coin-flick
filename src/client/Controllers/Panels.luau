@@ -25,6 +25,7 @@ local Icons = require(script.Parent.Parent.Ui.Icons)
 local CameraView = require(script.Parent.CameraView)
 local Sounds = require(script.Parent.Sounds)
 local State = require(script.Parent.State)
+local TapGuard = require(ReplicatedStorage.Shared.Util.TapGuard)
 
 type Snapshot = Types.Snapshot
 
@@ -67,12 +68,16 @@ type CardUi = {
 	team: TextButton?,
 	scale: UIScale,
 	outline: UIStroke,
+	view: PanelView.Card?,
 }
 
 local panelGui: ScreenGui
 local popGui: ScreenGui
 local backdrop: TextButton
 local toastRing: UIStroke
+local confirmFrame: Frame
+local confirmText: TextLabel
+local confirmYes: () -> () = function() end
 local panels: { [string]: Frame } = {}
 local openName: string? = nil
 local openListeners: { (boolean) -> () } = {}
@@ -117,6 +122,9 @@ local function setOpen(name: string?)
 		panel.Visible = key == name
 	end
 	backdrop.Visible = name ~= nil
+	if confirmFrame then
+		confirmFrame.Visible = false
+	end
 	-- Panels may reach over the thumbstick, so hide Roblox's touch controls while one is open.
 	GuiService.TouchControlsEnabled = name == nil
 	if (name ~= nil) ~= was then
@@ -155,6 +163,17 @@ function Panels.open(name: string)
 		scale.Scale = 0.6
 		TweenService:Create(scale, Kit.BOUNCY, { Scale = 1 }):Play()
 	end
+end
+
+-- "Buy X?" question, centred on the open panel. YES runs the buy, NO just closes it.
+function Panels.confirm(text: string, onYes: () -> ())
+	confirmText.Text = text
+	confirmYes = onYes
+	local open = if openName then panels[openName] else nil
+	if open then
+		confirmFrame.Position = UDim2.fromOffset(open.Position.X.Offset, open.Position.Y.Offset)
+	end
+	confirmFrame.Visible = true
 end
 
 -- Toasts and banners -------------------------------------------------------------
@@ -285,7 +304,13 @@ end
 local function shout(notice: Types.Notice)
 	local def = notice.rarity and Economy.rarityDef(notice.rarity)
 	local name = if def then def.name else "RARE"
-	showBanner(`{name} COIN!`, notice.text, if def then def.color else Kit.GOLD, notice.rarity == "rainbow", 2.8)
+	showBanner(
+		`{name} COIN!`,
+		notice.text,
+		if def then def.color else Kit.GOLD,
+		notice.rarity == "rainbow",
+		if notice.everyone == false then 1.8 else 2.8
+	)
 	if notice.rarity == "giant" then
 		confetti(30)
 	end
@@ -568,10 +593,41 @@ local function newCard(
 	line.TextWrapped = false
 	line.Parent = frame
 
-	local buy = Kit.button("", Kit.GREEN, function()
-		Sounds.play("Tap", 0.4)
-		onBuy()
+	-- A press only counts as a tap when the list did not move under the finger
+	-- (a coasting scroll would land it on the wrong row).
+	local downCanvas: number? = nil
+	local lastScroll = -10
+	list:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+		lastScroll = os.clock()
 	end)
+	local function cleanTap(): boolean
+		local at = downCanvas or list.CanvasPosition.Y
+		downCanvas = nil
+		return TapGuard.ok(at, list.CanvasPosition.Y, os.clock() - lastScroll)
+	end
+	local function noteDown(input: InputObject)
+		if
+			input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			downCanvas = list.CanvasPosition.Y
+		end
+	end
+	local ui: CardUi = nil :: any
+	local buy = Kit.button("", Kit.GREEN, function()
+		if not cleanTap() then
+			return
+		end
+		Sounds.play("Tap", 0.4)
+		local view = ui.view
+		local s = State.get()
+		if view and s and PanelView.needsConfirm(view, s) then
+			Panels.confirm(`Buy {view.title}? ({view.button})`, onBuy)
+		else
+			onBuy()
+		end
+	end)
+	buy.InputBegan:Connect(noteDown)
 	buy.Name = "Buy"
 	buy.AnchorPoint = Vector2.new(1, 0.5)
 	buy.Position = UDim2.new(1, -8, 0.5, 0)
@@ -583,9 +639,13 @@ local function newCard(
 	local team: TextButton? = nil
 	if onTeam then
 		local t = Kit.button("", Kit.BLUE, function()
+			if not cleanTap() then
+				return
+			end
 			Sounds.play("Tap", 0.4)
 			onTeam()
 		end)
+		t.InputBegan:Connect(noteDown)
 		t.Name = "Team"
 		t.AnchorPoint = Vector2.new(1, 0.5)
 		t.Position = UDim2.new(1 - buyWidth, -10, 0.5, 0)
@@ -597,7 +657,7 @@ local function newCard(
 	end
 
 	frame.Parent = list
-	local ui: CardUi = {
+	ui = {
 		frame = frame,
 		title = title,
 		line = line,
@@ -606,6 +666,7 @@ local function newCard(
 		team = team,
 		scale = scale,
 		outline = outline,
+		view = nil,
 	}
 	-- Remember which card was pressed, so its purchase can pop it.
 	buy.Activated:Connect(function()
@@ -615,6 +676,7 @@ local function newCard(
 end
 
 local function paintCard(ui: CardUi, view: PanelView.Card)
+	ui.view = view
 	ui.frame.LayoutOrder = view.order
 	ui.title.Text = view.title
 	ui.line.Text = view.line
@@ -1001,12 +1063,11 @@ function Panels.setLayout(l: HudLayout.Layout)
 	-- The dim covers the whole screen (insets too); the pills sit in a gui above it.
 	backdrop.Position = UDim2.fromOffset(0, -80)
 	backdrop.Size = UDim2.new(1, 0, 1, 160)
-	-- Use the full height down to where the low toast sits (the toast shows over
-	-- the panel's bottom edge while a panel is open), so phones get more rows.
-	local boxH = l.toastLow.y + l.toastLow.h - box.y
+	-- The panel fills HudLayout's box; the low toast sits below it, never over it.
+	local boxH = box.h
 	local wide = Vector2.new(math.min(600, box.w), math.min(470, boxH))
 	local small = Vector2.new(math.min(480, box.w), math.min(340, boxH))
-	local newHeight = if boxH < 380 then CARD_SHORT else CARD_TALL
+	local newHeight = if boxH < 330 then CARD_SHORT else CARD_TALL
 	if newHeight ~= cardHeight then
 		cardHeight = newHeight
 		for _, group in cards do
@@ -1119,6 +1180,47 @@ function Panels.init()
 	bannerText.TextWrapped = true
 	bannerText.Parent = banner
 	banner.Parent = popGui
+
+	confirmFrame = Instance.new("Frame")
+	confirmFrame.Name = "Confirm"
+	confirmFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	confirmFrame.Size = UDim2.fromOffset(300, 130)
+	confirmFrame.BackgroundColor3 = Kit.PANEL
+	confirmFrame.Visible = false
+	confirmFrame.ZIndex = 40
+	Kit.corner(confirmFrame, 0.1)
+	Kit.stroke(confirmFrame, 4)
+	confirmText = Kit.label({
+		Name = "Question",
+		Position = UDim2.fromOffset(12, 8),
+		Size = UDim2.new(1, -24, 0, 56),
+		TextColor3 = Kit.INK,
+		TextStrokeTransparency = 1,
+		TextWrapped = true,
+		ZIndex = 41,
+	})
+	Kit.textLimit(confirmText, 26)
+	confirmText.Parent = confirmFrame
+	local yes = Kit.button("YES", Kit.GREEN, function()
+		confirmFrame.Visible = false
+		local run = confirmYes
+		confirmYes = function() end
+		run()
+	end)
+	yes.Position = UDim2.new(0, 12, 1, -58)
+	yes.Size = UDim2.new(0.5, -18, 0, 46)
+	yes.ZIndex = 41
+	Kit.textLimit(yes, 26)
+	yes.Parent = confirmFrame
+	local no = Kit.button("NO", Kit.RED, function()
+		confirmFrame.Visible = false
+	end)
+	no.Position = UDim2.new(0.5, 6, 1, -58)
+	no.Size = UDim2.new(0.5, -18, 0, 46)
+	no.ZIndex = 41
+	Kit.textLimit(no, 26)
+	no.Parent = confirmFrame
+	confirmFrame.Parent = popGui
 
 	flash = Instance.new("Frame")
 	flash.Name = "Flash"

@@ -29,6 +29,8 @@ export type Card = {
 	button: string,
 	look: Look,
 	order: number, -- LayoutOrder in the list
+	price: number?, -- what a press would spend (nil when it spends nothing)
+	currency: ("cash" | "hat")?,
 	badge: string?, -- small tag next to the title, e.g. "Lv 3/9" or "WORKING"
 	team: { text: string, look: Look }?, -- helpers only: the work/rest toggle
 }
@@ -94,6 +96,8 @@ function PanelView.upgradeCards(s: Snapshot): { Card }
 			badge = `Lv {level}/{def.maxLevel}`,
 			button = if cost then PanelView.money(cost) else "MAXED ★",
 			look = if cost then priceLook(s.cash, cost) else "max",
+			price = cost,
+			currency = if cost then "cash" else nil,
 			order = i,
 		}
 		table.insert(cards, card)
@@ -121,6 +125,8 @@ function PanelView.helperCards(s: Snapshot): { Card }
 				line = `Lv {level} • every {string.format("%.1f", interval)}s • x{string.format("%.1f", mult)}`,
 				button = if cost then `⬆ {PanelView.money(cost)}` else "MAXED ★",
 				look = if cost then priceLook(s.cash, cost) else "max",
+				price = cost,
+				currency = if cost then "cash" else nil,
 				order = i, -- owned helpers first, in unlock order
 				team = {
 					text = if working then "WORKING" else "REST",
@@ -143,6 +149,8 @@ function PanelView.helperCards(s: Snapshot): { Card }
 				line = `Flips every {string.format("%.1f", def.interval)}s • x{def.mult}`,
 				button = PanelView.money(def.cost),
 				look = priceLook(s.cash, def.cost),
+				price = def.cost,
+				currency = "cash",
 				order = 100 + i,
 			}
 		end
@@ -194,6 +202,8 @@ function PanelView.hatCards(s: Snapshot): { Card }
 				line = HAT_LINES[def.id] or "A silly hat",
 				button = `🎩 {Format.short(def.cost)}`,
 				look = priceLook(s.hatPoints, def.cost),
+				price = def.cost,
+				currency = "hat",
 				order = i,
 			}
 		end
@@ -283,6 +293,17 @@ function PanelView.robuxCards(s: Snapshot, prices: { [string]: string }): { Card
 		table.insert(cards, card)
 	end
 	return cards
+end
+
+-- Ask "Buy X?" first for every hat, and for anything that costs half your cash or more.
+function PanelView.needsConfirm(card: Card, s: Snapshot): boolean
+	if card.price == nil or card.look ~= "buy" then
+		return false
+	end
+	if card.currency == "hat" then
+		return true
+	end
+	return card.price >= s.cash * 0.5
 end
 
 -- Top 10 --------------------------------------------------------------------
