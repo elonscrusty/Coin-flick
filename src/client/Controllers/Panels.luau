@@ -160,8 +160,13 @@ function Panels.open(name: string)
 	setOpen(name)
 	local scale = panel:FindFirstChildOfClass("UIScale")
 	if scale then
-		scale.Scale = 0.6
-		TweenService:Create(scale, Kit.BOUNCY, { Scale = 1 }):Play()
+		local fit = panel:GetAttribute("Fit")
+		local target = if typeof(fit) == "number" then fit else 1
+		scale.Scale = target * 0.85
+		-- No overshoot: the box has only a little room at the sides.
+		TweenService
+			:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = target })
+			:Play()
 	end
 end
 
@@ -183,7 +188,8 @@ local function toastPlace(): (UDim2, UDim2)
 	local open = if openName then panels[openName] else nil
 	if open then
 		local slot = layout.toastLow
-		local w = math.min(slot.w, open.Size.X.Offset - 24)
+		local fit = open:GetAttribute("Fit")
+		local w = math.min(slot.w, open.Size.X.Offset * (if typeof(fit) == "number" then fit else 1) - 24)
 		return UDim2.fromOffset(open.Position.X.Offset, slot.y + slot.h / 2 - 6), UDim2.fromOffset(w, slot.h - 8)
 	end
 	local slot = layout.toast
@@ -735,7 +741,7 @@ local function pickShopTab(key: string)
 end
 
 local function buildShop()
-	local panel, body = makePanel("Shop", "SHOP", Kit.GREEN, Vector2.new(600, 470))
+	local panel, body = makePanel("Shop", "SHOP", Kit.GREEN, Vector2.new(4000, 4000))
 	panels.shop = panel
 	local tabs: { { string } } = {}
 	for _, key in PanelView.TAB_ORDER do
@@ -886,13 +892,12 @@ local function renderBoard()
 	paintTabs(boardTabs, boardShown)
 	if s and myRow then
 		local unit = PanelView.BOARD_UNITS[boardShown]
-		myRow.Text =
-			`YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}  •  board updates slowly`
+		myRow.Text = `YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}`
 	end
 end
 
 local function buildTop()
-	local panel, body = makePanel("Top", "TOP 10", Kit.PURPLE, Vector2.new(560, 470))
+	local panel, body = makePanel("Top", "TOP 10", Kit.PURPLE, Vector2.new(4000, 4000))
 	panels.top = panel
 	boardTabs = tabRow(body, PanelView.BOARD_TABS, function(key)
 		boardShown = key
@@ -1064,9 +1069,12 @@ function Panels.setLayout(l: HudLayout.Layout)
 	backdrop.Position = UDim2.fromOffset(0, -80)
 	backdrop.Size = UDim2.new(1, 0, 1, 160)
 	-- The panel fills HudLayout's box; the low toast sits below it, never over it.
-	local boxH = box.h
-	local wide = Vector2.new(math.min(600, box.w), math.min(470, boxH))
-	local small = Vector2.new(math.min(480, box.w), math.min(340, boxH))
+	-- Big screens (PC) scale the whole panel up to fill the box, rows and text
+	-- included; small screens use the box as is. `fit` is the panel's UIScale.
+	local fit = math.clamp(math.min(box.w / 600, box.h / 470), 1, 2)
+	local boxW, boxH = box.w / fit, box.h / fit
+	local wide = Vector2.new(boxW, boxH)
+	local small = Vector2.new(math.min(480, boxW), math.min(340, boxH))
 	local newHeight = if boxH < 330 then CARD_SHORT else CARD_TALL
 	if newHeight ~= cardHeight then
 		cardHeight = newHeight
@@ -1086,8 +1094,13 @@ function Panels.setLayout(l: HudLayout.Layout)
 	for name, panel in panels do
 		local size = if name == "reset" then small else wide
 		panel.AnchorPoint = Vector2.new(0.5, 0.5)
-		panel.Position = UDim2.fromOffset(box.x + box.w / 2, box.y + boxH / 2)
+		panel.Position = UDim2.fromOffset(box.x + box.w / 2, box.y + box.h / 2)
 		panel.Size = UDim2.fromOffset(size.X, size.Y)
+		panel:SetAttribute("Fit", fit)
+		local scale = panel:FindFirstChildOfClass("UIScale")
+		if scale and panel.Visible then
+			scale.Scale = fit
+		end
 	end
 	if banner then
 		banner.Position = UDim2.fromOffset(l.shout.x + l.shout.w / 2, l.shout.y + l.shout.h / 2)
@@ -1161,8 +1174,8 @@ function Panels.init()
 	bannerScale.Parent = banner
 	bannerTitle = Kit.label({
 		Name = "Title",
-		Position = UDim2.fromScale(0.05, 0.05),
-		Size = UDim2.fromScale(0.9, 0.38),
+		Position = UDim2.fromScale(0.05, 0.06),
+		Size = UDim2.fromScale(0.9, 0.44),
 		ZIndex = 26,
 	})
 	Kit.outline(bannerTitle, 3)
@@ -1171,8 +1184,8 @@ function Panels.init()
 	bannerTitle.Parent = banner
 	bannerText = Kit.label({
 		Name = "Text",
-		Position = UDim2.fromScale(0.05, 0.45),
-		Size = UDim2.fromScale(0.9, 0.5),
+		Position = UDim2.fromScale(0.05, 0.52),
+		Size = UDim2.fromScale(0.9, 0.42),
 		ZIndex = 26,
 	})
 	Kit.outline(bannerText, 2)
