@@ -340,3 +340,35 @@ describe("CoinLook round 5: GOLD stands out, GIANT never sweeps anything, MEGA i
 		expect(MegaLook.SPARKLE_RATE).toBeAtLeast(8)
 	end)
 end)
+
+describe("CoinLook round 6: thin trail, heads land heads-up, nothing stays dressed", function()
+	local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
+
+	it("the flight trail is a thin ribbon, never a slab, for any coin size", function()
+		for _, d in { 3.0, 3.8, 4.2, 4.9, 6.1, 6.4, 9.2 } do
+			expect(CoinLook.trailHalfWidth(d) * 2).toBeAtMost(1.5 + 1e-9)
+		end
+		expect(CoinLook.trailHalfWidth(1)).toBeNear(0.5, 1e-9) -- never wider than the coin itself
+	end)
+
+	it("heads rests on the \"$\" face (Right face up), tails on the hat face", function()
+		-- Rz(roll) turns local +X (the Right face) toward world up when roll = +90 degrees
+		expect(math.sin(FlipArc.restRoll("heads"))).toBe(1)
+		expect(math.sin(FlipArc.restRoll("skull"))).toBe(-1)
+		expect(FlipArc.restRoll("anything else")).toBe(FlipArc.restRoll("skull"))
+	end)
+
+	it("every flip, rare or not, ends on the rest roll of its result (mod full turns)", function()
+		for _, from in { "heads", "skull" } do
+			for _, to in { "heads", "skull" } do
+				for _, duration in { 0.3, 0.8, 1.6 } do
+					local fromRoll, toRoll = FlipArc.restRoll(from), FlipArc.restRoll(to)
+					local total = (toRoll - fromRoll) + FlipArc.spins(duration) * math.pi * 2
+					local landed = fromRoll + total
+					expect(math.cos(landed)).toBeNear(math.cos(toRoll), 1e-9)
+					expect(math.sin(landed)).toBeNear(math.sin(toRoll), 1e-9)
+				end
+			end
+		end
+	end)
+end)

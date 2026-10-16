@@ -238,6 +238,13 @@ function CoinLook.hover(scale: number): number
 	return math.max(0, scale - 1) * 2.5
 end
 
+-- The flight trail is a thin ribbon: its two ends sit at most this far from the coin's spin axis,
+-- so a wide (grown) coin never drags a slab-sized yellow block behind it.
+CoinLook.TRAIL_MAX_HALF = 0.75
+function CoinLook.trailHalfWidth(diameter: number): number
+	return math.min(diameter / 2, CoinLook.TRAIL_MAX_HALF)
+end
+
 -- Where a ring of `count` stars sits on a coin face: (x, y) as 0..1 of the face, radius is a share of the face.
 function CoinLook.starRing(count: number, radius: number): { { x: number, y: number } }
 	local out = {}
