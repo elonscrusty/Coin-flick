@@ -23,6 +23,7 @@ local ClientNet = require(script.Parent.Parent.ClientNet)
 local Kit = require(script.Parent.Parent.Ui.Kit)
 local Icons = require(script.Parent.Parent.Ui.Icons)
 local CameraView = require(script.Parent.CameraView)
+local HudPopups = require(script.Parent.HudPopups)
 local Sounds = require(script.Parent.Sounds)
 local State = require(script.Parent.State)
 local TapGuard = require(ReplicatedStorage.Shared.Util.TapGuard)
@@ -1513,8 +1514,7 @@ function Panels.start()
 			Sounds.play("Denied", 0.5)
 			Panels.toast(notice.text)
 		elseif notice.kind == "offline" then
-			Sounds.play("Gift", 0.7)
-			showBanner(PanelView.AWAY_TITLE, PanelView.awayLine(notice.text), Kit.TEAL, false, 3.2, nil)
+			HudPopups.welcomeBack(notice.text) -- the big "Welcome back" card (HUD side)
 		else
 			Panels.toast(notice.text)
 		end

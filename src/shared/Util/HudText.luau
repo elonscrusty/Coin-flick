@@ -2,7 +2,9 @@
 -- The words on the always-on HUD strips and side buttons. Pure so tests can
 -- check the wording and numbers match what the game really pays.
 
+local Config = require(script.Parent.Parent.Config)
 local Format = require(script.Parent.Format)
+local StreakView = require(script.Parent.StreakView)
 
 local HudText = {}
 
@@ -19,12 +21,34 @@ function HudText.pay(cashPerHeads: number): string
 	return string.format("%d.%d", tenths // 10, tenths % 10)
 end
 
+-- The same extra cash multiplier the server applies to every heads
+-- (Boosts.cashMult): 2x pass, server-wide mega boost, friend bonus.
+function HudText.cashMult(doublePass: boolean, megaBoost: boolean, friendHere: boolean): number
+	local mult = 1
+	if doublePass then
+		mult *= Config.PASS_CASH_MULT
+	end
+	if megaBoost then
+		mult *= Config.MEGA_BOOST_MULT
+	end
+	if friendHere then
+		mult *= Config.FRIEND_CASH_MULT
+	end
+	return mult
+end
+
 -- Two short labelled lines (the info card is narrow). The coin count lives in
--- the RESET button's bar, so it is not repeated here.
--- `boostMult` is 2 while the server-wide 2x boost runs, so the card shows what
--- a heads really pays right now.
-function HudText.info(cashPerHeads: number, headsChance: number, boostMult: number?): string
-	return `Heads = ${HudText.pay(cashPerHeads * (boostMult or 1))}\nLuck {Format.percent(headsChance)}`
+-- the RESET button's bar, so it is not repeated here. `cashMult` is the
+-- extra multiplier right now (HudText.cashMult), so the card shows what a
+-- heads really pays; `flipsPerTap` adds the Multi Flip badge when a tap flips more
+-- than one coin.
+function HudText.info(cashPerHeads: number, headsChance: number, cashMult: number?, flipsPerTap: number?): string
+	local multi = StreakView.multi(flipsPerTap or 1)
+	local luck = `Luck {Format.percent(headsChance)}`
+	if multi ~= "" then
+		luck = `{luck} {multi}`
+	end
+	return `Heads = ${HudText.pay(cashPerHeads * (cashMult or 1))}\n{luck}`
 end
 
 -- Right-band chips. The mega count stays up after a mega flip (progress

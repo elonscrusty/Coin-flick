@@ -16,6 +16,7 @@ local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
 local HudText = require(ReplicatedStorage.Shared.Util.HudText)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local CameraView = require(script.Parent.CameraView)
+local HudPopups = require(script.Parent.HudPopups)
 local Panels = require(script.Parent.Panels)
 local Sounds = require(script.Parent.Sounds)
 local State = require(script.Parent.State)
@@ -98,6 +99,17 @@ local function setStrip(l: TextLabel, text: string)
 	l.Text = text
 	place(l, if l == boostLabel then layout.boost elseif l == megaLabel then layout.mega else layout.info)
 	l.Visible = text ~= "" and (l ~= infoLabel or not anyPanelOpen())
+end
+
+-- The Heads / Luck card: pay includes the 2x pass, the mega boost and the
+-- friend bonus (what the server really pays) and the Multi Flip badge.
+local friendHere = false
+local function refreshInfo()
+	local s = State.get()
+	if s then
+		local mult = HudText.cashMult(s.passes.doubleCash == true, boostEnds > os.clock(), friendHere)
+		setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance, mult, s.flipsPerTap))
+	end
 end
 
 -- Combo counter: grows with every quick tap, fades when the chain breaks.
@@ -207,7 +219,7 @@ render = function(s: Snapshot)
 	if s.hatPoints > oldHats then
 		popScale(hatScale, 1.15)
 	end
-	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance, if boostEnds > os.clock() then 2 else 1))
+	refreshInfo()
 
 	-- One button shape in every state: the word on top, a big bar with the
 	-- count inside. Full just turns the bar bright and the word to RESET!.
@@ -308,6 +320,7 @@ local function applyLayout()
 	end
 
 	Panels.setLayout(layout)
+	HudPopups.setLayout(layout)
 	for _, fn in layoutListeners do
 		task.spawn(fn, layout)
 	end
@@ -486,6 +499,7 @@ function Hud.init()
 	side.Parent = gui
 
 	buildCheats(gui)
+	HudPopups.init()
 
 	-- Panels hide the touch controls (Panels) and our test buttons and strips.
 	Panels.onOpenChanged(function(open: boolean)
@@ -528,6 +542,19 @@ function Hud.start()
 		if ev.ownerId == player.UserId and ev.combo >= 2 then
 			showCombo(ev.combo)
 		end
+		local snap = State.get()
+		HudPopups.onFlipped(ev, if snap then snap.streakGoal else Config.STREAK_GOAL)
+	end)
+	ClientNet.event("Notice").OnClientEvent:Connect(function(notice: Types.Notice)
+		if notice.kind == "friend" then
+			friendHere = true
+			HudPopups.setFriend(true)
+			refreshInfo()
+		elseif notice.kind == "friendOff" then
+			friendHere = false
+			HudPopups.setFriend(false)
+			refreshInfo()
+		end
 	end)
 	local mega: Types.MegaState = { taps = 0, goal = 1, boostLeft = 0 }
 	ClientNet.event("MegaState").OnClientEvent:Connect(function(state: Types.MegaState)
@@ -540,11 +567,7 @@ function Hud.start()
 			local text = HudText.boost(left)
 			if text ~= boostLabel.Text then
 				setStrip(boostLabel, text)
-				local snap = State.get()
-				if snap then
-					-- the Heads card doubles while the boost runs
-					setStrip(infoLabel, HudText.info(snap.cashPerHeads, snap.headsChance, if left > 0 then 2 else 1))
-				end
+				refreshInfo() -- the Heads card doubles while the boost runs
 			end
 			local megaText = HudText.mega(mega.taps, mega.goal)
 			if megaText ~= megaLabel.Text then
