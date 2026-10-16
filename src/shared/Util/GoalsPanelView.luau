@@ -6,6 +6,7 @@
 local Format = require(script.Parent.Format)
 local Goals = require(script.Parent.Goals)
 local PanelView = require(script.Parent.PanelView)
+local Types = require(script.Parent.Parent.Types)
 
 type GoalsView = Goals.GoalsView
 type Look = PanelView.Look
@@ -166,6 +167,25 @@ function GoalsPanelView.pageRows(view: GoalsView): { PageRow }
 		})
 	end
 	return rows
+end
+
+export type BadgeCard = { id: string, name: string, text: string, earned: boolean }
+
+function GoalsPanelView.badgeHeader(view: Types.BadgeView): string
+	return `BADGES {view.earned}/{#view.badges}`
+end
+
+-- Earned badges come first (bright), then the locked ones (grey, the text is the hint).
+function GoalsPanelView.badgeCards(view: Types.BadgeView): { BadgeCard }
+	local cards: { BadgeCard } = {}
+	for _, pass in { true, false } do
+		for _, b in view.badges do
+			if b.earned == pass then
+				table.insert(cards, { id = b.id, name = b.name, text = b.text, earned = b.earned })
+			end
+		end
+	end
+	return cards
 end
 
 -- Red dot on the GOALS tab: a challenge or the bonus can be claimed.

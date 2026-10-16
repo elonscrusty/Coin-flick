@@ -164,3 +164,66 @@ describe("Ladder coin look", function()
 		expect(PanelView.TAB_LABEL.goals).toBe(GoalsPanelView.TAB_LABEL)
 	end)
 end)
+
+describe("THIS WEEK board, badges, play gifts", function()
+	local GiftPetView = require(ReplicatedStorage.Shared.Util.GiftPetView)
+
+	it("THIS WEEK is a top 10 tab with a reset clock", function()
+		local found = false
+		for _, tab in PanelView.BOARD_TABS do
+			if tab[1] == "weekFlips" then
+				found = true
+				expect(tab[2]).toBe("THIS WEEK")
+			end
+		end
+		expect(found).toBe(true)
+		expect(PanelView.boardNote("weekFlips", 1000 + 3 * 86400 + 4 * 3600, 1000)).toBe("Resets in 3d 4h")
+		expect(PanelView.boardNote("flips", 5000, 1000)).toBe("")
+		expect(PanelView.boardNote("weekFlips", nil, 1000)).toBe("")
+	end)
+
+	it("your weekly number comes from the weekly board", function()
+		local rows = { { name = "Ava", value = 500 }, { name = "Me", value = 1234 } }
+		expect(PanelView.weekValueOf(rows, "Me")).toBe(1234)
+		expect(PanelView.weekValueOf(rows, "Zed")).toBe(0)
+		expect(PanelView.weekValueOf(nil, "Me")).toBe(0)
+		local snap: any = { flips = 99999, biggestFlip = 0, resets = 0 }
+		expect(PanelView.myValue("weekFlips", snap, 1234)).toBe("1.23K")
+	end)
+
+	it("badges: header counts, earned ones come first", function()
+		local view = {
+			earned = 1,
+			badges = {
+				{ id = "a", name = "A", text = "Do A", earned = false },
+				{ id = "b", name = "B", text = "Do B", earned = true },
+			},
+		}
+		expect(GoalsPanelView.badgeHeader(view)).toBe("BADGES 1/2")
+		local cards = GoalsPanelView.badgeCards(view)
+		expect(cards[1].id).toBe("b")
+		expect(cards[2].id).toBe("a")
+		expect(cards[2].text).toBe("Do A")
+	end)
+
+	it("play gifts: waiting shows a countdown, ready says CLAIM!, claimed says DONE", function()
+		local view = {
+			seconds = 100,
+			claimable = 1,
+			gifts = {
+				{ slot = 1, minutes = 5, cash = 10, hats = 1, state = "claimed", left = 0 },
+				{ slot = 2, minutes = 10, cash = 20, hats = 2, state = "ready", left = 0 },
+				{ slot = 3, minutes = 20, cash = 40, hats = 3, state = "waiting", left = 125 },
+			},
+		}
+		local rows = GiftPetView.playGiftRows(view, 0)
+		expect(rows[1].button.text).toBe("DONE ✔")
+		expect(rows[2].button.text).toBe("CLAIM!")
+		expect(rows[2].canClaim).toBe(true)
+		expect(rows[3].button.text).toBe("2m 05s")
+		expect(rows[3].button.look).toBe("poor")
+		expect(rows[3].text).toBe("Play 20 min")
+		expect(GiftPetView.playGiftRows(view, 130)[3].button.text).toBe("CLAIM!")
+		expect(GiftPetView.dailyDot(nil, view)).toBe(true)
+	end)
+end)

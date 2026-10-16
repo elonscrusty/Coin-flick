@@ -150,9 +150,31 @@ function GiftPetView.petRows(views: { PetView }): { PetRow }
 	return rows
 end
 
+export type PlayGiftRow = { slot: number, text: string, reward: string, button: Button, canClaim: boolean }
+GiftPetView.PLAY_HEADER = "PLAY GIFTS"
+
+-- Gifts for time played today. `age` = seconds since the view arrived (countdowns keep running).
+function GiftPetView.playGiftRows(view: Types.PlayGiftView, age: number): { PlayGiftRow }
+	local rows: { PlayGiftRow } = {}
+	for _, g in view.gifts do
+		local button: Button = if g.state == "claimed"
+			then { text = "DONE ✔", look = "owned" }
+			elseif g.state == "ready" or g.left - age <= 0 then { text = "CLAIM!", look = "buy" }
+			else { text = GiftPetView.timeLeft(g.left - age), look = "poor" }
+		table.insert(rows, {
+			slot = g.slot,
+			text = `Play {g.minutes} min`,
+			reward = rewardText(g.cash, g.hats),
+			button = button,
+			canClaim = g.state ~= "claimed" and (g.state == "ready" or g.left - age <= 0),
+		})
+	end
+	return rows
+end
+
 -- True when the tab's red dot should show.
-function GiftPetView.dailyDot(view: DailyView?): boolean
-	return view ~= nil and view.claimable > 0
+function GiftPetView.dailyDot(view: DailyView?, play: Types.PlayGiftView?): boolean
+	return (view ~= nil and view.claimable > 0) or (play ~= nil and play.claimable > 0)
 end
 
 -- Pet count, for sizing (kept here so Config changes need no client edit).
