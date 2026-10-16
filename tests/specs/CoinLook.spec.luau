@@ -53,7 +53,8 @@ describe("CoinLook", function()
 	end)
 
 	it("rarer coins sparkle more", function()
-		local order = { CoinLook.NORMAL, CoinLook.RARE.silver, CoinLook.RARE.gold, CoinLook.RARE.rainbow, CoinLook.RARE.giant }
+		local order =
+			{ CoinLook.NORMAL, CoinLook.RARE.silver, CoinLook.RARE.gold, CoinLook.RARE.rainbow, CoinLook.RARE.giant }
 		for i = 2, #order do
 			expect(order[i].landBurst).toBeAtLeast(order[i - 1].landBurst + 1)
 			expect(order[i].sparkleSize).toBeAtLeast(order[i - 1].sparkleSize)

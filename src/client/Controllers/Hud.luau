@@ -697,7 +697,16 @@ local function buildCheats(parent: ScreenGui)
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 6)
 	layout.Parent = frame
-	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "MEGA", "mega" }, { "AWAY", "away" }, { "WIPE", "wipe" } } do
+	for _, item in
+		{
+			{ "+1M", "cash" },
+			{ "FILL", "fill" },
+			{ "RARE", "rare" },
+			{ "MEGA", "mega" },
+			{ "AWAY", "away" },
+			{ "WIPE", "wipe" },
+		}
+	do
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)

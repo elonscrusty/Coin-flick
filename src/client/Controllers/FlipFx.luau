@@ -210,8 +210,10 @@ local function dressRare(anim: Anim, now: number, t: number)
 		local sparkle = coin:FindFirstChild("Sparkle")
 		if sparkle and sparkle:IsA("ParticleEmitter") then
 			sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[2])
-			sparkle.Size =
-				NumberSequence.new({ NumberSequenceKeypoint.new(0, look.sparkleSize), NumberSequenceKeypoint.new(1, 0) })
+			sparkle.Size = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, look.sparkleSize),
+				NumberSequenceKeypoint.new(1, 0),
+			})
 			sparkle.Rate = look.trail
 			sparkle.Enabled = look.trail > 0
 		end
