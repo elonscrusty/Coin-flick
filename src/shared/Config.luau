@@ -325,6 +325,7 @@ return table.freeze({
 	MEGA_TAP_RATE = 6,
 	MEGA_TAP_BURST = 10,
 	MEGA_DIAMETER = 16,
+	MEGA_JUMP = 3, -- studs the mega coin hops in its big flip (small, so it stays on screen from your yard)
 	MEGA_HEIGHT = 12, -- coin centre above the ground (sits just above the 3.2 tall pedestal)
 
 	-- Leaderboards (global, OrderedDataStore)

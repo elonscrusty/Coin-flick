@@ -108,7 +108,7 @@ function Plot.build(
 	border.Parent = folder
 
 	-- Fence: posts + two rails on each side, with a gap for the entrance.
-	local gap = 6
+	local gap = 8 -- half the entrance width; wide, so the gate pillars stay at the screen edges
 	local function fenceRun(from: Vector3, to: Vector3)
 		local length = (to - from).Magnitude
 		local mid = (from + to) / 2
@@ -145,7 +145,7 @@ function Plot.build(
 	for _, x in { -gap, gap } do
 		local pillar = make({
 			Name = "Pillar",
-			Size = Vector3.new(1.6, ARCH_TOP, 1.6),
+			Size = Vector3.new(0.9, ARCH_TOP, 0.9),
 			CFrame = plotCFrame * CFrame.new(x, ARCH_TOP / 2, -half),
 			Color = PILLAR,
 		})
@@ -153,7 +153,7 @@ function Plot.build(
 		for i = 1, 5 do
 			local band = make({
 				Name = "Band",
-				Size = Vector3.new(1.8, 0.7, 1.8),
+				Size = Vector3.new(1.1, 0.6, 1.1),
 				CFrame = plotCFrame * CFrame.new(x, i * 2.9, -half),
 				Color = look.top,
 				CanCollide = false,

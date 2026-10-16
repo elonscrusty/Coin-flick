@@ -285,8 +285,8 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(0.06, d, d),
 			CFrame = CFrame.new(state.center + Vector3.new(x, 0.03, z)) * CFrame.Angles(0, 0, math.pi / 2),
-			Color = Color3.fromRGB(60, 50, 95), -- dark, so the white + shows on any table color
-			Transparency = 0.2,
+			Color = Color3.fromRGB(120, 235, 165), -- bright mint, so it reads as "free spot" (not locked) on any table color
+			Transparency = 0.3,
 			CanCollide = false,
 			CanQuery = false,
 			CanTouch = false,
@@ -304,7 +304,9 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 		plus.TextScaled = true
 		plus.Font = Enum.Font.FredokaOne
 		plus.TextColor3 = Color3.fromRGB(255, 255, 255)
-		plus.TextTransparency = 0.2
+		plus.TextTransparency = 0.1
+		plus.TextStrokeTransparency = 0
+		plus.TextStrokeColor3 = Color3.fromRGB(20, 110, 70)
 		plus.Parent = mark
 		slot.Parent = model
 	end

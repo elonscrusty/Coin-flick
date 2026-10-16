@@ -18,6 +18,7 @@ local coin: BasePart? = nil
 local base: CFrame = CFrame.new()
 local bar: Frame? = nil
 local sign: BillboardGui? = nil
+local countLabel: TextLabel? = nil
 local wobbleAt = -10
 local flipAt = -10
 local FLIP_TIME = 2.6
@@ -59,15 +60,30 @@ local function buildSign(part: BasePart)
 	fillCorner.CornerRadius = UDim.new(0.5, 0)
 	fillCorner.Parent = fill
 	fill.Parent = track
+	local count = Instance.new("TextLabel")
+	count.BackgroundTransparency = 1
+	count.Size = UDim2.fromScale(1, 1)
+	count.Font = Enum.Font.FredokaOne
+	count.TextScaled = true
+	count.TextColor3 = Color3.fromRGB(255, 255, 255)
+	count.TextStrokeColor3 = Color3.fromRGB(45, 30, 20)
+	count.TextStrokeTransparency = 0
+	count.Text = "0 / ?"
+	count.ZIndex = 2
+	count.Parent = track
 	track.Parent = gui
 	gui.Parent = part
 	bar = fill
+	countLabel = count
 	sign = gui
 end
 
 local function onState(state: Types.MegaState)
 	if bar then
 		bar.Size = UDim2.fromScale(math.clamp(state.taps / math.max(1, state.goal), 0, 1), 1)
+	end
+	if countLabel then
+		countLabel.Text = `{state.taps} / {state.goal}`
 	end
 end
 
@@ -77,7 +93,7 @@ local function onFlipped()
 	CameraView.shake(0.6, 1)
 	local sparkle = coin and coin:FindFirstChild("Sparkle")
 	if sparkle and sparkle:IsA("ParticleEmitter") then
-		sparkle:Emit(120)
+		sparkle:Emit(260)
 	end
 end
 
@@ -96,7 +112,7 @@ local function step()
 	end
 	if sinceFlip < FLIP_TIME then
 		local u = sinceFlip / FLIP_TIME
-		height = 6 * 4 * u * (1 - u)
+		height = Config.MEGA_JUMP * 4 * u * (1 - u)
 		turn = FlipArc.megaSpin(u)
 	end
 	-- A face always points at you (swaying a little), so it is never an edge-on pole.

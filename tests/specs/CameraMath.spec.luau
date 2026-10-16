@@ -78,10 +78,17 @@ describe("Spawn camera", function()
 
 	it("the gate pillars are off to the sides and the name sign is above the lens", function()
 		for _, y in { 2, 8, 15 } do
-			local sx, sy = CameraMath.project(view, { -Config.PLOT_SIZE / 2, y, 6 }, 1.78, 70)
+			local sx, sy = CameraMath.project(view, { -Config.PLOT_SIZE / 2, y, 8 }, 1.78, 70)
 			expect(sx == nil or sy == nil or math.abs(sx) > 0.9 or sy < -0.9).toBeTruthy()
 		end
 		local sign = CameraMath.project(view, { -Config.PLOT_SIZE / 2, 14.4, 0 }, 1.78, 70)
 		expect(sign).toBeNil()
+	end)
+end)
+
+describe("Mega coin hop", function()
+	it("is small enough to stay on screen", function()
+		expect(Config.MEGA_JUMP).toBeAtMost(4)
+		expect(Config.MEGA_JUMP).toBeAtLeast(1)
 	end)
 end)
