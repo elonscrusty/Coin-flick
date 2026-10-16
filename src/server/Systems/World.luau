@@ -125,37 +125,9 @@ function World.decorate()
 			Plot.tree(makePart, folder, CFrame.new(at), rng:NextNumber(1.2, 1.6), leaves)
 		end
 	end
-	-- Forest ring outside the yards.
-	for _ = 1, 48 do
-		local angle = rng:NextNumber(0, math.pi * 2)
-		local radius = rng:NextNumber(Config.PLOT_RING_RADIUS + 30, 200)
-		local at = Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
-		local leaves = Plot.LEAVES[rng:NextInteger(1, #Plot.LEAVES)]
-		Plot.tree(makePart, folder, CFrame.new(at) * CFrame.Angles(0, angle, 0), rng:NextNumber(1.3, 2.2), leaves)
-	end
-	-- Flower patches.
-	for _ = 1, 40 do
-		local angle = rng:NextNumber(0, math.pi * 2)
-		local radius = rng:NextNumber(Config.PLOT_RING_RADIUS + 22, 190)
-		local center = Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
-		local color = Plot.FLOWERS[rng:NextInteger(1, #Plot.FLOWERS)]
-		for _ = 1, 5 do
-			local offset = Vector3.new(rng:NextNumber(-3, 3), 0, rng:NextNumber(-3, 3))
-			Plot.flower(makePart, folder, CFrame.new(center + offset), color)
-		end
-	end
-	-- Bushes and chunky rocks just outside the yards, so the field is never empty.
-	for _ = 1, 70 do
-		local angle = rng:NextNumber(0, math.pi * 2)
-		local radius = rng:NextNumber(Config.PLOT_RING_RADIUS + Config.PLOT_SIZE / 2 + 4, 150)
-		local at = CFrame.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
-			* CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
-		if rng:NextNumber() < 0.6 then
-			World.bush(folder, at, rng:NextNumber(1, 1.8), Plot.LEAVES[rng:NextInteger(1, #Plot.LEAVES)])
-		else
-			World.rock(folder, at, rng:NextNumber(1.2, 3), rng)
-		end
-	end
+	-- Trees, rocks, bushes, logs, mushrooms and flower beds around the yards.
+	local PlotDecor = require(script.Parent.Parent.Builders.PlotDecor) -- here, not at the top: it reads Enum values the offline tests lack
+	PlotDecor.world(makePart, folder)
 	-- Rolling green hills all round the edge close off the horizon.
 	for i = 1, 26 do
 		local angle = (i / 26) * math.pi * 2 + rng:NextNumber(-0.08, 0.08)

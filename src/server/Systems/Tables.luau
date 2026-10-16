@@ -12,6 +12,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
+local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
@@ -270,7 +271,8 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	-- The yard around the table (fence, name arch, trees).
 	local center, outward = World.plotCenter(state.slot)
 	local plotCFrame = CFrame.lookAt(center, center - outward)
-	Plot.build(World.makePart, model, plotCFrame, look, player.DisplayName, profile.resets)
+	local theme = PlotThemes.resolve(profile.resets, nil)
+	Plot.build(World.makePart, model, plotCFrame, theme, player.DisplayName, profile.resets)
 
 	state.coins = {}
 	-- A skin only shows while the player still owns its pass.
@@ -329,6 +331,7 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 		end
 	end
 	model:SetAttribute("Look", look.name)
+	model:SetAttribute("PlotTheme", theme.id)
 end
 
 local flipRemote: RemoteEvent
