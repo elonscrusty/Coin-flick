@@ -340,7 +340,8 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 			Name = "Rim",
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(1.4, radius * 2 + 1.8, radius * 2 + 1.8),
-			CFrame = CFrame.new(state.center - Vector3.new(0, topThickness + 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			CFrame = CFrame.new(state.center - Vector3.new(0, topThickness + 0.2, 0))
+				* CFrame.Angles(0, 0, math.pi / 2),
 			Color = look.rim,
 		})
 		rim.Parent = model
