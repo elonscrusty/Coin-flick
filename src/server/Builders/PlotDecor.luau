@@ -604,7 +604,7 @@ local function floor(make: PartMaker, parent: Instance, plotCFrame: CFrame, them
 						plotCFrame,
 						CFrame.new(x, 0.43, z),
 						Vector3.new(tile - 0.5, 0.06, tile - 0.5),
-						theme.accent[1]:Lerp(theme.pad, 0.72)
+						theme.tile
 					)
 				end
 			end
@@ -612,15 +612,33 @@ local function floor(make: PartMaker, parent: Instance, plotCFrame: CFrame, them
 	end
 end
 
--- How tall each small prop is, so tall-ish ones are shrunk to stay low (camera rules in YardLayout).
-local LOW_SCALE: { [string]: number } = {
-	umbrella = 0.7,
-	candycane = 0.65,
-	torch = 0.7,
-	antenna = 0.7,
-	orb = 0.8,
-	lamp = 0.7,
-}
+-- A ring of themed ground just outside the fence (sand, candy pink, stone, space grey), under the
+-- gate path, so every yard reads as its own place in the shared world.
+local RING_WIDTH = 7
+PlotDecor.RingWidth = RING_WIDTH
+
+local function ring(make: PartMaker, parent: Instance, plotCFrame: CFrame, theme: Theme)
+	local edge = Config.PLOT_SIZE / 2 + 0.8 -- the yard's border trim
+	local outer = edge + RING_WIDTH
+	local top = 0.16 -- under the paths (their tops are at 0.2)
+	local function slab(name: string, sx: number, sz: number, cx: number, cz: number)
+		put(
+			make,
+			parent,
+			name,
+			plotCFrame,
+			CFrame.new(cx, top / 2, cz),
+			Vector3.new(sx, top, sz),
+			theme.ground,
+			nil,
+			false
+		)
+	end
+	slab("RingFront", outer * 2, RING_WIDTH, 0, -(edge + RING_WIDTH / 2))
+	slab("RingBack", outer * 2, RING_WIDTH, 0, edge + RING_WIDTH / 2)
+	slab("RingLeft", RING_WIDTH, edge * 2, -(edge + RING_WIDTH / 2), 0)
+	slab("RingRight", RING_WIDTH, edge * 2, edge + RING_WIDTH / 2, 0)
+end
 
 -- A base that only turns around Y (never tilts), at yard-local (x, z), facing the yard centre.
 local function standing(plotCFrame: CFrame, x: number, z: number): CFrame
@@ -637,13 +655,15 @@ function PlotDecor.yard(make: PartMaker, parent: Instance, plotCFrame: CFrame, t
 	local folder = Instance.new("Folder")
 	folder.Name = "Decor_" .. theme.id
 	local half = Config.PLOT_SIZE / 2
+	ring(make, folder, plotCFrame, theme)
 	floor(make, folder, plotCFrame, theme)
 
 	local treePiece = TREES[theme.tree] or TREES.oak
 	local tall = YardLayout.tall(half)
 	for i = 1, math.min(#tall, 2 + resets) do
 		local spot = tall[i]
-		local scale = 1 + (i % 3) * 0.07 -- never above YardLayout.MaxTallScale
+		-- never above MaxTallScale, and small enough to stay under the top HUD in the spawn view
+		local scale = YardLayout.tallScale(theme.tree, spot.x, spot.z, 1 + (i % 3) * 0.07)
 		treePiece(make, folder, standing(plotCFrame, spot.x, spot.z), scale, theme)
 	end
 
@@ -652,7 +672,7 @@ function PlotDecor.yard(make: PartMaker, parent: Instance, plotCFrame: CFrame, t
 		local kind = pick(theme.props, i)
 		local piece = PROPS[kind] or PROPS.boulder
 		local spot = low[i]
-		piece(make, folder, standing(plotCFrame, spot.x, spot.z), LOW_SCALE[kind] or 0.85, theme)
+		piece(make, folder, standing(plotCFrame, spot.x, spot.z), YardLayout.lowScale(kind), theme)
 	end
 	folder.Parent = parent
 	return folder
