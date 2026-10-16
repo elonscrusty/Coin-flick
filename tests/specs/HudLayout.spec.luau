@@ -158,6 +158,16 @@ describe("HUD layout", function()
 		end
 	end)
 
+	it("info card and chips are chunky enough to read (14px text, 26px chips)", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.mega.h).toBeAtLeast(26)
+			expect(l.boost.h).toBeAtLeast(26)
+			expect(l.info.h).toBeAtLeast(40)
+			expect(fittedLines(l.info, "Heads = $999K\nLuck 100%", 0.06)).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
 	it("pills have a gap, and the combo card is big enough to read", function()
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)

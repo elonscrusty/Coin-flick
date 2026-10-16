@@ -73,9 +73,7 @@ local resetButton: TextButton
 local resetBar: Frame
 local resetFill: Frame
 local resetCount: TextLabel
-local resetIcon: TextLabel
 local resetWord: TextLabel
-local resetSpin: Tween?
 local resetPulse: Tween?
 local megaLabel: TextLabel
 local boostLabel: TextLabel
@@ -99,7 +97,7 @@ end
 local function setStrip(l: TextLabel, text: string)
 	l.Text = text
 	place(l, if l == boostLabel then layout.boost elseif l == megaLabel then layout.mega else layout.info)
-	l.Visible = text ~= "" and not anyPanelOpen()
+	l.Visible = text ~= "" and (l ~= infoLabel or not anyPanelOpen())
 end
 
 -- Combo counter: grows with every quick tap, fades when the chain breaks.
@@ -211,37 +209,14 @@ render = function(s: Snapshot)
 	end
 	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance))
 
-	-- Not full: a gold progress bar fills up inside an orange button (clearly
-	-- "filling", never "broken"). Full: bar goes away, button glows.
+	-- One button shape in every state: the word on top, a big bar with the
+	-- count inside. Full just turns the bar bright and the word to RESET!.
 	local full = s.tableFull
-	resetButton.BackgroundColor3 = if full then ORANGE else Color3.fromRGB(214, 120, 40)
-	resetBar.Visible = not full
-	resetIcon.Visible = full
-	if full then
-		resetIcon.Size = UDim2.fromScale(1, 0.55)
-		resetWord.Position = UDim2.fromScale(0, 0.55)
-		resetWord.Size = UDim2.fromScale(1, 0.4)
-	else
-		resetWord.Position = UDim2.fromScale(0, 0.04)
-		resetWord.Size = UDim2.fromScale(1, 0.42)
-	end
 	resetFill.Size =
 		UDim2.fromScale(if s.coinCount <= 0 then 0 else math.clamp(s.coinCount / Config.MAX_COINS, 0.12, 1), 1)
+	resetFill.BackgroundColor3 = if full then Color3.fromRGB(255, 240, 90) else UiStyle.GOLD
 	resetCount.Text = HudText.resetCount(s.coinCount, Config.MAX_COINS)
 	resetWord.Text = HudText.reset(full)
-	if full and not resetSpin then
-		local spin = TweenService:Create(
-			resetIcon,
-			TweenInfo.new(1.2, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1),
-			{ Rotation = 360 }
-		)
-		spin:Play()
-		resetSpin = spin
-	elseif not full and resetSpin then
-		resetSpin:Cancel()
-		resetSpin = nil
-		resetIcon.Rotation = 0
-	end
 	-- Glow the RESET button's outline when the table is full. (Pulsing the
 	-- outline, not the size, so the press-pop animation can't cancel it.)
 	local outline = resetButton:FindFirstChildOfClass("UIStroke")
@@ -378,31 +353,33 @@ function Hud.init()
 	pillGui = Instance.new("ScreenGui")
 	pillGui.Name = "CoinFlickPills"
 	pillGui.ResetOnSpawn = false
-	pillGui.DisplayOrder = 4 -- under the panels' dim, like the rest of the HUD
+	pillGui.DisplayOrder = 6 -- money, hats and chips stay bright above the shop's dim
 	pillGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	pillGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	top.Parent = pillGui
 
-	-- Dark see-through strips so the white text reads on bright sky.
-	local function strip(name: string, text: string, color: Color3): TextLabel
+	-- Solid cards so the text reads on any sky. The info card is dark; the
+	-- chips are bright and chunky.
+	local function strip(name: string, text: string, color: Color3, fill: Color3, parent: ScreenGui): TextLabel
 		local l = label({ Name = name, Text = text, TextColor3 = color })
 		textLimit(l, 24)
-		l.BackgroundColor3 = INK
-		l.BackgroundTransparency = 0.3
-		corner(l, 0.5)
+		l.BackgroundColor3 = fill
+		l.BackgroundTransparency = 0
+		corner(l, 0.4)
+		stroke(l, 3)
 		local pad = Instance.new("UIPadding")
-		pad.PaddingLeft = UDim.new(0, 10)
-		pad.PaddingRight = UDim.new(0, 10)
-		pad.PaddingTop = UDim.new(0.12, 0)
-		pad.PaddingBottom = UDim.new(0.12, 0)
+		pad.PaddingLeft = UDim.new(0, 8)
+		pad.PaddingRight = UDim.new(0, 8)
+		pad.PaddingTop = UDim.new(0.06, 0)
+		pad.PaddingBottom = UDim.new(0.06, 0)
 		pad.Parent = l
-		l.Parent = gui
+		l.Parent = parent
 		return l
 	end
-	infoLabel = strip("Info", "Tap a coin to flip it!", WHITE)
-	boostLabel = strip("Boost", "", UiStyle.GOLD)
+	infoLabel = strip("Info", "Tap a coin to flip it!", WHITE, INK, gui)
+	boostLabel = strip("Boost", "", INK, UiStyle.GOLD, pillGui)
 	boostLabel.Visible = false
-	megaLabel = strip("Mega", "", WHITE)
+	megaLabel = strip("Mega", "", WHITE, PURPLE, pillGui)
 	megaLabel.Visible = false
 
 	-- Left side, under the Roblox menu, above the thumbstick.
@@ -446,15 +423,17 @@ function Hud.init()
 			Panels.toast(`Fill your table first! ({count}/{Config.MAX_COINS} coins)`)
 		end
 	end)
-	resetButton, resetIcon, resetWord = resetB, resetI, resetW
-	-- Filling: the word sits on top and a roomy gold bar with the coin count
-	-- fills the bottom. Ready (full): the spinning icon and RESET! take over.
+	resetButton, resetWord = resetB, resetW
+	resetI.Visible = false -- no icon: the bar says it all
+	resetWord.Position = UDim2.fromScale(0, 0.04)
+	resetWord.Size = UDim2.fromScale(1, 0.4)
+	-- The word sits on top; a roomy gold bar with the coin count fills the bottom.
 	resetBar = Instance.new("Frame")
 	resetBar.Name = "Bar"
-	resetBar.Position = UDim2.fromScale(0.04, 0.5)
-	resetBar.Size = UDim2.fromScale(0.92, 0.42)
+	resetBar.Position = UDim2.fromScale(0.06, 0.48)
+	resetBar.Size = UDim2.fromScale(0.88, 0.46)
 	resetBar.BackgroundColor3 = INK
-	resetBar.BackgroundTransparency = 0.25
+	resetBar.BackgroundTransparency = 0
 	resetBar.ZIndex = 2
 	corner(resetBar, 0.5)
 	stroke(resetBar, 2)
@@ -510,15 +489,8 @@ function Hud.init()
 				render(s)
 			end
 		end
-		if open then
-			infoLabel.Visible = false
-			boostLabel.Visible = false
-			megaLabel.Visible = false
-		else
-			setStrip(megaLabel, megaLabel.Text)
-			setStrip(infoLabel, infoLabel.Text)
-			setStrip(boostLabel, boostLabel.Text)
-		end
+		-- Only the info card hides; money, hats and chips stay in view.
+		infoLabel.Visible = infoLabel.Text ~= "" and not open
 	end)
 
 	shownCash.Changed:Connect(function(value: number)
