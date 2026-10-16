@@ -306,7 +306,7 @@ local function makePanel(name: string, title: string, color: Color3, maxSize: Ve
 	Kit.corner(ribbon, 0.3)
 	ribbon.Parent = panel
 	local ribbonFill = Instance.new("Frame") -- squares off the ribbon's bottom corners
-	ribbonFill.Size = UDim2.new(1, 0, 0.4, 0)
+	ribbonFill.Size = UDim2.fromScale(1, 0.4)
 	ribbonFill.Position = UDim2.fromScale(0, 0.6)
 	ribbonFill.BackgroundColor3 = color
 	ribbonFill.BorderSizePixel = 0
