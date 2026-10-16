@@ -184,7 +184,8 @@ local function build()
 	sparkle.Lifetime = NumberRange.new(0.6, 1.2)
 	sparkle.Speed = NumberRange.new(4, 10)
 	sparkle.SpreadAngle = Vector2.new(180, 180)
-	sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, MegaLook.SPARKLE_SIZE), NumberSequenceKeypoint.new(1, 0) })
+	sparkle.Size =
+		NumberSequence.new({ NumberSequenceKeypoint.new(0, MegaLook.SPARKLE_SIZE), NumberSequenceKeypoint.new(1, 0) })
 	sparkle.Color = ColorSequence.new(Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255))
 	sparkle.LightEmission = 0.5
 	sparkle.Parent = coin

@@ -473,8 +473,9 @@ local function step()
 		end
 		dressRare(anim, now, t)
 		-- Never let the spinning (or grown) coin cut into the table top.
-		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y)
-			+ CoinLook.hover(coin.Size.Y / anim.restSize.Y)
+		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y) + CoinLook.hover(
+			coin.Size.Y / anim.restSize.Y
+		)
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0))
 			* CFrame.Angles(0, anim.yaw, 0)
 			* CFrame.Angles(0, 0, roll)
