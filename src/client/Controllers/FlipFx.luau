@@ -473,7 +473,9 @@ local function step()
 				anim.landed = true
 				local drift = Vector3.new(coin.Position.X - anim.base.X, 0, coin.Position.Z - anim.base.Z).Magnitude
 				if Config.LOG_COIN_DRIFT and drift > 0.3 then
-					warn(`CoinFlick: {coin.Name} landed {string.format("%.2f", drift)} studs off its slot (snapped back)`)
+					warn(
+						`CoinFlick: {coin.Name} landed {string.format("%.2f", drift)} studs off its slot (snapped back)`
+					)
 				end
 				trailOn(coin, false)
 				onLanded(anim)
