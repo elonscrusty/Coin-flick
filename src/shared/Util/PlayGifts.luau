@@ -130,13 +130,14 @@ function PlayGifts.view(s: PlayState, today: number, cashPerHeads: number): Play
 		local owed = s.owed[i] == true
 		local claimed = not fresh and s.claimed[i] == true
 		local state = "waiting"
-		-- Owed, or reached yesterday and not claimed (becomes owed on the next tick).
-		if owed or (fresh and not s.claimed[i] and reached(s, i)) then
+		-- Owed, or reached yesterday and not claimed (becomes owed on the next tick), or reached today.
+		local ready = owed
+			or (fresh and not s.claimed[i] and reached(s, i))
+			or (not claimed and seconds >= def.minutes * 60)
+		if ready then
 			state = "ready"
 		elseif claimed then
 			state = "claimed"
-		elseif seconds >= def.minutes * 60 then
-			state = "ready"
 		end
 		if state == "ready" then
 			claimable += 1
