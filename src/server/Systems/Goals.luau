@@ -88,12 +88,20 @@ local function onClaimChallenge(player: Player, rawSlot: unknown)
 	end
 end
 
+local lookChanged: (Player) -> () = function() end
+
+-- Tables.init gives us its rebuild, so a new coin look shows at once (Tables needs Goals, not the reverse).
+function Goals.setLookChanged(fn: (Player) -> ())
+	lookChanged = fn
+end
+
 local function onWearLadder(player: Player, rawId: unknown)
 	if not limiter:allow(player) then
 		return
 	end
 	local profile = PlayerData.get(player)
 	if profile and GoalRules.wearRung(profile, rawId) then
+		lookChanged(player)
 		PlayerData.changed(player)
 		dirty[player] = true
 	end
