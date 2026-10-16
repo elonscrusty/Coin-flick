@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
+local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
@@ -47,8 +48,6 @@ local forcedRarity: { [Player]: string } = {} -- Studio test button only
 local SEE_FLIPS_DISTANCE = 220
 local HEADS: FlipResult = "heads"
 
-local COIN_GOLD = Color3.fromRGB(255, 200, 40)
-
 -- A coin lies flat: its round faces point up/down. Heads = Right face up.
 local function restCFrame(state: TableState, index: number, face: FlipResult): CFrame
 	local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
@@ -57,34 +56,63 @@ local function restCFrame(state: TableState, index: number, face: FlipResult): C
 	return CFrame.new(pos) * CFrame.Angles(0, 0, roll)
 end
 
-local function faceLabel(parent: BasePart, face: Enum.NormalId, text: string, color: Color3)
+-- One painted coin face: a thick rim, a thin inner ring and the mark in the
+-- middle. Names (Rim, Ring, Mark) let the client recolor a rare coin in the air.
+local function coinFace(parent: BasePart, face: Enum.NormalId, text: string, textColor: Color3, rimColor: Color3)
 	local gui = Instance.new("SurfaceGui")
+	gui.Name = `Face_{face.Name}`
 	gui.Face = face
 	gui.LightInfluence = 0.3
 	gui.CanvasSize = Vector2.new(200, 200)
 	gui.Parent = parent
+
+	local function ring(name: string, scale: number, thickness: number)
+		local frame = Instance.new("Frame")
+		frame.Name = name
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Position = UDim2.fromScale(0.5, 0.5)
+		frame.Size = UDim2.fromScale(scale, scale)
+		frame.BackgroundTransparency = 1
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = frame
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = thickness
+		stroke.Color = rimColor
+		stroke.Parent = frame
+		frame.Parent = gui
+	end
+	ring("Rim", 0.94, 12)
+	ring("Ring", 0.74, 4)
+
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
+	label.Name = "Mark"
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.Size = UDim2.fromScale(0.56, 0.56)
 	label.BackgroundTransparency = 1
 	label.Text = text
 	label.TextScaled = true
 	label.Font = Enum.Font.FredokaOne
-	label.TextColor3 = color
+	label.TextColor3 = textColor
 	label.Parent = gui
 end
 
 local function makeCoin(state: TableState, index: number, profile: Profile, skin: Config.SkinDef?): BasePart
 	local diameter = Economy.coinDiameter(profile.upgrades.bigCoins)
 	local face: FlipResult = state.faces[index] or HEADS
-	local textColor = if skin then skin.text else Color3.fromRGB(255, 255, 255)
+	local look = CoinLook.NORMAL
+	local coinColor = if skin then skin.coin else look.color
+	local textColor = if skin then skin.text else look.text
+	local rimColor = if skin then CoinLook.darker(skin.coin, 0.7) else look.rim
 
 	local coin = World.makePart({
 		Name = `Coin_{index}`,
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(Config.COIN_THICKNESS, diameter, diameter),
-		Color = if skin then skin.coin else COIN_GOLD,
-		Material = Enum.Material.SmoothPlastic,
-		Reflectance = 0.15,
+		Color = coinColor,
+		Material = Enum.Material:FromName(look.material) or Enum.Material.SmoothPlastic,
+		Reflectance = look.reflectance,
 		CanCollide = false,
 		CanQuery = false, -- taps hit the bigger hitbox instead
 		CanTouch = false,
@@ -93,8 +121,8 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	coin.CFrame = restCFrame(state, index, face)
 	coin:SetAttribute("CoinIndex", index)
 	coin:SetAttribute("Face", face)
-	faceLabel(coin, Enum.NormalId.Right, "$", textColor)
-	faceLabel(coin, Enum.NormalId.Left, "🎩", textColor) -- tails gives hat points
+	coinFace(coin, Enum.NormalId.Right, "$", textColor, rimColor)
+	coinFace(coin, Enum.NormalId.Left, "🎩", textColor, rimColor) -- tails gives hat points
 
 	local sparkle = Instance.new("ParticleEmitter")
 	sparkle.Name = "Sparkle"
@@ -103,8 +131,9 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	sparkle.Lifetime = NumberRange.new(0.4, 0.8)
 	sparkle.Speed = NumberRange.new(6, 12)
 	sparkle.SpreadAngle = Vector2.new(180, 180)
-	sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
-	sparkle.Color = ColorSequence.new(Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255))
+	sparkle.Size =
+		NumberSequence.new({ NumberSequenceKeypoint.new(0, look.sparkleSize), NumberSequenceKeypoint.new(1, 0) })
+	sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[2])
 	sparkle.LightEmission = 1
 	sparkle.Parent = coin
 
