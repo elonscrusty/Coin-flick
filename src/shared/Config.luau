@@ -319,7 +319,7 @@ return table.freeze({
 	-- Shared mega coin in the middle of the server
 	MEGA_BASE_TAPS = 60,
 	MEGA_TAPS_PER_PLAYER = 30,
-	MEGA_REWARD_FLIPS = 25, -- everyone who tapped gets 25 heads worth of cash
+	MEGA_REWARD_FLIPS = 1000, -- everyone who tapped gets 1000 heads worth of cash (more than the best rare coin pays)
 	MEGA_REWARD_HATS = 5,
 	MEGA_BOOST_MULT = 2, -- then the whole server gets 2x cash...
 	MEGA_BOOST_SECONDS = 60, -- ...for this long

@@ -241,3 +241,15 @@ describe("Leaderboards", function()
 		expect(s.passes.doubleCash).toBe(true)
 	end)
 end)
+
+describe("Mega prize", function()
+	it("pays more than the best rare coin", function()
+		local Economy = require(game:GetService("ReplicatedStorage").Shared.Util.Economy)
+		local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
+		local best = 0
+		for _, r in Config.Rarities do
+			best = math.max(best, r.mult)
+		end
+		expect(Config.MEGA_REWARD_FLIPS).toBeAtLeast(best)
+	end)
+end)
