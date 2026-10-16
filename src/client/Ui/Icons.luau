@@ -106,33 +106,24 @@ local function helperModel(model: Model, def: { id: string, body: Color3, cap: C
 	end
 	if def.id == "zippy" then -- lightning badge on the belly
 		local yellow = Color3.fromRGB(255, 215, 40)
-		add(
-			model,
-			{
-				Size = Vector3.new(0.35, 0.8, 0.2),
-				CFrame = CFrame.new(0.15, 0.35, -1.0) * CFrame.Angles(0, 0, -0.4),
-				Color = yellow,
-			}
-		)
-		add(
-			model,
-			{
-				Size = Vector3.new(0.35, 0.8, 0.2),
-				CFrame = CFrame.new(-0.15, -0.3, -1.0) * CFrame.Angles(0, 0, -0.4),
-				Color = yellow,
-			}
-		)
+		add(model, {
+			Size = Vector3.new(0.35, 0.8, 0.2),
+			CFrame = CFrame.new(0.15, 0.35, -1.0) * CFrame.Angles(0, 0, -0.4),
+			Color = yellow,
+		})
+		add(model, {
+			Size = Vector3.new(0.35, 0.8, 0.2),
+			CFrame = CFrame.new(-0.15, -0.3, -1.0) * CFrame.Angles(0, 0, -0.4),
+			Color = yellow,
+		})
 	elseif def.id == "chompy" then -- big grin with teeth
 		add(model, { Size = Vector3.new(0.9, 0.35, 0.2), CFrame = CFrame.new(0, 1.2, -0.78), Color = dark })
 		for _, x in { -0.25, 0.25 } do
-			add(
-				model,
-				{
-					Size = Vector3.new(0.22, 0.2, 0.2),
-					CFrame = CFrame.new(x, 1.32, -0.86),
-					Color = Color3.fromRGB(255, 255, 255),
-				}
-			)
+			add(model, {
+				Size = Vector3.new(0.22, 0.2, 0.2),
+				CFrame = CFrame.new(x, 1.32, -0.86),
+				Color = Color3.fromRGB(255, 255, 255),
+			})
 		end
 	elseif def.id == "twinkle" then -- little sparkles on the body
 		for _, p in { Vector3.new(-0.7, 0.3, -0.8), Vector3.new(0.6, -0.4, -0.85) } do
@@ -171,22 +162,16 @@ local BUILD: { [string]: (Model) -> () } = {
 	speed = function(m) -- stopwatch
 		local at = CFrame.Angles(math.pi / 2.4, 0, 0)
 		coin(m, at, 2.6, Color3.fromRGB(255, 255, 255), Color3.fromRGB(235, 70, 70))
-		add(
-			m,
-			{
-				Size = Vector3.new(0.18, 0.12, 1.0),
-				CFrame = at * CFrame.new(0.25, 0.3, -0.3) * CFrame.Angles(0, -0.5, 0),
-				Color = Color3.fromRGB(45, 30, 20),
-			}
-		)
-		add(
-			m,
-			{
-				Size = Vector3.new(0.5, 0.4, 0.5),
-				CFrame = at * CFrame.new(0, 0.1, -1.55),
-				Color = Color3.fromRGB(235, 70, 70),
-			}
-		)
+		add(m, {
+			Size = Vector3.new(0.18, 0.12, 1.0),
+			CFrame = at * CFrame.new(0.25, 0.3, -0.3) * CFrame.Angles(0, -0.5, 0),
+			Color = Color3.fromRGB(45, 30, 20),
+		})
+		add(m, {
+			Size = Vector3.new(0.5, 0.4, 0.5),
+			CFrame = at * CFrame.new(0, 0.1, -1.55),
+			Color = Color3.fromRGB(235, 70, 70),
+		})
 	end,
 	doubleCash = function(m)
 		coin(m, CFrame.new(-0.7, 0, 0) * CFrame.Angles(math.pi / 2.4, 0, 0), 2.2)
