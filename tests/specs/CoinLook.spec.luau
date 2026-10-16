@@ -156,3 +156,43 @@ describe("CoinLook fixes from the runner pictures", function()
 		expect(GameLogic.shoutNotice("C", 7, { result = "heads", cash = 1, hats = 0, rarity = "normal" })).toBeNil()
 	end)
 end)
+
+describe("CoinLook round 3: coins stand out on the table, GIANT is a shiny coin", function()
+	it("every rare coin has an outline that is clearly darker or lighter than it", function()
+		for id, look in CoinLook.RARE do
+			if id ~= "silver" then
+				expect(look.outline ~= nil).toBeTruthy()
+				expect(CoinLook.contrast(look.outline :: Color3, look.color)).toBeAtLeast(2)
+			end
+		end
+	end)
+
+	it("every coin is clearly different from every table top, or is outlined", function()
+		for id, look in CoinLook.all() do
+			for _, tbl in Config.TableLooks do
+				local apart = CoinLook.distance(look.color, tbl.top) >= 60
+				local outlined = look.outline ~= nil and CoinLook.contrast(look.outline, tbl.top) >= 1.5
+				expect(apart or outlined).toBeTruthy()
+			end
+		end
+	end)
+
+	it("GIANT is deep gold with a white shine, not fire red", function()
+		local c = CoinLook.RARE.giant.color
+		expect(c.R).toBeAtLeast(c.G)
+		expect(c.G).toBeAtLeast(c.B * 1.5) -- gold, not red
+		expect(c.G * 255).toBeAtLeast(110)
+		expect(CoinLook.RARE.giant.reflectance).toBeAtLeast(CoinLook.RARE.gold.reflectance)
+		expect(#CoinLook.RARE.giant.sparkle).toBeAtLeast(4) -- rainbow-ish sparkles
+	end)
+
+	it("sparkles never wash the table pale (they keep a little of the color behind them)", function()
+		expect(CoinLook.SPARKLE_LIGHT).toBeAtMost(0.5)
+	end)
+
+	it("no coin look lights the table (nothing in a look is a light)", function()
+		for _, look in CoinLook.all() do
+			expect((look :: any).glow).toBeNil()
+		end
+	end)
+end)
