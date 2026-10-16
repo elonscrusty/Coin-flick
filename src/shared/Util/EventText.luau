@@ -39,6 +39,11 @@ function EventText.event(ev: EventView?, now: number): string
 	return ""
 end
 
+-- The one wording for "a gift is coming" (HUD chip, GIFTS tab buttons).
+function EventText.giftWait(seconds: number): string
+	return `Next gift {EventText.span(seconds)}`
+end
+
 -- Play gifts: how many can be taken now, else a countdown when one is close.
 -- `age` is how many seconds old the view is (the countdown keeps running).
 function EventText.gift(view: PlayGiftView?, age: number): (string, boolean)
@@ -57,7 +62,7 @@ function EventText.gift(view: PlayGiftView?, age: number): (string, boolean)
 	if nearest <= 0 then
 		return "🎁 READY!", true
 	elseif nearest <= EventText.NEAR_GIFT then
-		return `🎁 {EventText.span(nearest)}`, false
+		return EventText.giftWait(nearest), false
 	end
 	return "", false
 end

@@ -205,16 +205,10 @@ end
 
 -- Toasts and banners -------------------------------------------------------------
 
--- Where the toast rests: its HUD slot, or (panel open) centred on the panel's bottom edge.
+-- Where the toast rests: always in the free band at the left (the panel sits to its right,
+-- so a toast never covers the shop). While a panel is open it uses the same spot.
 local function toastPlace(): (UDim2, UDim2)
-	local open = if openName then panels[openName] else nil
-	if open then
-		local slot = layout.toastLow
-		local fit = open:GetAttribute("Fit")
-		local w = math.min(slot.w, open.Size.X.Offset * (if typeof(fit) == "number" then fit else 1) - 24)
-		return UDim2.fromOffset(open.Position.X.Offset, slot.y + slot.h / 2 - 6), UDim2.fromOffset(w, slot.h - 8)
-	end
-	local slot = layout.toast
+	local slot = if openName then layout.toastLow else layout.toast
 	return UDim2.fromOffset(slot.x + slot.w / 2, slot.y + slot.h / 2), UDim2.fromOffset(slot.w, slot.h)
 end
 
@@ -613,7 +607,7 @@ local function layoutCard(ui: CardUi, h: number)
 	end
 	local lineLimit = ui.line:FindFirstChildOfClass("UITextSizeConstraint")
 	if lineLimit then
-		lineLimit.MaxTextSize = math.max(14, math.round(h * 0.3))
+		lineLimit.MaxTextSize = math.max(14, math.round(h * 0.34))
 	end
 end
 
@@ -650,8 +644,8 @@ local function newCard(
 	end
 
 	-- Buttons on the right; the text area fills the rest.
-	local buyWidth = 0.3
-	local teamWidth = if withTeam then 0.22 else 0
+	local buyWidth = 0.24
+	local teamWidth = if withTeam then 0.2 else 0
 	local textLeft = cardHeight + 2
 	local textRight = buyWidth + teamWidth
 
@@ -1189,9 +1183,10 @@ local function buildReset()
 		Panels.closeAll()
 	end)
 	resetYes.Size = UDim2.fromScale(0.47, 0.24)
+	resetYes.Text = "RESET"
 	resetYes.Position = UDim2.fromScale(0, 0.76)
 	resetYes.ZIndex = 8
-	Kit.textLimit(resetYes, 28)
+	Kit.textLimit(resetYes, 24)
 	resetYes.Parent = body
 	local no = Kit.button("NO", Kit.RED, function()
 		Sounds.play("Tap", 0.4)
@@ -1564,18 +1559,19 @@ function Panels.start()
 			Panels.toast(notice.text)
 		elseif notice.kind == "offline" then
 			HudPopups.welcomeBack(notice.text) -- the big "Welcome back" card (HUD side)
+		elseif PanelView.unlockBanner(notice.kind, notice.text) then
+			-- new pet / new badge: one bright look, picture + name
+			local title, name, emoji = PanelView.unlockBanner(notice.kind, notice.text)
+			local picture = Kit.label({ Text = emoji or "", Size = UDim2.fromScale(1, 1) })
+			Kit.textLimit(picture, 60)
+			Sounds.play("Gift", 0.7)
+			showBanner(title or "", name or notice.text, Kit.GOLD, false, 3, picture)
+			confetti(16)
 		elseif EventText.banner(notice.kind, notice.text) then
 			-- weekend / coin rain / play gift / badge: one banner look for all
 			local title, line = EventText.banner(notice.kind, notice.text)
 			Sounds.play("Gift", 0.7)
-			showBanner(
-				title or "",
-				line or notice.text,
-				if notice.kind == "badge" then Kit.PURPLE else Kit.TEAL,
-				false,
-				3,
-				nil
-			)
+			showBanner(title or "", line or notice.text, Kit.TEAL, false, 3, nil)
 			confetti(16)
 		else
 			Panels.toast(notice.text)
