@@ -10,8 +10,15 @@ local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 
 local Plot = {}
 
--- Gate pillars this tall keep the name sign above the spawn camera's picture.
-local ARCH_TOP = 16
+-- Gate pillars this tall keep the name sign above the spawn camera's picture AND above the walk
+-- view just outside the gate (tests/specs/Map.spec.luau projects both).
+local ARCH_TOP = 20
+-- Half the entrance width. Wide, so the pillars sit at the very edges of the walk view and the
+-- table stays big; thin pillars so they never fill the picture.
+local GATE_HALF = 11
+local PILLAR_W = 0.5
+local BAND_W = 0.7
+local CAP_SIZE = 1.3
 -- Arch pillars stay bright white in EVERY theme, so a brown or dark avatar never blends into them.
 local PILLAR = Color3.fromRGB(255, 252, 245)
 local PILLAR_CAP = Color3.fromRGB(255, 205, 50)
@@ -54,6 +61,9 @@ end
 Plot.tree = tree
 Plot.PILLAR = PILLAR
 Plot.ARCH_TOP = ARCH_TOP
+Plot.GATE_HALF = GATE_HALF
+Plot.PILLAR_W = PILLAR_W
+Plot.CAP_SIZE = CAP_SIZE
 Plot.LEAVES = LEAVES
 Plot.FLOWERS = FLOWERS
 
@@ -107,7 +117,7 @@ function Plot.build(
 	border.Parent = folder
 
 	-- Fence: posts + two rails on each side, with a gap for the entrance.
-	local gap = 8 -- half the entrance width; wide, so the gate pillars stay at the screen edges
+	local gap = GATE_HALF
 	local function fenceRun(from: Vector3, to: Vector3)
 		local length = (to - from).Magnitude
 		local mid = (from + to) / 2
@@ -144,7 +154,7 @@ function Plot.build(
 	for _, x in { -gap, gap } do
 		local pillar = make({
 			Name = "Pillar",
-			Size = Vector3.new(0.9, ARCH_TOP, 0.9),
+			Size = Vector3.new(PILLAR_W, ARCH_TOP, PILLAR_W),
 			CFrame = plotCFrame * CFrame.new(x, ARCH_TOP / 2, -half),
 			Color = PILLAR,
 		})
@@ -153,7 +163,7 @@ function Plot.build(
 		for i = 1, 4 do
 			local band = make({
 				Name = "Band",
-				Size = Vector3.new(1.1, 0.6, 1.1),
+				Size = Vector3.new(BAND_W, 0.5, BAND_W),
 				CFrame = plotCFrame * CFrame.new(x, i * 2.9, -half),
 				Color = theme.border,
 				CanCollide = false,
@@ -163,8 +173,8 @@ function Plot.build(
 		local cap = make({
 			Name = "Cap",
 			Shape = Enum.PartType.Ball,
-			Size = Vector3.one * 2.2,
-			CFrame = plotCFrame * CFrame.new(x, ARCH_TOP + 0.8, -half),
+			Size = Vector3.one * CAP_SIZE,
+			CFrame = plotCFrame * CFrame.new(x, ARCH_TOP + 0.4, -half),
 			Color = PILLAR_CAP,
 			CanCollide = false,
 		})

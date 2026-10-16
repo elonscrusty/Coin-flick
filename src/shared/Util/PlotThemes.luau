@@ -9,6 +9,8 @@ export type Theme = {
 	name: string,
 	resets: number, -- resets needed before you can pick it
 	pad: Color3, -- floor of the yard
+	tile: Color3, -- checker tiles on the floor: clearly not white (the fence is white)
+	ground: Color3, -- ring of ground outside the fence, so each yard reads as its own place
 	border: Color3, -- trim around the floor
 	fence: Color3, -- posts and rails
 	post: Color3, -- fence cap / arch pillars
@@ -29,6 +31,8 @@ local THEMES: { Theme } = {
 		name = "Sunny Meadow",
 		resets = 0,
 		pad = Color3.fromRGB(176, 226, 150),
+		tile = Color3.fromRGB(130, 200, 110),
+		ground = Color3.fromRGB(150, 222, 120),
 		border = Color3.fromRGB(150, 100, 60),
 		fence = Color3.fromRGB(255, 250, 240),
 		post = Color3.fromRGB(150, 100, 60),
@@ -52,6 +56,8 @@ local THEMES: { Theme } = {
 		name = "Sandy Beach",
 		resets = 1,
 		pad = Color3.fromRGB(250, 228, 160),
+		tile = Color3.fromRGB(232, 194, 118),
+		ground = Color3.fromRGB(246, 224, 150),
 		border = Color3.fromRGB(70, 190, 255),
 		fence = Color3.fromRGB(255, 255, 255),
 		post = Color3.fromRGB(255, 120, 90),
@@ -75,6 +81,8 @@ local THEMES: { Theme } = {
 		name = "Candy Land",
 		resets = 2,
 		pad = Color3.fromRGB(255, 205, 230),
+		tile = Color3.fromRGB(255, 160, 205),
+		ground = Color3.fromRGB(255, 196, 224),
 		border = Color3.fromRGB(255, 120, 190),
 		fence = Color3.fromRGB(255, 255, 255),
 		post = Color3.fromRGB(255, 90, 160),
@@ -98,6 +106,8 @@ local THEMES: { Theme } = {
 		name = "Toy Castle",
 		resets = 3,
 		pad = Color3.fromRGB(214, 214, 226),
+		tile = Color3.fromRGB(168, 174, 206),
+		ground = Color3.fromRGB(190, 194, 208),
 		border = Color3.fromRGB(120, 130, 180),
 		fence = Color3.fromRGB(230, 232, 245),
 		post = Color3.fromRGB(110, 120, 170),
@@ -121,6 +131,8 @@ local THEMES: { Theme } = {
 		name = "Star Station",
 		resets = 4,
 		pad = Color3.fromRGB(150, 130, 230),
+		tile = Color3.fromRGB(116, 96, 205),
+		ground = Color3.fromRGB(150, 152, 182),
 		border = Color3.fromRGB(90, 255, 230),
 		fence = Color3.fromRGB(235, 240, 255),
 		post = Color3.fromRGB(90, 255, 230),
