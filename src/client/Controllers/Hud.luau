@@ -7,12 +7,15 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GuiService = game:GetService("GuiService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
+local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local CameraView = require(script.Parent.CameraView)
 local Sounds = require(script.Parent.Sounds)
@@ -48,6 +51,20 @@ local label = UiStyle.label
 local button = UiStyle.button
 local popScale = UiStyle.popScale
 
+-- Anchored at the middle so pop animations (UIScale) grow from the center.
+local function place(g: GuiObject, r: HudLayout.Rect)
+	g.AnchorPoint = Vector2.new(0.5, 0.5)
+	g.Position = UDim2.fromOffset(r.x + r.w / 2, r.y + r.h / 2)
+	g.Size = UDim2.fromOffset(r.w, r.h)
+end
+
+local function setMaxText(g: GuiObject, max: number)
+	local c = g:FindFirstChildOfClass("UITextSizeConstraint")
+	if c then
+		c.MaxTextSize = math.max(HudLayout.MIN_TEXT, math.floor(max))
+	end
+end
+
 -- Build ---------------------------------------------------------------------
 
 local gui: ScreenGui
@@ -82,6 +99,8 @@ local comboLabel: TextLabel
 local comboScale: UIScale
 local comboToken = 0
 local prices: { [string]: string } = {} -- live Robux prices from Roblox
+local layout: HudLayout.Layout = HudLayout.compute(844, 390, true) -- redone in applyLayout
+local cheatFrame: Frame? = nil
 
 local shownCash = Instance.new("NumberValue")
 local render: (Snapshot) -> ()
@@ -97,11 +116,13 @@ local function toast(text: string, color: Color3?)
 	toastLabel.Text = text
 	toastLabel.TextColor3 = color or WHITE
 	toastLabel.Visible = true
-	-- Below an open panel, else low in the middle (never over coins or cards).
-	local toastY = if anyPanelOpen() then 0.9 else 0.79
-	toastLabel.Position = UDim2.fromScale(0.5, toastY)
+	-- Its own slot under the top strips; below an open panel while one is up.
+	local slot = if anyPanelOpen() then layout.toastLow else layout.toast
+	place(toastLabel, slot)
+	local rest = toastLabel.Position
+	toastLabel.Position = rest - UDim2.fromOffset(0, 6)
 	UiStyle.showText(toastLabel)
-	TweenService:Create(toastLabel, BOUNCY, { Position = UDim2.fromScale(0.5, toastY + 0.02) }):Play()
+	TweenService:Create(toastLabel, BOUNCY, { Position = rest }):Play()
 	task.delay(2.6, function()
 		if token ~= toastToken then
 			return
@@ -155,6 +176,12 @@ local function openPanel(panel: Frame)
 		onShopOpen()
 	end
 	panel.Visible = true
+	-- Panels may reach over the thumbstick, so hide Roblox's touch controls
+	-- (and the Studio test buttons) while one is open.
+	GuiService.TouchControlsEnabled = false
+	if cheatFrame then
+		cheatFrame.Visible = false
+	end
 	if scale then
 		scale.Scale = 0.6
 		TweenService:Create(scale, BOUNCY, { Scale = 1 }):Play()
@@ -165,6 +192,10 @@ local function closePanels()
 	shopPanel.Visible = false
 	resetPanel.Visible = false
 	topPanel.Visible = false
+	GuiService.TouchControlsEnabled = true
+	if cheatFrame then
+		cheatFrame.Visible = true
+	end
 end
 
 local function makePanel(name: string, title: string): (Frame, Frame)
@@ -597,14 +628,8 @@ local function buildReset()
 	no.Parent = body
 end
 
-local function sideButton(order: number, text: string, color: Color3, onPress: () -> ()): TextButton
+local function sideButton(text: string, color: Color3, onPress: () -> ()): TextButton
 	local b = button(text, color, onPress)
-	b.LayoutOrder = order
-	b.Size = UDim2.fromScale(1, 0.22)
-	local aspect = Instance.new("UIAspectRatioConstraint")
-	aspect.AspectRatio = 1
-	aspect.DominantAxis = Enum.DominantAxis.Height
-	aspect.Parent = b
 	textLimit(b, 22)
 	return b
 end
@@ -617,21 +642,22 @@ local function buildCheats(parent: ScreenGui)
 	local frame = Instance.new("Frame")
 	frame.Name = "StudioCheats"
 	frame.BackgroundTransparency = 1
-	-- Top-left, under the Roblox menu, clear of the combo counter and thumbstick.
-	frame.Position = UDim2.fromOffset(8, 56)
-	frame.Size = UDim2.fromOffset(72, 190)
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 6)
-	layout.Parent = frame
-	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "MEGA", "mega" }, { "WIPE", "wipe" } } do
+	local layoutList = Instance.new("UIListLayout")
+	layoutList.Padding = UDim.new(0, HudLayout.GAP)
+	layoutList.SortOrder = Enum.SortOrder.LayoutOrder
+	layoutList.Parent = frame
+	for i, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "MEGA", "mega" }, { "WIPE", "wipe" } } do
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)
-		b.Size = UDim2.fromOffset(72, 32)
+		b.Name = item[2]
+		b.LayoutOrder = i
 		b.Parent = frame
 	end
 	frame.Parent = parent
+	cheatFrame = frame
 end
+
 
 render = function(s: Snapshot)
 	-- Cash counts up instead of snapping.
@@ -647,7 +673,7 @@ render = function(s: Snapshot)
 		popScale(hatScale, 1.15)
 	end
 	infoLabel.Text =
-		`${Format.short(s.cashPerHeads)} per heads  •  {Format.percent(s.headsChance)} heads  •  {s.coinCount}/{Config.MAX_COINS} coins`
+		`💵 ${Format.short(s.cashPerHeads)} per heads  •  🍀 {Format.percent(s.headsChance)}  •  🪙 {s.coinCount}/{Config.MAX_COINS}`
 
 	for id, card in shopCards do
 		local level = s.upgrades[id :: Types.UpgradeId]
@@ -788,6 +814,75 @@ render = function(s: Snapshot)
 	end
 end
 
+local topFrame: Frame
+local sideFrame: Frame
+local sideButtons: { TextButton } = {}
+
+-- Put every HUD piece in its HudLayout slot for this screen size. Runs on
+-- start and whenever the screen changes (phone turned, window resized).
+local function applyLayout()
+	local size = gui.AbsoluteSize
+	if size.X < 10 or size.Y < 10 then
+		return
+	end
+	layout = HudLayout.compute(size.X, size.Y, UserInputService.TouchEnabled)
+	local s = layout.scale
+
+	place(topFrame, layout.top)
+	setMaxText(cashLabel, layout.top.h * 0.62)
+	setMaxText(hatLabel, layout.top.h * 0.62)
+	place(infoLabel, layout.info)
+	setMaxText(infoLabel, layout.info.h * 0.72)
+	place(boostLabel, layout.boost)
+	setMaxText(boostLabel, layout.boost.h * 0.72)
+	place(shoutLabel, layout.shout)
+	setMaxText(shoutLabel, layout.shout.h * 0.42)
+	place(comboLabel, layout.combo)
+	setMaxText(comboLabel, layout.combo.h * 0.4)
+	setMaxText(toastLabel, layout.toast.h * 0.42)
+	if toastLabel.Visible then
+		local slot = if anyPanelOpen() then layout.toastLow else layout.toast
+		place(toastLabel, slot)
+	end
+
+	place(sideFrame, layout.side)
+	for i, b in sideButtons do
+		local r = layout.sideButtons[i]
+		place(b, { x = r.x - layout.side.x, y = r.y - layout.side.y, w = r.w, h = r.h })
+		setMaxText(b, r.h * 0.3)
+	end
+
+	if cheatFrame then
+		place(cheatFrame, layout.cheats)
+		local list = cheatFrame:FindFirstChildOfClass("UIListLayout")
+		local row = layout.cheats.w > layout.cheats.h
+		if list then
+			list.FillDirection = if row then Enum.FillDirection.Horizontal else Enum.FillDirection.Vertical
+			list.Padding = UDim.new(0, HudLayout.GAP * s)
+		end
+		local count = 5
+		for _, b in cheatFrame:GetChildren() do
+			if b:IsA("TextButton") then
+				b.Size = if row
+					then UDim2.new(1 / count, -HudLayout.GAP * s, 1, 0)
+					else UDim2.new(1, 0, 1 / count, -HudLayout.GAP * s)
+			end
+		end
+	end
+
+	-- Panels: centered in the free panel box, never bigger than it.
+	for _, panel in { shopPanel, resetPanel, topPanel } do
+		local box = layout.panel
+		panel.AnchorPoint = Vector2.new(0.5, 0.5)
+		panel.Position = UDim2.fromOffset(box.x + box.w / 2, box.y + box.h / 2)
+		local cap = panel:FindFirstChildOfClass("UISizeConstraint")
+		if cap then
+			cap.MaxSize = Vector2.new(math.min(560 * s, box.w), box.h)
+			cap.MinSize = Vector2.new(math.min(300, box.w), math.min(210, box.h))
+		end
+	end
+end
+
 function Hud.init()
 	gui = Instance.new("ScreenGui")
 	gui.Name = "CoinFlickHud"
@@ -798,19 +893,13 @@ function Hud.init()
 	-- Top bar: cash + hat points.
 	local top = Instance.new("Frame")
 	top.Name = "Top"
-	top.AnchorPoint = Vector2.new(0.5, 0)
-	top.Position = UDim2.new(0.5, 0, 0, 6)
-	top.Size = UDim2.fromScale(0.6, 0.11)
 	top.BackgroundTransparency = 1
-	local topSize = Instance.new("UISizeConstraint")
-	topSize.MaxSize = Vector2.new(520, 64)
-	topSize.MinSize = Vector2.new(240, 38)
-	topSize.Parent = top
 	local topLayout = Instance.new("UIListLayout")
 	topLayout.FillDirection = Enum.FillDirection.Horizontal
 	topLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	topLayout.Padding = UDim.new(0.03, 0)
 	topLayout.Parent = top
+	topFrame = top
 
 	local function pill(color: Color3, width: number): (Frame, TextLabel, UIScale)
 		local frame = Instance.new("Frame")
@@ -820,7 +909,7 @@ function Hud.init()
 		stroke(frame, 3)
 		local scale = Instance.new("UIScale")
 		scale.Parent = frame
-		local text = label({ Size = UDim2.fromScale(0.9, 0.8), Position = UDim2.fromScale(0.05, 0.1) })
+		local text = label({ Size = UDim2.fromScale(0.86, 0.8), Position = UDim2.fromScale(0.07, 0.1) })
 		textLimit(text, 40)
 		text.Parent = frame
 		frame.Parent = top
@@ -834,24 +923,29 @@ function Hud.init()
 	hatLabel.Text = "🎩 0"
 	top.Parent = gui
 
-	infoLabel = label({
-		Name = "Info",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0.11, 12),
-		Size = UDim2.fromScale(0.6, 0.045),
-		Text = "Tap a coin to flip it!",
-	})
-	textLimit(infoLabel, 20)
-	-- Dark see-through strip so the white text reads on bright sky.
-	infoLabel.BackgroundColor3 = INK
-	infoLabel.BackgroundTransparency = 0.45
-	corner(infoLabel, 0.5)
-	infoLabel.Parent = gui
+	-- Dark see-through strips so the white text reads on bright sky.
+	local function strip(name: string, text: string, color: Color3): TextLabel
+		local l = label({ Name = name, Text = text, TextColor3 = color })
+		textLimit(l, 24)
+		l.BackgroundColor3 = INK
+		l.BackgroundTransparency = 0.3
+		corner(l, 0.5)
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft = UDim.new(0, 10)
+		pad.PaddingRight = UDim.new(0, 10)
+		pad.PaddingTop = UDim.new(0.12, 0)
+		pad.PaddingBottom = UDim.new(0.12, 0)
+		pad.Parent = l
+		l.Parent = gui
+		return l
+	end
+	infoLabel = strip("Info", "Tap a coin to flip it!", WHITE)
+	boostLabel = strip("Boost", "", UiStyle.GOLD)
+	boostLabel.Visible = false
 
 	toastLabel = label({
 		Name = "Toast",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Size = UDim2.fromScale(0.7, 0.07),
+		TextWrapped = true,
 		Visible = false,
 		ZIndex = 10,
 	})
@@ -860,9 +954,7 @@ function Hud.init()
 
 	shoutLabel = label({
 		Name = "Shout",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.69),
-		Size = UDim2.fromScale(0.8, 0.09),
+		TextWrapped = true,
 		Visible = false,
 		ZIndex = 11,
 	})
@@ -871,26 +963,9 @@ function Hud.init()
 	shoutScale.Parent = shoutLabel
 	shoutLabel.Parent = gui
 
-	boostLabel = label({
-		Name = "Boost",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0.155, 14),
-		Size = UDim2.fromScale(0.4, 0.05),
-		TextColor3 = Color3.fromRGB(255, 220, 60),
-		Visible = false,
-	})
-	textLimit(boostLabel, 20)
-	boostLabel.BackgroundColor3 = INK
-	boostLabel.BackgroundTransparency = 0.45
-	corner(boostLabel, 0.5)
-	boostLabel.Parent = gui
-
-	-- Left side, above the phone thumbstick.
+	-- Left side, under the Roblox menu, above the thumbstick.
 	comboLabel = label({
 		Name = "Combo",
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 14, 0.56, 0),
-		Size = UDim2.fromScale(0.16, 0.16),
 		Visible = false,
 		ZIndex = 9,
 	})
@@ -899,26 +974,17 @@ function Hud.init()
 	comboScale.Parent = comboLabel
 	comboLabel.Parent = gui
 
-	-- Right side: big buttons, above the phone jump button.
+	-- Right side: 2x2 big buttons, above the phone jump button.
 	local side = Instance.new("Frame")
 	side.Name = "Side"
-	side.AnchorPoint = Vector2.new(1, 0.5)
-	side.Position = UDim2.new(1, -10, 0.45, 0)
-	side.Size = UDim2.fromScale(0.2, 0.64)
 	side.BackgroundTransparency = 1
-	local sideLayout = Instance.new("UIListLayout")
-	sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-	sideLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	sideLayout.Padding = UDim.new(0.04, 0)
-	sideLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	sideLayout.Parent = side
-	local shopButton = sideButton(1, "🛒\nSHOP", GREEN, function()
+	sideFrame = side
+	local shopButton = sideButton("🛒\nSHOP", GREEN, function()
 		Sounds.play("Tap", 0.4)
 		closePanels()
 		openPanel(shopPanel)
 	end)
-	shopButton.Parent = side
-	resetButton = sideButton(2, "🔄\nRESET", GREY, function()
+	resetButton = sideButton("🔄\nRESET", GREY, function()
 		Sounds.play("Tap", 0.4)
 		local s = State.get()
 		if s and s.tableFull then
@@ -929,19 +995,21 @@ function Hud.init()
 			toast(`Fill your table first! ({count}/{Config.MAX_COINS} coins)`)
 		end
 	end)
-	resetButton.Parent = side
-	local topButton = sideButton(3, "🏆\nTOP", PURPLE, function()
+	local topButton = sideButton("🏆\nTOP", PURPLE, function()
 		Sounds.play("Tap", 0.4)
 		closePanels()
 		openPanel(topPanel)
 	end)
-	topButton.Parent = side
 	local viewButton: TextButton
-	viewButton = sideButton(4, "🔍\nZOOM", BLUE, function()
+	viewButton = sideButton("🔍\nZOOM", BLUE, function()
 		local tableView = CameraView.toggle()
 		viewButton.Text = if tableView then "🏃\nWALK" else "🔍\nZOOM"
 	end)
-	viewButton.Parent = side
+	sideButtons = { shopButton, resetButton, topButton, viewButton }
+	for i, b in sideButtons do
+		b.Name = ({ "Shop", "Reset", "Top", "View" })[i]
+		b.Parent = side
+	end
 	side.Parent = gui
 
 	buildShop()
@@ -954,6 +1022,8 @@ function Hud.init()
 	end)
 
 	gui.Parent = player:WaitForChild("PlayerGui")
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyLayout)
+	applyLayout()
 end
 
 function Hud.start()
