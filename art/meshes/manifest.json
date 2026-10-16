@@ -1,0 +1,64 @@
+{
+ "CF_Coin": {
+  "file": "CF_Coin.fbx",
+  "faces": 570,
+  "pieces": {
+   "Rim": {
+    "color": "#e89a00",
+    "material": "SmoothPlastic"
+   },
+   "Face": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Mark": {
+    "color": "#8a4a00",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Table": {
+  "file": "CF_Table.fbx",
+  "faces": 944,
+  "pieces": {
+   "Top": {
+    "color": "#d6965a",
+    "material": "SmoothPlastic"
+   },
+   "Rim": {
+    "color": "#96602f",
+    "material": "SmoothPlastic"
+   },
+   "Trim": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Legs": {
+    "color": "#78502a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Tree": {
+  "file": "CF_Tree.fbx",
+  "faces": 469,
+  "pieces": {
+   "Bark": {
+    "color": "#8a5a30",
+    "material": "SmoothPlastic"
+   },
+   "Leaf": {
+    "color": "#58c944",
+    "material": "SmoothPlastic"
+   },
+   "LeafLight": {
+    "color": "#8fe05a",
+    "material": "SmoothPlastic"
+   },
+   "Fruit": {
+    "color": "#ff4f5e",
+    "material": "SmoothPlastic"
+   }
+  }
+ }
+}

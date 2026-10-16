@@ -4,6 +4,7 @@
 """
 
 import argparse
+import json
 import os
 import sys
 
@@ -23,6 +24,8 @@ def main():
     names = [n for n in args.only.split(",") if n] or list(MODELS)
     os.makedirs(os.path.join(ROOT, "art/meshes"), exist_ok=True)
     os.makedirs(os.path.join(ROOT, "art/previews"), exist_ok=True)
+    manifest_path = os.path.join(ROOT, "art/meshes/manifest.json")
+    manifest = json.load(open(manifest_path)) if os.path.exists(manifest_path) else {}
     for name in names:
         cfkit.reset_scene()
         model = MODELS[name]()
@@ -30,9 +33,16 @@ def main():
         cfkit.export_fbx(objs, os.path.join(ROOT, f"art/meshes/{name}.fbx"))
         tris = sum(len(o.data.polygons) for o in objs)
         print(f"{name}: {len(objs)} pieces, {tris} faces")
+        manifest[name] = model.manifest(tris)
         if not args.no_render:
             big = name == "CF_Table"
             cfkit.render(objs, os.path.join(ROOT, f"art/previews/{name}.png"), cam_dir=(1.0, -1.25, 0.9 if big else 0.8))
+    write_manifest(manifest)
+
+
+def write_manifest(manifest):
+    path = os.path.join(ROOT, "art/meshes/manifest.json")
+    json.dump(dict(sorted(manifest.items())), open(path, "w"), indent=1)
 
 
 def scene_preview():

@@ -20,10 +20,22 @@ class Model:
     def __init__(self, name):
         self.name = name
         self.pieces = {}  # slot -> (bmesh, colour)
+        self.materials = {}  # slot -> Roblox Enum.Material name
 
-    def slot(self, slot, colour):
+    def manifest(self, faces):
+        """What the game needs to repaint the imported MeshParts (the FBX itself carries no colours)."""
+        return {
+            "file": f"{self.name}.fbx",
+            "faces": faces,
+            "pieces": {
+                slot: {"color": "#%02x%02x%02x" % tuple(round(c * 255) for c in colour), "material": self.materials[slot]}
+                for slot, (_, colour) in self.pieces.items()
+            },
+        }
+    def slot(self, slot, colour, material="SmoothPlastic"):
         if slot not in self.pieces:
             self.pieces[slot] = (bmesh.new(), hexc(colour))
+            self.materials[slot] = material
         return Piece(self, self.pieces[slot][0])
 
     def objects(self):
