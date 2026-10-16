@@ -24,97 +24,29 @@ local Hud = {}
 
 local player = Players.LocalPlayer
 
-local FONT = Enum.Font.FredokaOne
-local INK = Color3.fromRGB(45, 30, 20)
-local WHITE = Color3.fromRGB(255, 255, 255)
-local GREEN = Color3.fromRGB(70, 210, 110)
-local PURPLE = Color3.fromRGB(170, 110, 255)
-local ORANGE = Color3.fromRGB(255, 160, 40)
-local BLUE = Color3.fromRGB(60, 170, 255)
-local RED = Color3.fromRGB(255, 90, 90)
-local GREY = Color3.fromRGB(170, 170, 175)
-local PANEL = Color3.fromRGB(255, 248, 230)
+local UiStyle = require(script.Parent.UiStyle)
 
-local FAST = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local BOUNCY = TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-local COUNT = TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local INK = UiStyle.INK
+local WHITE = UiStyle.WHITE
+local GREEN = UiStyle.GREEN
+local PURPLE = UiStyle.PURPLE
+local ORANGE = UiStyle.ORANGE
+local BLUE = UiStyle.BLUE
+local RED = UiStyle.RED
+local GREY = UiStyle.GREY
+local PANEL = UiStyle.PANEL
 
--- Small UI helpers -------------------------------------------------------
+local BOUNCY = UiStyle.BOUNCY
+local COUNT = UiStyle.COUNT
 
-local function corner(parent: GuiObject, scale: number?)
-	local c = Instance.new("UICorner")
-	c.CornerRadius = UDim.new(scale or 0.25, 0)
-	c.Parent = parent
-end
+-- Small UI helpers (shared look lives in UiStyle) ---------------------------
 
-local function stroke(parent: GuiObject, thickness: number?)
-	local s = Instance.new("UIStroke")
-	s.Thickness = thickness or 3
-	s.Color = INK
-	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	s.Parent = parent
-	return s
-end
-
-local function textLimit(label: TextLabel | TextButton, max: number)
-	local c = Instance.new("UITextSizeConstraint")
-	c.MaxTextSize = max
-	c.MinTextSize = 10
-	c.Parent = label
-end
-
-local function label(props: { [string]: any }): TextLabel
-	local l = Instance.new("TextLabel")
-	l.BackgroundTransparency = 1
-	l.Font = FONT
-	l.TextScaled = true
-	l.TextColor3 = WHITE
-	l.TextStrokeColor3 = INK
-	l.TextStrokeTransparency = 0.2
-	for k, v in props do
-		(l :: any)[k] = v
-	end
-	return l
-end
-
--- A chunky cartoon button that pops when pressed.
-local function button(text: string, color: Color3, onPress: () -> ()): TextButton
-	local b = Instance.new("TextButton")
-	b.AutoButtonColor = false
-	b.BackgroundColor3 = color
-	b.Font = FONT
-	b.TextScaled = true
-	b.Text = text
-	b.TextColor3 = WHITE
-	b.TextStrokeColor3 = INK
-	b.TextStrokeTransparency = 0.2
-	corner(b)
-	stroke(b)
-	local scale = Instance.new("UIScale")
-	scale.Parent = b
-	local pad = Instance.new("UIPadding")
-	pad.PaddingLeft = UDim.new(0.08, 0)
-	pad.PaddingRight = UDim.new(0.08, 0)
-	pad.PaddingTop = UDim.new(0.1, 0)
-	pad.PaddingBottom = UDim.new(0.1, 0)
-	pad.Parent = b
-	b.MouseButton1Down:Connect(function()
-		TweenService:Create(scale, FAST, { Scale = 0.9 }):Play()
-	end)
-	b.MouseButton1Up:Connect(function()
-		TweenService:Create(scale, BOUNCY, { Scale = 1 }):Play()
-	end)
-	b.MouseLeave:Connect(function()
-		TweenService:Create(scale, BOUNCY, { Scale = 1 }):Play()
-	end)
-	b.Activated:Connect(onPress)
-	return b
-end
-
-local function popScale(scale: UIScale, amount: number)
-	scale.Scale = amount
-	TweenService:Create(scale, BOUNCY, { Scale = 1 }):Play()
-end
+local corner = UiStyle.corner
+local stroke = UiStyle.stroke
+local textLimit = UiStyle.textLimit
+local label = UiStyle.label
+local button = UiStyle.button
+local popScale = UiStyle.popScale
 
 -- Build ---------------------------------------------------------------------
 
@@ -168,15 +100,13 @@ local function toast(text: string, color: Color3?)
 	-- Below an open panel, else low in the middle (never over coins or cards).
 	local toastY = if anyPanelOpen() then 0.9 else 0.79
 	toastLabel.Position = UDim2.fromScale(0.5, toastY)
-	toastLabel.TextTransparency = 0
-	toastLabel.TextStrokeTransparency = 0.2
+	UiStyle.showText(toastLabel)
 	TweenService:Create(toastLabel, BOUNCY, { Position = UDim2.fromScale(0.5, toastY + 0.02) }):Play()
 	task.delay(2.6, function()
 		if token ~= toastToken then
 			return
 		end
-		local fade = TweenService:Create(toastLabel, COUNT, { TextTransparency = 1, TextStrokeTransparency = 1 })
-		fade:Play()
+		local fade = UiStyle.fadeText(toastLabel, 1)
 		fade.Completed:Wait()
 		if token == toastToken then
 			toastLabel.Visible = false
@@ -191,8 +121,7 @@ local function shout(notice: Types.Notice)
 	local def = notice.rarity and Economy.rarityDef(notice.rarity)
 	shoutLabel.Text = `⭐ {notice.text} ⭐`
 	shoutLabel.TextColor3 = if def then def.color else ORANGE
-	shoutLabel.TextTransparency = 0
-	shoutLabel.TextStrokeTransparency = 0
+	UiStyle.showText(shoutLabel)
 	shoutLabel.Visible = true
 	shoutScale.Scale = 0.2
 	TweenService:Create(shoutScale, BOUNCY, { Scale = 1 }):Play()
@@ -210,8 +139,7 @@ local function shout(notice: Types.Notice)
 		if token ~= shoutToken then
 			return
 		end
-		local fade = TweenService:Create(shoutLabel, COUNT, { TextTransparency = 1, TextStrokeTransparency = 1 })
-		fade:Play()
+		local fade = UiStyle.fadeText(shoutLabel, 1)
 		fade.Completed:Wait()
 		if token == shoutToken then
 			shoutLabel.Visible = false
@@ -622,8 +550,7 @@ local function showCombo(combo: number)
 	local token = comboToken
 	comboLabel.Text = `🔥 x{combo}\nCOMBO`
 	comboLabel.TextColor3 = Color3.fromHSV(math.max(0, 0.15 - combo * 0.007), 0.85, 1)
-	comboLabel.TextTransparency = 0
-	comboLabel.TextStrokeTransparency = 0
+	UiStyle.showText(comboLabel)
 	comboLabel.Visible = true
 	popScale(comboScale, 1 + math.min(0.6, combo * 0.03))
 	if combo % 5 == 0 then
@@ -633,8 +560,7 @@ local function showCombo(combo: number)
 		if token ~= comboToken then
 			return
 		end
-		local fade = TweenService:Create(comboLabel, COUNT, { TextTransparency = 1, TextStrokeTransparency = 1 })
-		fade:Play()
+		local fade = UiStyle.fadeText(comboLabel, 1)
 		fade.Completed:Wait()
 		if token == comboToken then
 			comboLabel.Visible = false
