@@ -78,17 +78,39 @@ local function discs(m: Model, make: Make, list: { Disc }, y0: number)
 	end
 end
 
-local PARTY = HatBuilder.cone(10, 0.95, 0.08, 1.7, { PINK, BLUE, YELLOW }, 1)
-local TRAFFIC_CONE = HatBuilder.cone(6, 1.1, 0.3, 0.75, { ORANGE, ORANGE, WHITE, WHITE, ORANGE, ORANGE }, 1)
+-- Smooth cones (many thin discs). One color list entry per disc, bottom to top.
+local function bands(
+	steps: number,
+	base: Color3,
+	band: Color3,
+	from: number,
+	to: number,
+	from2: number?,
+	to2: number?
+): { Color3 }
+	local list = {}
+	for i = 0, steps - 1 do
+		local inBand = (i >= from and i <= to) or (from2 ~= nil and to2 ~= nil and i >= from2 and i <= to2)
+		table.insert(list, if inBand then band else base)
+	end
+	return list
+end
+
+local PARTY_STEPS, CONE_STEPS = 16, 16
+local PARTY = HatBuilder.cone(PARTY_STEPS, 0.9, 0.06, 1.9, bands(PARTY_STEPS, PINK, BLUE, 3, 5, 9, 11), 1)
+local TRAFFIC_CONE = HatBuilder.cone(CONE_STEPS, 1.0, 0.2, 1.1, bands(CONE_STEPS, ORANGE, WHITE, 5, 8), 1)
+local CONE_BASE = Color3.fromRGB(225, 95, 20)
+local BAND = Color3.fromRGB(205, 215, 235)
 
 local BUILDERS: { [string]: (Model, Make) -> () } = {
 	party = function(m, make)
-		discs(m, make, PARTY, 0)
-		ball(m, make, 0.3, Vector3.new(0, 1.78, 0), YELLOW)
+		cyl(m, make, 0.1, 1.2, 0, YELLOW) -- small brim
+		discs(m, make, PARTY, 0.1)
+		ball(m, make, 0.34, Vector3.new(0, 2.02, 0), YELLOW)
 	end,
 	cone = function(m, make)
-		block(m, make, Vector3.new(1.3, 0.12, 1.3), CFrame.new(0, 0.06, 0), ORANGE)
-		discs(m, make, TRAFFIC_CONE, 0.12)
+		block(m, make, Vector3.new(1.4, 0.14, 1.4), CFrame.new(0, 0.07, 0), CONE_BASE) -- square base
+		discs(m, make, TRAFFIC_CONE, 0.14)
 	end,
 	cowboy = function(m, make)
 		cyl(m, make, 0.12, 2.1, 0, BROWN)
@@ -96,8 +118,12 @@ local BUILDERS: { [string]: (Model, Make) -> () } = {
 		cyl(m, make, 0.14, 1.13, 0.14, RED)
 	end,
 	chef = function(m, make)
-		cyl(m, make, 0.8, 1.05, 0, WHITE)
-		cyl(m, make, 0.45, 1.4, 0.75, WHITE)
+		cyl(m, make, 0.5, 1.0, 0, BAND) -- band round the head
+		ball(m, make, 1.45, Vector3.new(0, 1.15, 0), WHITE) -- tall puffy top
+		ball(m, make, 0.9, Vector3.new(-0.55, 0.85, 0), WHITE)
+		ball(m, make, 0.9, Vector3.new(0.55, 0.85, 0), WHITE)
+		ball(m, make, 0.9, Vector3.new(0, 0.85, -0.55), WHITE)
+		ball(m, make, 0.9, Vector3.new(0, 0.85, 0.55), WHITE)
 	end,
 	propeller = function(m, make)
 		cyl(m, make, 0.35, 1.2, 0, BLUE)
