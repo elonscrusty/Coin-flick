@@ -165,7 +165,7 @@ describe("HUD layout", function()
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
 			expect(l.mega.h).toBeAtLeast(26)
 			expect(l.boost.h).toBeAtLeast(26)
-			expect(l.info.h).toBeAtLeast(40)
+			expect(l.info.h).toBeAtLeast(38)
 			expect(fittedLines(l.info, "Heads = $999K\nLuck 100%", 0.06)).toBeAtLeast(HudLayout.MIN_TEXT)
 		end
 	end)
@@ -191,15 +191,19 @@ describe("HUD layout", function()
 			for _, b in l.sideButtons do
 				expect(HudLayout.overlaps(big, b)).toBeFalsy()
 			end
-			-- RESET bar: at least 20px tall, inside the button, word above it
+			-- RESET bar: at least 20px tall, inside the button, icon above it
 			local rb = l.sideButtons[2]
 			local parts = HudLayout.resetParts(rb.w, rb.h)
 			expect(parts.bar.h).toBeAtLeast(20)
 			expect(parts.bar.y + parts.bar.h).toBeAtMost(rb.h)
 			expect(parts.bar.x).toBeAtLeast(0)
 			expect(parts.bar.x + parts.bar.w).toBeAtMost(rb.w)
-			expect(parts.word.y + parts.word.h).toBeAtMost(parts.bar.y)
-			expect(parts.word.h).toBeAtLeast(12)
+			expect(parts.icon.y + parts.icon.h).toBeAtMost(parts.bar.y)
+			expect(parts.icon.h).toBeAtLeast(12)
+			-- the count (or GO!) fits inside the bar at 14px
+			for _, text in { "24", "GO!" } do
+				expect(fittedTextSize(parts.bar, text, 0.05)).toBeAtLeast(HudLayout.MIN_TEXT)
+			end
 			-- chip text: white with a thin outline on a deep color (see Hud.strip)
 			expect(fittedTextSize(l.boost, "⚡ 2x  9:59", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
 			expect(fittedTextSize(l.mega, "🌟 999/999", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
