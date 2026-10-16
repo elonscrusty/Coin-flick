@@ -19,10 +19,10 @@ local BACK_PER_UP_CHOICES = { 0.62, 0.8, 1.0 }
 -- Aim this far past the table centre (studs). Small, so the near coins are not cut.
 local AIM_AHEAD = 0.6
 
--- Room the HUD leaves free, in screen units from -1 (left/bottom) to 1 (right/top).
--- Right side has the big buttons, top has the cash bar.
+-- Room the HUD leaves free, in screen units from -1 (left/bottom) to 1 (right/top): the middle
+-- half across, from just under the flip peak down to the near coins (same box as HudLayout.tableZone).
 -- `air` is the top limit for a coin at the top of its flip (it may rise over the table's far edge).
-CameraMath.SAFE = table.freeze({ left = -0.62, right = 0.5, bottom = -0.86, top = 0.45, air = 0.62 })
+CameraMath.SAFE = table.freeze({ left = -0.5, right = 0.5, bottom = -0.86, top = 0.62, air = 0.62 })
 
 -- Normal (WALK) camera when you leave ZOOM: this far behind and above your avatar.
 CameraMath.WALK = table.freeze({ back = 12, up = 5 })
@@ -48,7 +48,7 @@ function CameraMath.points(): { { number } }
 		end
 		table.insert(list, { x, Config.FLIP_HEIGHT, z, 1 })
 	end
-	-- The table's rim, and the helper guys who walk around it (feet on the ground, heads up).
+	-- The table's rim, and the helper guys who walk around it (their heads; the feet may dip under the bottom edge).
 	local rimY = -1.2
 	local helperR = Config.TABLE_RADIUS + 2
 	for k = 0, 7 do
@@ -57,7 +57,6 @@ function CameraMath.points(): { { number } }
 			list,
 			{ math.cos(a) * (Config.TABLE_RADIUS + 0.6), rimY, math.sin(a) * (Config.TABLE_RADIUS + 0.6) }
 		)
-		table.insert(list, { math.cos(a) * helperR, -Config.TABLE_HEIGHT + 0.2, math.sin(a) * helperR })
 		table.insert(list, { math.cos(a) * helperR, -Config.TABLE_HEIGHT + 3.4, math.sin(a) * helperR })
 	end
 	return list

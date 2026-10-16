@@ -69,3 +69,23 @@ describe("Coins spin toward the ZOOM camera on every plot", function()
 		expect(FlipArc.spinYaw(0, 0)).toBe(0)
 	end)
 end)
+
+describe("Mega coin always shows a face", function()
+	it("turns a face toward the viewer from every side", function()
+		for k = 0, 11 do
+			local a = k / 12 * math.pi * 2
+			local dx, dz = math.cos(a), math.sin(a)
+			local yaw = FlipArc.megaFacing(dx, dz)
+			-- the coin's face axis (world) after the extra turn: (-sin, -cos)
+			local ax, az = -math.sin(yaw), -math.cos(yaw)
+			expect(math.abs(ax * dx + az * dz)).toBeNear(1, 1e-9)
+		end
+	end)
+
+	it("the big jump spin ends on a whole turn", function()
+		expect(FlipArc.megaSpin(0)).toBe(0)
+		local last = FlipArc.megaSpin(1)
+		expect(last / (math.pi * 2)).toBeNear(3, 1e-9)
+		expect(FlipArc.megaSpin(0.5)).toBeAtLeast(FlipArc.megaSpin(0.2))
+	end)
+end)

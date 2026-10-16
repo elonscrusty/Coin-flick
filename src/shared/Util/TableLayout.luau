@@ -4,7 +4,8 @@
 
 local TableLayout = {}
 
-local RING_RADIUS = 5.6
+-- Wide enough that a rare coin can puff up without touching its neighbours.
+local RING_RADIUS = 6.6
 
 function TableLayout.coinOffset(index: number, maxCoins: number): (number, number)
 	if index <= 1 then

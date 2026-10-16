@@ -12,6 +12,8 @@ local Plot = {}
 -- Arch pillars: bright white with colored bands, so a brown or dark avatar
 -- never blends into them (pictures showed one disappearing into brown wood).
 local PILLAR = Color3.fromRGB(255, 252, 245)
+-- Gate pillars this tall keep the name sign above the spawn camera's picture.
+local ARCH_TOP = 16
 local PILLAR_CAP = Color3.fromRGB(255, 205, 50)
 local FENCE = Color3.fromRGB(255, 250, 240)
 local TRUNK = Color3.fromRGB(120, 80, 45)
@@ -52,6 +54,7 @@ end
 
 Plot.tree = tree
 Plot.PILLAR = PILLAR
+Plot.ARCH_TOP = ARCH_TOP
 Plot.LEAVES = LEAVES
 Plot.FLOWERS = FLOWERS
 
@@ -137,20 +140,21 @@ function Plot.build(
 	fenceRun(Vector3.new(-half, 0, -half), Vector3.new(-gap, 0, -half)) -- front left
 	fenceRun(Vector3.new(gap, 0, -half), Vector3.new(half, 0, -half)) -- front right
 
-	-- Name arch over the entrance.
+	-- Name arch over the entrance. Tall, so from the spawn camera (outside the gate, behind your
+	-- avatar) the sign is above the picture and the pillars stay beside the table, not in front of it.
 	for _, x in { -gap, gap } do
 		local pillar = make({
 			Name = "Pillar",
-			Size = Vector3.new(1.6, 9, 1.6),
-			CFrame = plotCFrame * CFrame.new(x, 4.5, -half),
+			Size = Vector3.new(1.6, ARCH_TOP, 1.6),
+			CFrame = plotCFrame * CFrame.new(x, ARCH_TOP / 2, -half),
 			Color = PILLAR,
 		})
 		pillar.Parent = folder
-		for i = 1, 3 do
+		for i = 1, 5 do
 			local band = make({
 				Name = "Band",
 				Size = Vector3.new(1.8, 0.7, 1.8),
-				CFrame = plotCFrame * CFrame.new(x, i * 2.3, -half),
+				CFrame = plotCFrame * CFrame.new(x, i * 2.9, -half),
 				Color = look.top,
 				CanCollide = false,
 			})
@@ -160,7 +164,7 @@ function Plot.build(
 			Name = "Cap",
 			Shape = Enum.PartType.Ball,
 			Size = Vector3.one * 2.2,
-			CFrame = plotCFrame * CFrame.new(x, 12, -half),
+			CFrame = plotCFrame * CFrame.new(x, ARCH_TOP + 0.8, -half),
 			Color = PILLAR_CAP,
 			CanCollide = false,
 		})
@@ -169,7 +173,7 @@ function Plot.build(
 	local beam = make({
 		Name = "NameSign",
 		Size = Vector3.new(gap * 2 + 3, 2.6, 1),
-		CFrame = plotCFrame * CFrame.new(0, 9.6, -half),
+		CFrame = plotCFrame * CFrame.new(0, ARCH_TOP - 1.6, -half),
 		Color = look.rim,
 	})
 	beam.Parent = folder

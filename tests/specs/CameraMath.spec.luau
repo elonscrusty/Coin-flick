@@ -1,5 +1,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CameraMath = require(ReplicatedStorage.Shared.Util.CameraMath)
+local Config = require(ReplicatedStorage.Shared.Config)
+local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
 
 -- Screen shapes: phone portrait, tablet, PC, phone landscape, the 1914x645 runner window.
 local ASPECTS = { 0.46, 0.75, 1.33, 1.78, 2.17, 2.97 }
@@ -33,5 +35,26 @@ describe("ZOOM camera fits every coin", function()
 		-- Old: 7 back, 16 up, aim 2.5 past the middle (picture d05/d06).
 		local old = { back = 7, up = 16, aim = 2.5 }
 		expect(CameraMath.fits(old, 2.97, 55)).toBeFalsy()
+	end)
+end)
+
+describe("ZOOM camera size", function()
+	local function tableHalfWidth(aspect: number): number
+		local view = CameraMath.tableView(aspect, 55)
+		return CameraMath.project(view, { 0, 0, Config.TABLE_RADIUS }, aspect, 55) :: number
+	end
+
+	it("the table is big on screen, not a small island", function()
+		expect(tableHalfWidth(1.33)).toBeAtLeast(0.38)
+		expect(tableHalfWidth(1.78)).toBeAtLeast(0.34)
+		expect(tableHalfWidth(2.97)).toBeAtLeast(0.2)
+	end)
+
+	it("uses the same free box the HUD keeps clear", function()
+		local zone = HudLayout.tableZone(1000, 1000)
+		expect(math.abs(CameraMath.SAFE.right - ((zone.x + zone.w) / 500 - 1))).toBeAtMost(0.01)
+		expect(math.abs(CameraMath.SAFE.left - (zone.x / 500 - 1))).toBeAtMost(0.01)
+		expect(math.abs(CameraMath.SAFE.top - (1 - zone.y / 500))).toBeAtMost(0.01)
+		expect(math.abs(CameraMath.SAFE.bottom - (1 - (zone.y + zone.h) / 500))).toBeAtMost(0.01)
 	end)
 end)

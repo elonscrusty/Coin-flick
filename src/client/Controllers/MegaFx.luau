@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
 local Types = require(ReplicatedStorage.Shared.Types)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local CameraView = require(script.Parent.CameraView)
@@ -17,7 +18,6 @@ local coin: BasePart? = nil
 local base: CFrame = CFrame.new()
 local bar: Frame? = nil
 local countLabel: TextLabel? = nil
-local spin = 0
 local wobbleAt = -10
 local flipAt = -10
 local FLIP_TIME = 2.6
@@ -27,8 +27,8 @@ local function buildSign(part: BasePart)
 	gui.Name = "MegaSign"
 	gui.Adornee = part
 	gui.Size = UDim2.fromScale(18, 5)
-	-- Low, at the foot of the pedestal: up above the coin it sat behind the HUD bars on screen.
-	gui.StudsOffsetWorldSpace = Vector3.new(0, 2.8 - Config.MEGA_HEIGHT, 0)
+	-- Just above the coin's top edge (the HUD now keeps the middle of the screen clear).
+	gui.StudsOffsetWorldSpace = Vector3.new(0, Config.MEGA_DIAMETER / 2 + 3, 0)
 	gui.LightInfluence = 0
 	gui.MaxDistance = 48 -- up close only; from your yard the HUD shows the count
 	local title = Instance.new("TextLabel")
@@ -44,7 +44,7 @@ local function buildSign(part: BasePart)
 	local track = Instance.new("Frame")
 	track.Position = UDim2.fromScale(0.05, 0.55)
 	track.Size = UDim2.fromScale(0.9, 0.4)
-	track.BackgroundColor3 = Color3.fromRGB(255, 248, 230)
+	track.BackgroundColor3 = Color3.fromRGB(70, 50, 40) -- dark, so the white count reads when the bar is empty
 	local trackCorner = Instance.new("UICorner")
 	trackCorner.CornerRadius = UDim.new(0.5, 0)
 	trackCorner.Parent = track
@@ -95,27 +95,36 @@ local function onFlipped()
 	end
 end
 
-local function step(dt: number)
+local function step()
 	local part = coin
 	if not part then
 		return
 	end
 	local now = os.clock()
 	local height = 0
-	local speed = 0.6
+	local turn = 0
 	local sinceFlip = now - flipAt
 	if sinceFlip < FLIP_TIME then
 		local u = sinceFlip / FLIP_TIME
 		height = 6 * 4 * u * (1 - u)
-		speed = 14 * (1 - u) + 0.6
+		turn = FlipArc.megaSpin(u)
 	end
-	spin += dt * speed
+	-- A face always points at you (swaying a little), so it is never an edge-on pole.
+	local camera = workspace.CurrentCamera
+	local facing = 0
+	if camera then
+		local away = camera.CFrame.Position - base.Position
+		facing = FlipArc.megaFacing(away.X, away.Z)
+	end
+	local sway = math.sin(now * 1.3) * 0.35
 	local wobble = 0
 	local sinceTap = now - wobbleAt
 	if sinceTap < 0.3 then
 		wobble = math.sin(sinceTap * 40) * 0.08 * (1 - sinceTap / 0.3)
 	end
-	part.CFrame = base * CFrame.new(0, height, 0) * CFrame.Angles(wobble, spin, 0)
+	part.CFrame = CFrame.new(base.Position + Vector3.new(0, height, 0))
+		* CFrame.Angles(0, math.pi / 2 + facing + sway + turn, 0)
+		* CFrame.Angles(wobble, 0, 0)
 end
 
 -- Called by CoinTap when you tap the mega coin.

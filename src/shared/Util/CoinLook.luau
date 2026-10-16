@@ -6,6 +6,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 
 export type Look = {
 	color: Color3,
@@ -195,6 +196,39 @@ function CoinLook.lift(
 	local grownBy = diameter / restDiameter - 1
 	local clearance = restThickness * math.clamp(grownBy * 4, 0, 1)
 	return math.max(0, half - restThickness / 2 + clearance)
+end
+
+-- How far a coin may grow before it touches a neighbour or hangs off the table.
+-- Every slot on the table counts as a neighbour (empty slots show a disc).
+-- Returns a scale >= 1 to clamp a rare coin's `grow` with. `restDiameter` is the
+-- diameter of the coins sitting on the other slots.
+CoinLook.GAP = 0.1 -- air left between a grown coin (with its ridge) and its neighbours
+CoinLook.RIDGE_WIDER = 1.08 -- the ridge ring is this much wider than the coin
+CoinLook.EDGE_OVERHANG = 0.5 -- a grown coin may hang this far past the table edge
+
+function CoinLook.maxScale(index: number, restDiameter: number): number
+	local maxCoins = Config.MAX_COINS
+	local x, z = TableLayout.coinOffset(index, maxCoins)
+	local room = (Config.TABLE_RADIUS + CoinLook.EDGE_OVERHANG) - math.sqrt(x * x + z * z) -- radius left to the table edge
+	for other = 1, maxCoins do
+		if other ~= index then
+			local ox, oz = TableLayout.coinOffset(other, maxCoins)
+			local dist = math.sqrt((x - ox) ^ 2 + (z - oz) ^ 2)
+			room = math.min(room, dist - restDiameter / 2 - CoinLook.GAP)
+		end
+	end
+	return math.max(1, room * 2 / (restDiameter * CoinLook.RIDGE_WIDER))
+end
+
+-- The grown scale a rare coin really uses on this slot.
+function CoinLook.growFor(grow: number, index: number, restDiameter: number): number
+	return math.min(grow, CoinLook.maxScale(index, restDiameter))
+end
+
+-- A thin, slightly wider ring around the middle of the coin's edge, so a coin
+-- seen edge-on still has a ridge and reads as a coin, not a flat plank.
+function CoinLook.ridge(thickness: number, diameter: number): (number, number)
+	return thickness * 0.7, diameter * CoinLook.RIDGE_WIDER
 end
 
 -- Every look the coins can wear, for tests and the preview.

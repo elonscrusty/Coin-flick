@@ -40,6 +40,7 @@ type Anim = {
 	restReflectance: number,
 	restMarks: { [Instance]: Color3 }, -- face marks/rims and their resting colors
 	dressed: boolean,
+	grow: number, -- how big this coin may get on its slot (capped so it never touches neighbours)
 }
 
 local FlipFx = {}
@@ -284,7 +285,26 @@ local function dressRare(anim: Anim, now: number, t: number)
 			end
 		end
 	end
-	coin.Size = CoinLook.size(anim.restSize, CoinLook.scale(rare.grow, t, MAIN))
+	coin.Size = CoinLook.size(anim.restSize, CoinLook.scale(anim.grow, t, MAIN))
+	local ridge = coin:FindFirstChild("RareRidge")
+	if not ridge then
+		local part = Instance.new("Part")
+		part.Name = "RareRidge"
+		part.Shape = Enum.PartType.Cylinder
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.CastShadow = false
+		part.Material = Enum.Material.SmoothPlastic
+		part.Parent = coin
+		ridge = part
+	end
+	if ridge and ridge:IsA("BasePart") then
+		local thickness, diameter = CoinLook.ridge(coin.Size.X, coin.Size.Y)
+		ridge.Size = Vector3.new(thickness, diameter, diameter)
+		ridge.Color = look.rim
+	end
 end
 
 local function undressRare(anim: Anim)
@@ -310,6 +330,10 @@ local function undressRare(anim: Anim)
 	local outline = coin:FindFirstChild("RareOutline")
 	if outline then
 		outline:Destroy()
+	end
+	local ridge = coin:FindFirstChild("RareRidge")
+	if ridge then
+		ridge:Destroy()
 	end
 	for _, gui in coin:GetChildren() do
 		local disc = gui:FindFirstChild("RainbowFace")
@@ -353,6 +377,7 @@ local function onFlipped(ev: FlipEvent)
 			end
 		end
 	end
+	local rare = Economy.rarityDef(ev.rarity)
 	local fromRoll = rollFor(coin:GetAttribute("Face"))
 	local spins = FlipArc.spins(ev.duration)
 	local toRoll = rollFor(ev.result)
@@ -367,7 +392,7 @@ local function onFlipped(ev: FlipEvent)
 		event = ev,
 		landed = false,
 		mine = mine,
-		rare = Economy.rarityDef(ev.rarity),
+		rare = rare,
 		restSize = restSize,
 		restColor = restColor,
 		restMaterial = restMaterial,
@@ -376,6 +401,7 @@ local function onFlipped(ev: FlipEvent)
 		restReflectance = restReflectance,
 		restMarks = restMarks,
 		dressed = false,
+		grow = CoinLook.growFor(rare and rare.grow or 1, coin:GetAttribute("CoinIndex") :: number? or 1, restSize.Y),
 	}
 	trailOn(coin, true)
 	if mine then
@@ -418,6 +444,10 @@ local function step()
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0))
 			* CFrame.Angles(0, anim.yaw, 0)
 			* CFrame.Angles(0, 0, roll)
+		local ridge = coin:FindFirstChild("RareRidge")
+		if ridge and ridge:IsA("BasePart") then
+			ridge.CFrame = coin.CFrame
+		end
 		if t >= 1 then
 			undressRare(anim)
 			coin.CFrame = CFrame.new(anim.base)
