@@ -236,8 +236,8 @@ describe("CoinLook round 4: rare coins never overlap a neighbour, edge-on still 
 			expect(CoinLook.growFor(1.1, index, 3.0)).toBeAtLeast(1)
 			expect(CoinLook.growFor(1.1, index, 3.8)).toBeAtLeast(1)
 		end
-		-- the middle coin has the most room, so GIANT is really big there
-		expect(CoinLook.growFor(2.5, 1, 3.8)).toBeAtLeast(2)
+		-- GIANT is still clearly bigger than the others (capped to 6.4 studs wide)
+		expect(CoinLook.growFor(2.5, 1, 3.8)).toBeAtLeast(1.6)
 		-- silver (x1.1) puffs fully on every slot at normal size
 		for index = 1, Config.MAX_COINS do
 			expect(CoinLook.growFor(1.1, index, 3.0)).toBeNear(1.1, 1e-9)
@@ -260,5 +260,83 @@ describe("CoinLook round 4: rare coins never overlap a neighbour, edge-on still 
 
 	it("coins are chunky enough to read edge-on", function()
 		expect(Config.COIN_THICKNESS / 3.8).toBeAtLeast(0.12)
+	end)
+end)
+
+describe("CoinLook round 5: GOLD stands out, GIANT never sweeps anything, MEGA is a real coin", function()
+	local MegaLook = require(ReplicatedStorage.Shared.Util.MegaLook)
+	local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+
+	it("GOLD is deep amber, far from the plain yellow coin, with stars and a dark ridge", function()
+		local gold, normal = CoinLook.RARE.gold, CoinLook.NORMAL
+		expect(CoinLook.distance(gold.color, normal.color)).toBeAtLeast(70)
+		expect(gold.stars).toBeTruthy()
+		expect(normal.stars).toBeFalsy()
+		-- the ridge is dark enough to show against the coin
+		expect(CoinLook.contrast(gold.rim, gold.color)).toBeAtLeast(2.5)
+	end)
+
+	it("every rare coin's ridge shows against its coin", function()
+		for id, look in CoinLook.RARE do
+			if id ~= "silver" and id ~= "rainbow" then
+				expect(CoinLook.contrast(look.rim, look.color)).toBeAtLeast(1.5)
+			end
+		end
+	end)
+
+	it("no rare coin is ever wider than 6.4 studs in the air, on any slot or upgrade", function()
+		for _, restD in { 3.0, 3.4, 3.8 } do
+			for index = 1, Config.MAX_COINS do
+				for _, def in Config.Rarities do
+					local width = restD * CoinLook.growFor(def.grow, index, restD)
+					expect(width).toBeAtMost(math.max(CoinLook.MAX_DIAMETER, restD) + 1e-9)
+				end
+			end
+		end
+		-- edge-on, the GIANT's sweep stays short of the coins next to it
+		local reach = 3.8 * CoinLook.growFor(2.5, 1, 3.8) * CoinLook.RIDGE_WIDER / 2
+		local nextCoin = select(1, TableLayout.coinOffset(2, Config.MAX_COINS))
+		expect(reach).toBeAtMost(math.abs(nextCoin) - 3.8 / 2)
+	end)
+
+	it("a grown coin hovers higher, a plain coin does not", function()
+		expect(CoinLook.hover(1)).toBe(0)
+		expect(CoinLook.hover(0.9)).toBe(0)
+		expect(CoinLook.hover(1.68)).toBeAtLeast(1.5)
+	end)
+
+	it("the star ring is round and inside the face", function()
+		local spots = CoinLook.starRing(10, 0.34)
+		expect(#spots).toBe(10)
+		for _, spot in spots do
+			expect(math.sqrt((spot.x - 0.5) ^ 2 + (spot.y - 0.5) ^ 2)).toBeNear(0.34, 1e-9)
+			expect(spot.x).toBeAtLeast(0)
+			expect(spot.y).toBeAtMost(1)
+		end
+	end)
+
+	it("MEGA coin: rings nest inside each other, emblem fits inside the star ring", function()
+		expect(MegaLook.RING_SCALE).toBeAtMost(MegaLook.RIM_SCALE)
+		expect(MegaLook.STAR_RADIUS * 2).toBeAtMost(MegaLook.RING_SCALE)
+		expect(MegaLook.EMBLEM_SCALE).toBeAtMost(MegaLook.STAR_RADIUS * 2 - 0.1)
+		expect(#MegaLook.starSpots()).toBe(MegaLook.STARS)
+	end)
+
+	it("MEGA coin: gold gradient goes light to deep, emblem reads on both ends", function()
+		expect(CoinLook.contrast(MegaLook.FACE_TOP, Color3.fromRGB(0, 0, 0))).toBeAtLeast(
+			CoinLook.contrast(MegaLook.FACE_BOTTOM, Color3.fromRGB(0, 0, 0))
+		)
+		expect(CoinLook.contrast(MegaLook.EMBLEM, MegaLook.FACE_TOP)).toBeAtLeast(3)
+		expect(CoinLook.contrast(MegaLook.EMBLEM, MegaLook.FACE_BOTTOM)).toBeAtLeast(3)
+		expect(CoinLook.contrast(MegaLook.RIM, MegaLook.FACE_BOTTOM)).toBeAtLeast(2)
+	end)
+
+	it("MEGA coin: the ridge is wider and thinner than the coin, and it shines", function()
+		local thickness, diameter = MegaLook.ridge(1.6, 16)
+		expect(thickness).toBeAtMost(1.6)
+		expect(diameter).toBeAtLeast(16 * 1.05)
+		expect(MegaLook.REFLECTANCE).toBeAtLeast(0.2)
+		expect(MegaLook.SHINE_ALPHA).toBeAtMost(0.9)
+		expect(MegaLook.SPARKLE_RATE).toBeAtLeast(8)
 	end)
 end)

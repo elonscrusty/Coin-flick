@@ -20,6 +20,7 @@ export type Look = {
 	trail: number, -- sparkles per second while
 	outline: Color3?, -- dark outline drawn around the coin in the air (stays on the coin, never lights the table)
 	rainbow: boolean, -- color cycles through the rainbow while in the air
+	stars: boolean, -- a ring of stars painted on both faces while in the air
 }
 
 local CoinLook = {}
@@ -30,7 +31,7 @@ CoinLook.SPARKLE_LIGHT = 0.35
 
 -- Warm coin gold. Rare GOLD is a brighter lemon gold so the two never look alike.
 CoinLook.NORMAL = table.freeze({
-	color = Color3.fromRGB(245, 180, 20),
+	color = Color3.fromRGB(250, 205, 50),
 	material = "SmoothPlastic",
 	reflectance = 0.15,
 	text = Color3.fromRGB(110, 55, 0),
@@ -40,6 +41,7 @@ CoinLook.NORMAL = table.freeze({
 	landBurst = 14,
 	trail = 0,
 	rainbow = false,
+	stars = false,
 } :: Look)
 
 local RARE: { [string]: Look } = {
@@ -54,19 +56,21 @@ local RARE: { [string]: Look } = {
 		landBurst = 30,
 		trail = 10,
 		rainbow = false,
+		stars = false,
 	} :: Look),
 	gold = table.freeze({
-		color = Color3.fromRGB(255, 240, 70),
+		color = Color3.fromRGB(255, 140, 0), -- deep amber: clearly not the plain yellow coin
 		material = "Foil",
 		reflectance = 0.3,
-		text = Color3.fromRGB(150, 70, 0),
-		rim = Color3.fromRGB(230, 120, 0),
+		text = Color3.fromRGB(100, 40, 0),
+		rim = Color3.fromRGB(150, 60, 0), -- strong dark ridge
 		sparkle = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 255, 200) },
 		sparkleSize = 0.9,
 		landBurst = 45,
 		trail = 25,
-		outline = Color3.fromRGB(120, 55, 0),
+		outline = Color3.fromRGB(90, 35, 0),
 		rainbow = false,
+		stars = true,
 	} :: Look),
 	rainbow = table.freeze({
 		color = Color3.fromRGB(255, 120, 220), -- starting color; cycles in the air
@@ -80,13 +84,14 @@ local RARE: { [string]: Look } = {
 		trail = 45,
 		outline = Color3.fromRGB(255, 255, 255),
 		rainbow = true,
+		stars = false,
 	} :: Look),
 	giant = table.freeze({
-		color = Color3.fromRGB(205, 130, 0), -- deep gold, a huge shiny coin (not a lava ball)
+		color = Color3.fromRGB(255, 215, 120), -- pale shiny champagne gold: a huge shiny coin (not a lava ball)
 		material = "Foil",
 		reflectance = 0.5, -- white shine
-		text = Color3.fromRGB(60, 20, 0),
-		rim = Color3.fromRGB(255, 238, 160),
+		text = Color3.fromRGB(90, 40, 0),
+		rim = Color3.fromRGB(200, 130, 20),
 		sparkle = {
 			Color3.fromRGB(255, 255, 255),
 			Color3.fromRGB(255, 225, 80),
@@ -98,6 +103,7 @@ local RARE: { [string]: Look } = {
 		trail = 60,
 		outline = Color3.fromRGB(90, 40, 0),
 		rainbow = false,
+		stars = false,
 	} :: Look),
 }
 CoinLook.RARE = table.freeze(RARE)
@@ -203,7 +209,7 @@ end
 -- Returns a scale >= 1 to clamp a rare coin's `grow` with. `restDiameter` is the
 -- diameter of the coins sitting on the other slots.
 CoinLook.GAP = 0.1 -- air left between a grown coin (with its ridge) and its neighbours
-CoinLook.RIDGE_WIDER = 1.08 -- the ridge ring is this much wider than the coin
+CoinLook.RIDGE_WIDER = 1.12 -- the ridge ring is this much wider than the coin
 CoinLook.EDGE_OVERHANG = 0.5 -- a grown coin may hang this far past the table edge
 
 function CoinLook.maxScale(index: number, restDiameter: number): number
@@ -221,14 +227,31 @@ function CoinLook.maxScale(index: number, restDiameter: number): number
 end
 
 -- The grown scale a rare coin really uses on this slot.
+CoinLook.MAX_DIAMETER = 6.4 -- no rare coin is ever wider than this in the air (edge-on it swept helpers and back coins)
+
 function CoinLook.growFor(grow: number, index: number, restDiameter: number): number
-	return math.min(grow, CoinLook.maxScale(index, restDiameter))
+	return math.max(1, math.min(grow, CoinLook.maxScale(index, restDiameter), CoinLook.MAX_DIAMETER / restDiameter))
+end
+
+-- A grown coin also hovers a bit higher, so it flies over the helpers and the coins behind it.
+function CoinLook.hover(scale: number): number
+	return math.max(0, scale - 1) * 2.5
+end
+
+-- Where a ring of `count` stars sits on a coin face: (x, y) as 0..1 of the face, radius is a share of the face.
+function CoinLook.starRing(count: number, radius: number): { { x: number, y: number } }
+	local out = {}
+	for i = 0, count - 1 do
+		local a = i / count * math.pi * 2
+		table.insert(out, { x = 0.5 + math.cos(a) * radius, y = 0.5 + math.sin(a) * radius })
+	end
+	return out
 end
 
 -- A thin, slightly wider ring around the middle of the coin's edge, so a coin
 -- seen edge-on still has a ridge and reads as a coin, not a flat plank.
 function CoinLook.ridge(thickness: number, diameter: number): (number, number)
-	return thickness * 0.7, diameter * CoinLook.RIDGE_WIDER
+	return thickness * 0.8, diameter * CoinLook.RIDGE_WIDER
 end
 
 -- Every look the coins can wear, for tests and the preview.

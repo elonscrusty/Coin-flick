@@ -11,6 +11,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
+local MegaLook = require(ReplicatedStorage.Shared.Util.MegaLook)
 local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
@@ -26,29 +27,98 @@ local limiter = RateLimiter.new(Config.MEGA_TAP_RATE, Config.MEGA_TAP_BURST, os.
 local flipping = false
 local dirty = true
 
-local GOLD = Color3.fromRGB(255, 200, 40)
 local DEBUG_LEFTOVER = 3 -- Studio MEGA button stops this many taps short first
 
 local function goal(): number
 	return Economy.megaGoal(#Players:GetPlayers())
 end
 
-local function faceLabel(parent: BasePart, face: Enum.NormalId, text: string)
+-- One face of the mega coin: gold gradient disc, a raised rim ring and a bright inner ring,
+-- a ring of stars, a big emblem ($ or star) and a white shine bar. See Util/MegaLook.
+local function coinFace(parent: BasePart, face: Enum.NormalId, emblem: string)
 	local gui = Instance.new("SurfaceGui")
+	gui.Name = `Face_{face.Name}`
 	gui.Face = face
-	gui.LightInfluence = 0.3
+	gui.LightInfluence = 0.2
 	gui.CanvasSize = Vector2.new(400, 400)
 	gui.Parent = parent
+
+	local function disc(name: string, scale: number): Frame
+		local frame = Instance.new("Frame")
+		frame.Name = name
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Position = UDim2.fromScale(0.5, 0.5)
+		frame.Size = UDim2.fromScale(scale, scale)
+		frame.BorderSizePixel = 0
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = frame
+		frame.Parent = gui
+		return frame
+	end
+
+	local base = disc("Gold", MegaLook.RIM_SCALE)
+	base.BackgroundColor3 = Color3.new(1, 1, 1)
+	local gradient = Instance.new("UIGradient")
+	gradient.Rotation = 90
+	gradient.Color = ColorSequence.new(MegaLook.FACE_TOP, MegaLook.FACE_BOTTOM)
+	gradient.Parent = base
+	local rim = Instance.new("UIStroke")
+	rim.Name = "Rim"
+	rim.Thickness = 26
+	rim.Color = MegaLook.RIM
+	rim.Parent = base
+
+	local ring = disc("Ring", MegaLook.RING_SCALE)
+	ring.BackgroundTransparency = 1
+	local ringStroke = Instance.new("UIStroke")
+	ringStroke.Thickness = 7
+	ringStroke.Color = MegaLook.RING
+	ringStroke.Parent = ring
+
+	for _, spot in MegaLook.starSpots() do
+		local star = Instance.new("TextLabel")
+		star.Name = "Star"
+		star.AnchorPoint = Vector2.new(0.5, 0.5)
+		star.Position = UDim2.fromScale(spot.x, spot.y)
+		star.Size = UDim2.fromScale(0.09, 0.09)
+		star.BackgroundTransparency = 1
+		star.Text = "★"
+		star.TextScaled = true
+		star.Font = Enum.Font.FredokaOne
+		star.TextColor3 = MegaLook.STAR
+		star.TextStrokeColor3 = MegaLook.STAR_STROKE
+		star.TextStrokeTransparency = 0
+		star.Parent = gui
+	end
+
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
+	label.Name = "Emblem"
+	label.AnchorPoint = Vector2.new(0.5, 0.5)
+	label.Position = UDim2.fromScale(0.5, 0.5)
+	label.Size = UDim2.fromScale(MegaLook.EMBLEM_SCALE, MegaLook.EMBLEM_SCALE)
 	label.BackgroundTransparency = 1
-	label.Text = text
+	label.Text = emblem
 	label.TextScaled = true
 	label.Font = Enum.Font.FredokaOne
-	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.TextStrokeColor3 = Color3.fromRGB(150, 90, 10)
+	label.TextColor3 = MegaLook.EMBLEM
+	label.TextStrokeColor3 = MegaLook.EMBLEM_STROKE
 	label.TextStrokeTransparency = 0
 	label.Parent = gui
+
+	local shine = Instance.new("Frame")
+	shine.Name = "Shine"
+	shine.AnchorPoint = Vector2.new(0.5, 0.5)
+	shine.Position = UDim2.fromScale(0.3, 0.3)
+	shine.Size = UDim2.fromScale(0.1, 0.8)
+	shine.Rotation = 40
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = MegaLook.SHINE_ALPHA
+	shine.BorderSizePixel = 0
+	local shineCorner = Instance.new("UICorner")
+	shineCorner.CornerRadius = UDim.new(0.5, 0)
+	shineCorner.Parent = shine
+	shine.Parent = gui
 end
 
 local function build()
@@ -79,22 +149,44 @@ local function build()
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(1.6, Config.MEGA_DIAMETER, Config.MEGA_DIAMETER),
 		CFrame = CFrame.new(0, Config.MEGA_HEIGHT, 0) * CFrame.Angles(0, math.pi / 2, 0),
-		Color = GOLD,
-		Reflectance = 0.15,
+		Color = MegaLook.BASE,
+		Material = Enum.Material.Foil,
+		Reflectance = MegaLook.REFLECTANCE,
 		CanCollide = false,
 		CanQuery = false,
 	})
-	faceLabel(coin, Enum.NormalId.Right, "$")
-	faceLabel(coin, Enum.NormalId.Left, "⭐")
+	coinFace(coin, Enum.NormalId.Right, "$")
+	coinFace(coin, Enum.NormalId.Left, "★")
+	-- A darker ridge ring around the edge (welded, so it follows the coin when the client moves it).
+	local ridgeThickness, ridgeDiameter = MegaLook.ridge(coin.Size.X, coin.Size.Y)
+	local ridge = make({
+		Name = "Ridge",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(ridgeThickness, ridgeDiameter, ridgeDiameter),
+		CFrame = coin.CFrame,
+		Color = MegaLook.RIDGE,
+		Material = Enum.Material.Foil,
+		Anchored = false,
+		Massless = true,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+	})
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = coin
+	weld.Part1 = ridge
+	weld.Parent = ridge
+	ridge.Parent = model
 	local sparkle = Instance.new("ParticleEmitter")
 	sparkle.Name = "Sparkle"
-	sparkle.Rate = 4
+	sparkle.Rate = MegaLook.SPARKLE_RATE
 	sparkle.Lifetime = NumberRange.new(0.6, 1.2)
 	sparkle.Speed = NumberRange.new(4, 10)
 	sparkle.SpreadAngle = Vector2.new(180, 180)
-	sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) })
+	sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, MegaLook.SPARKLE_SIZE), NumberSequenceKeypoint.new(1, 0) })
 	sparkle.Color = ColorSequence.new(Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255))
-	sparkle.LightEmission = 1
+	sparkle.LightEmission = 0.5
 	sparkle.Parent = coin
 	coin.Parent = model
 
