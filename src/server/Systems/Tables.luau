@@ -54,7 +54,7 @@ local HEADS: FlipResult = "heads"
 local function restCFrame(state: TableState, index: number, face: FlipResult): CFrame
 	local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
 	local pos = state.center + Vector3.new(x, Config.COIN_THICKNESS / 2, z)
-	local roll = if face == "heads" then math.pi / 2 else -math.pi / 2
+	local roll = FlipArc.restRoll(face)
 	return CFrame.new(pos) * CFrame.Angles(0, state.yaw, 0) * CFrame.Angles(0, 0, roll)
 end
 
@@ -123,6 +123,12 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	coin.CFrame = restCFrame(state, index, face)
 	coin:SetAttribute("CoinIndex", index)
 	coin:SetAttribute("Face", face)
+	-- What the coin looks like at rest. The client dresses rare coins in the air and always restores
+	-- THIS (never whatever it finds on the part), so a coin can never stay big or colored.
+	coin:SetAttribute("RestSize", coin.Size)
+	coin:SetAttribute("RestColor", coin.Color)
+	coin:SetAttribute("RestMaterial", coin.Material.Name)
+	coin:SetAttribute("RestReflectance", coin.Reflectance)
 	coinFace(coin, Enum.NormalId.Right, "$", textColor, rimColor)
 	coinFace(coin, Enum.NormalId.Left, "🎩", textColor, rimColor) -- tails gives hat points
 

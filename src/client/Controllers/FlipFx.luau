@@ -52,7 +52,7 @@ local MAIN = FlipArc.MAIN
 local OTHERS_MAX_DISTANCE = 220
 
 local function rollFor(face: unknown): number
-	return if face == "skull" then -math.pi / 2 else math.pi / 2
+	return FlipArc.restRoll(face)
 end
 
 local function easeOut(u: number): number
@@ -75,32 +75,36 @@ end
 
 local function trailOn(coin: BasePart, on: boolean)
 	local trail = coin:FindFirstChild("FlipTrail")
+	-- Thin ribbon on the spin axis (never wider than the coin, never a slab), re-fitted every flip.
+	local r = CoinLook.trailHalfWidth(coin.Size.Y)
 	if not trail then
 		if not on then
 			return
 		end
-		-- Attachments on the spin axis, so the ribbon stays smooth while the coin spins.
-		local r = coin.Size.Y * 0.5
 		local a0 = Instance.new("Attachment")
 		a0.Name = "TrailA"
-		a0.Position = Vector3.new(0, 0, -r)
 		a0.Parent = coin
 		local a1 = Instance.new("Attachment")
 		a1.Name = "TrailB"
-		a1.Position = Vector3.new(0, 0, r)
 		a1.Parent = coin
 		local t = Instance.new("Trail")
 		t.Name = "FlipTrail"
 		t.Attachment0 = a0
 		t.Attachment1 = a1
 		t.Lifetime = 0.3
-		t.LightEmission = 0.7
+		t.LightEmission = 0.35
 		t.FaceCamera = true
 		t.Color = ColorSequence.new(Color3.fromRGB(255, 245, 170), Color3.fromRGB(255, 200, 60))
-		t.Transparency = NumberSequence.new(0.25, 1)
+		t.Transparency = NumberSequence.new(0.35, 1)
 		t.WidthScale = NumberSequence.new(1, 0.2)
 		t.Parent = coin
 		trail = t
+	end
+	local a0 = coin:FindFirstChild("TrailA")
+	local a1 = coin:FindFirstChild("TrailB")
+	if a0 and a0:IsA("Attachment") and a1 and a1:IsA("Attachment") then
+		a0.Position = Vector3.new(0, 0, -r)
+		a1.Position = Vector3.new(0, 0, r)
 	end
 	if trail and trail:IsA("Trail") then
 		trail.Enabled = on
@@ -339,9 +343,6 @@ local function dressRare(anim: Anim, now: number, t: number)
 end
 
 local function undressRare(anim: Anim)
-	if not anim.dressed then
-		return
-	end
 	local coin = anim.coin
 	coin.Size = anim.restSize
 	coin.Color = anim.restColor
@@ -377,6 +378,15 @@ local function undressRare(anim: Anim)
 	anim.dressed = false
 end
 
+-- The coin's resting look, from the attributes the server put on it (falls back to the part itself).
+local function restOf<T>(coin: BasePart, name: string, fallback: T): T
+	local value = coin:GetAttribute(name)
+	if value ~= nil and typeof(value) == typeof(fallback) then
+		return value :: any
+	end
+	return fallback
+end
+
 local function onFlipped(ev: FlipEvent)
 	local folder = workspace:FindFirstChild("Tables")
 	local model = folder and folder:FindFirstChild(`Table_{ev.ownerId}`)
@@ -396,10 +406,10 @@ local function onFlipped(ev: FlipEvent)
 		undressRare(old) -- a re-flip mid-air starts from the plain coin
 	end
 	local base = if old then old.base else coin.Position
-	local restSize = if old then old.restSize else coin.Size
-	local restColor = if old then old.restColor else coin.Color
-	local restMaterial = if old then old.restMaterial else coin.Material
-	local restReflectance = if old then old.restReflectance else coin.Reflectance
+	local restSize = restOf(coin, "RestSize", coin.Size)
+	local restColor = restOf(coin, "RestColor", coin.Color)
+	local restMaterial = Enum.Material:FromName(restOf(coin, "RestMaterial", coin.Material.Name)) or coin.Material
+	local restReflectance = restOf(coin, "RestReflectance", coin.Reflectance)
 	local restMarks: { [Instance]: Color3 } = if old then old.restMarks else {}
 	if not old then
 		for _, d in coin:GetDescendants() do
@@ -471,7 +481,9 @@ local function step()
 			shadow.Size = Vector3.new(shadow.Size.X, d, d)
 			shadow.Transparency = FlipArc.shadowFade(height, anim.height)
 		end
-		dressRare(anim, now, t)
+		if not pcall(dressRare, anim, now, t) then
+			warn("CoinFlick: rare coin look failed (the coin still lands normally)")
+		end
 		-- Never let the spinning (or grown) coin cut into the table top.
 		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y) + CoinLook.hover(
 			coin.Size.Y / anim.restSize.Y

@@ -21,6 +21,12 @@ function FlipArc.height(t: number, peak: number?): number
 	return top * FlipArc.BOUNCE * 4 * b * (1 - b)
 end
 
+-- The roll (about the coin's own Z axis) that leaves each face up: heads = the "$" (Right) face,
+-- anything else = the hat (Left) face. The server rests coins with this and the client lands on it.
+function FlipArc.restRoll(face: unknown): number
+	return if face == "heads" then math.pi / 2 else -math.pi / 2
+end
+
 -- How many full spins a flip of `duration` seconds makes (faster flips still spin a lot).
 function FlipArc.spins(duration: number): number
 	return 3 + math.floor(math.max(0, duration) * 2)
