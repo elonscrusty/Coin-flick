@@ -155,7 +155,8 @@ local function popText(coin: BasePart, text: string, color: Color3)
 	local pulse = Instance.new("UIScale") -- pops big, then settles
 	pulse.Scale = 0.4
 	pulse.Parent = label
-	TweenService:Create(pulse, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1.15 }):Play()
+	TweenService:Create(pulse, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1.15 })
+		:Play()
 	label.Parent = gui
 	gui.Parent = player:WaitForChild("PlayerGui")
 	TweenService:Create(gui, POP_INFO, { StudsOffsetWorldSpace = Vector3.new(0, 4.5, 0) }):Play()
@@ -507,7 +508,9 @@ local function step()
 		-- Landing squash: squish on impact, spring back, settle (the rare size is the base while it is dressed).
 		local squishT, squishW = CoinLook.squash(t, MAIN)
 		if squishT ~= 1 then
-			local base = if anim.rare then CoinLook.size(anim.restSize, CoinLook.scale(anim.grow, t, MAIN)) else anim.restSize
+			local base = if anim.rare
+				then CoinLook.size(anim.restSize, CoinLook.scale(anim.grow, t, MAIN))
+				else anim.restSize
 			coin.Size = Vector3.new(base.X * squishT, base.Y * squishW, base.Z * squishW)
 		end
 		-- Never let the spinning (or grown) coin cut into the table top.
