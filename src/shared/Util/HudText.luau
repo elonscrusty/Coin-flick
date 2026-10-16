@@ -25,15 +25,16 @@ function HudText.info(cashPerHeads: number, headsChance: number): string
 	return `Heads = ${HudText.pay(cashPerHeads)}\nLuck {Format.percent(headsChance)}`
 end
 
--- Right-band chip: the 2x timer while it runs, else the mega coin count once
--- someone has started tapping it, else nothing (chip hidden). The count is
--- shown here only; the 3D sign says just "tap it".
-function HudText.boost(taps: number, goal: number, boostLeft: number): string
+-- Right-band chips. The mega count stays up after a mega flip (progress
+-- never vanishes); the 2x timer has its own chip below it.
+function HudText.mega(taps: number, goal: number): string
+	return if taps > 0 then `🌟 {taps}/{goal}` else ""
+end
+
+function HudText.boost(boostLeft: number): string
 	local left = math.ceil(boostLeft)
 	if left > 0 then
 		return `⚡ 2x  {left // 60}:{string.format("%02d", left % 60)}`
-	elseif taps > 0 then
-		return `🌟 {taps}/{goal}`
 	end
 	return ""
 end

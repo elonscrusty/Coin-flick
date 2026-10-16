@@ -77,6 +77,7 @@ local resetIcon: TextLabel
 local resetWord: TextLabel
 local resetSpin: Tween?
 local resetPulse: Tween?
+local megaLabel: TextLabel
 local boostLabel: TextLabel
 local boostEnds = 0
 local comboLabel: TextLabel
@@ -97,7 +98,7 @@ end
 -- empty or while a panel is open.
 local function setStrip(l: TextLabel, text: string)
 	l.Text = text
-	place(l, if l == boostLabel then layout.boost else layout.info)
+	place(l, if l == boostLabel then layout.boost elseif l == megaLabel then layout.mega else layout.info)
 	l.Visible = text ~= "" and not anyPanelOpen()
 end
 
@@ -282,6 +283,8 @@ local function applyLayout()
 	setMaxText(hatLabel, layout.top.h * 0.62)
 	setMaxText(infoLabel, layout.info.h * 0.4)
 	setStrip(infoLabel, infoLabel.Text)
+	setMaxText(megaLabel, layout.mega.h * 0.75)
+	setStrip(megaLabel, megaLabel.Text)
 	setMaxText(boostLabel, layout.boost.h * 0.75)
 	setStrip(boostLabel, boostLabel.Text)
 	place(comboLabel, layout.combo)
@@ -375,7 +378,7 @@ function Hud.init()
 	pillGui = Instance.new("ScreenGui")
 	pillGui.Name = "CoinFlickPills"
 	pillGui.ResetOnSpawn = false
-	pillGui.DisplayOrder = 6
+	pillGui.DisplayOrder = 4 -- under the panels' dim, like the rest of the HUD
 	pillGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	pillGui.ScreenInsets = Enum.ScreenInsets.DeviceSafeInsets
 	top.Parent = pillGui
@@ -399,6 +402,8 @@ function Hud.init()
 	infoLabel = strip("Info", "Tap a coin to flip it!", WHITE)
 	boostLabel = strip("Boost", "", UiStyle.GOLD)
 	boostLabel.Visible = false
+	megaLabel = strip("Mega", "", WHITE)
+	megaLabel.Visible = false
 
 	-- Left side, under the Roblox menu, above the thumbstick.
 	comboLabel = label({
@@ -508,7 +513,9 @@ function Hud.init()
 		if open then
 			infoLabel.Visible = false
 			boostLabel.Visible = false
+			megaLabel.Visible = false
 		else
+			setStrip(megaLabel, megaLabel.Text)
 			setStrip(infoLabel, infoLabel.Text)
 			setStrip(boostLabel, boostLabel.Text)
 		end
@@ -540,10 +547,13 @@ function Hud.start()
 	task.spawn(function()
 		while true do
 			local left = boostEnds - os.clock()
-			local text = HudText.boost(mega.taps, mega.goal, left)
-			boostLabel.TextColor3 = if left > 0 then UiStyle.GOLD else WHITE
+			local text = HudText.boost(left)
 			if text ~= boostLabel.Text then
 				setStrip(boostLabel, text)
+			end
+			local megaText = HudText.mega(mega.taps, mega.goal)
+			if megaText ~= megaLabel.Text then
+				setStrip(megaLabel, megaText)
 			end
 			task.wait(0.25)
 		end

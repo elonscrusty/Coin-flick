@@ -20,10 +20,13 @@ describe("HUD words", function()
 	end)
 
 	it("boost strip hides when nothing is going on", function()
-		expect(HudText.boost(0, 90, 0)).toBe("")
-		expect(HudText.boost(5, 90, 0)).toBe("🌟 5/90")
-		expect(HudText.boost(5, 90, 61.2)).toBe("⚡ 2x  1:02")
-		expect(HudText.boost(0, 90, 9)).toBe("⚡ 2x  0:09")
+		expect(HudText.boost(0)).toBe("")
+		expect(HudText.mega(0, 90)).toBe("")
+		expect(HudText.mega(5, 90)).toBe("🌟 5/90")
+		expect(HudText.boost(61.2)).toBe("⚡ 2x  1:02")
+		expect(HudText.boost(9)).toBe("⚡ 2x  0:09")
+		-- both chips can show at once: progress stays while the timer runs
+		expect(HudText.mega(87, 90)).toBe("🌟 87/90")
 	end)
 
 	it("reset button says RESET, then RESET! when ready; bar counts coins", function()
