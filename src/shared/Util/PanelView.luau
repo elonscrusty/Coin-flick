@@ -55,6 +55,12 @@ local PanelView = {}
 PanelView.MAX_LINE = 28
 PanelView.OPEN_SEATS = 2 -- placeholder rows shown under the real players
 
+-- Width of each of `count` shown tabs sharing one row: (scale, offset).
+function PanelView.tabSize(count: number, gap: number): (number, number)
+	local n = math.max(1, count)
+	return 1 / n, -(gap * (n - 1)) / n
+end
+
 PanelView.TAB_ORDER = { "upgrades", "helpers", "hats", "robux" }
 PanelView.TAB_LABEL = {
 	upgrades = "COINS",
@@ -83,6 +89,14 @@ local function priceLook(have: number, cost: number): Look
 	return if have >= cost then "buy" else "poor"
 end
 
+-- A price of 0 reads FREE in bright green (never a grey "$0").
+function PanelView.freePrice(card: Card)
+	if card.price ~= nil and card.price <= 0 and (card.look == "buy" or card.look == "poor") then
+		card.button = "FREE"
+		card.look = "buy"
+	end
+end
+
 function PanelView.upgradeCards(s: Snapshot): { Card }
 	local cards: { Card } = {}
 	for i, id in Config.UPGRADE_ORDER do
@@ -100,6 +114,7 @@ function PanelView.upgradeCards(s: Snapshot): { Card }
 			currency = if cost then "cash" else nil,
 			order = i,
 		}
+		PanelView.freePrice(card)
 		table.insert(cards, card)
 	end
 	return cards
@@ -154,6 +169,7 @@ function PanelView.helperCards(s: Snapshot): { Card }
 				order = 100 + i,
 			}
 		end
+		PanelView.freePrice(card)
 		table.insert(cards, card)
 	end
 	return cards
@@ -207,6 +223,7 @@ function PanelView.hatCards(s: Snapshot): { Card }
 				order = i,
 			}
 		end
+		PanelView.freePrice(card)
 		table.insert(cards, card)
 	end
 	return cards
@@ -290,6 +307,7 @@ function PanelView.robuxCards(s: Snapshot, prices: { [string]: string }): { Card
 		elseif item.id > 0 then
 			card.button, card.look = prices[item.key] or "BUY", "buy"
 		end
+		PanelView.freePrice(card)
 		table.insert(cards, card)
 	end
 	return cards
@@ -328,9 +346,22 @@ function PanelView.fitRows(
 	return fits, h, content
 end
 
+-- Shop rows: roomy (CARD_PREF) when at least 3 fit, else squeezed to CARD_MIN so
+-- a short phone panel still shows 2-3 whole rows.
+PanelView.CARD_PREF = 64
+function PanelView.cardRows(avail: number, count: number, minH: number, maxH: number): (number, number)
+	local fits, h = PanelView.fitRows(avail, count, PanelView.CARD_PREF, maxH, 8, 8)
+	if fits >= math.min(3, count) then
+		return fits, h
+	end
+	local f2, h2 = PanelView.fitRows(avail, count, minH, maxH, 8, 8)
+	return f2, h2
+end
+
 -- Top 10 rows: the real players, up to two open seats, and an "Invite friends!"
 -- card that must always be fully visible. Open seats go first when space is short.
 PanelView.INVITE_MIN = 56
+PanelView.INVITE_PAD = 6 -- air under the invite card so its border is never cut
 PanelView.ROW_MIN = 34
 PanelView.ROW_MAX = 62
 
@@ -340,15 +371,22 @@ function PanelView.boardLayout(full: number, real: number, wanted: number): (num
 		return wanted, rowH, 0
 	end
 	for n = wanted, math.max(real, 1), -1 do
-		local rowMax = math.floor((full - 8 - 8 - (n - 1) * 8 - PanelView.INVITE_MIN) / n)
+		local rowMax = math.floor((full - 8 - 8 - PanelView.INVITE_PAD - (n - 1) * 8 - PanelView.INVITE_MIN) / n)
 		if rowMax >= PanelView.ROW_MIN then
 			local rowH = math.min(PanelView.ROW_MAX, rowMax)
-			local invite = math.min(130, full - (8 + n * rowH + (n - 1) * 8) - 8)
+			local invite = math.min(130, full - (8 + n * rowH + (n - 1) * 8) - 8 - PanelView.INVITE_PAD)
 			return n, rowH, invite
 		end
 	end
 	local _, rowH = PanelView.fitRows(full, math.max(real, 1), PanelView.ROW_MIN, PanelView.ROW_MAX, 8, 8)
 	return math.max(real, 1), rowH, 0
+end
+
+-- Height of the one-line caption above the CREW / HATS lists: none on a short
+-- panel, so a phone shows more rows.
+PanelView.HEADER_H = 26
+function PanelView.headerHeight(boxH: number): number
+	return if boxH < 340 then 0 else PanelView.HEADER_H
 end
 
 -- Banner rows (title over text) inside a banner `h` pixels tall.

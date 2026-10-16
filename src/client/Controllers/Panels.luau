@@ -37,8 +37,9 @@ local cardHeight = 66 -- smaller on short (phone landscape) screens, set by setL
 local CARD_MIN, CARD_MAX = 44, 88
 local lastBoxH = 300 -- panel height in panel units (before its UIScale), from setLayout
 local SCROLLBAR = 10
+local TAB_GAP = 6
 local ICON_TILE = Color3.fromRGB(150, 200, 250) -- light blue: white chef hat and yellow duck both show
-local HEADER_H = 26 -- caption row above the CREW and HATS lists (dropped on short panels)
+local HEADER_H = PanelView.HEADER_H -- caption row above the CREW and HATS lists (dropped on short panels)
 local headerShown = HEADER_H
 local ARROW_STRIP = 20 -- empty strip under a list that holds the "more below" arrow
 local TAB_COLORS: { [string]: Color3 } = {
@@ -527,7 +528,7 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 	local listLayout = Instance.new("UIListLayout")
 	listLayout.FillDirection = Enum.FillDirection.Horizontal
 	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-	listLayout.Padding = UDim.new(0, 6)
+	listLayout.Padding = UDim.new(0, TAB_GAP)
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	listLayout.Parent = row
 	local buttons: { [string]: TextButton } = {}
@@ -539,12 +540,28 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 		end)
 		b.Name = `Tab_{key}`
 		b.LayoutOrder = i
-		b.Size = UDim2.new(1 / #tabs, -(6 * (#tabs - 1)) / #tabs, 1, 0)
 		b.ZIndex = 7
 		Kit.textLimit(b, 22)
 		b.Parent = row
 		buttons[key] = b
 	end
+	-- Shown tabs share the whole row (a hidden tab leaves no empty strip).
+	local function resize()
+		local shown = 0
+		for _, b in buttons do
+			if b.Visible then
+				shown += 1
+			end
+		end
+		local scale, offset = PanelView.tabSize(shown, TAB_GAP)
+		for _, b in buttons do
+			b.Size = UDim2.new(scale, offset, 1, 0)
+		end
+	end
+	for _, b in buttons do
+		b:GetPropertyChangedSignal("Visible"):Connect(resize)
+	end
+	resize()
 	row.Parent = parent
 	return buttons
 end
@@ -583,7 +600,7 @@ local function layoutCard(ui: CardUi, h: number)
 	ui.badge.Size = UDim2.fromOffset(66, math.max(20, math.round(h * 0.3)))
 	local titleLimit = ui.title:FindFirstChildOfClass("UITextSizeConstraint")
 	if titleLimit then
-		titleLimit.MaxTextSize = math.max(16, math.round(h * 0.4))
+		titleLimit.MaxTextSize = math.max(16, math.round(h * 0.46))
 	end
 	local lineLimit = ui.line:FindFirstChildOfClass("UITextSizeConstraint")
 	if lineLimit then
@@ -1209,7 +1226,7 @@ end
 local function fitCards()
 	local bodyH = lastBoxH - 62
 	-- On a short (phone) panel the one-line captions go, so a second row fits.
-	headerShown = if lastBoxH < 290 then 0 else HEADER_H
+	headerShown = PanelView.headerHeight(lastBoxH)
 	for key, caption in shopHeaders do
 		caption.Visible = caption.Visible and headerShown > 0
 		local list = shopLists[key]
@@ -1224,7 +1241,7 @@ local function fitCards()
 		end
 		local header = if group == "helpers" or group == "hats" then headerShown else 0
 		local avail = bodyH - 44 - header - ARROW_STRIP - 4 -- a few px spare so no row is ever clipped
-		local _, h = PanelView.fitRows(avail, count, CARD_MIN, CARD_MAX, 8, 8)
+		local _, h = PanelView.cardRows(avail, count, CARD_MIN, CARD_MAX)
 		for _, ui in byId do
 			layoutCard(ui, h)
 		end
@@ -1365,7 +1382,7 @@ function Panels.init()
 		Size = UDim2.fromScale(0.9, 0.44),
 		ZIndex = 26,
 	})
-	bannerTitle.TextYAlignment = Enum.TextYAlignment.Center
+	bannerTitle.TextYAlignment = Enum.TextYAlignment.Bottom -- words hug each other
 	Kit.outline(bannerTitle, 3)
 	Kit.textLimit(bannerTitle, 30)
 	local titleLimit = bannerTitle:FindFirstChildOfClass("UITextSizeConstraint")
@@ -1380,7 +1397,7 @@ function Panels.init()
 		Size = UDim2.fromScale(0.9, 0.42),
 		ZIndex = 26,
 	})
-	bannerText.TextYAlignment = Enum.TextYAlignment.Center
+	bannerText.TextYAlignment = Enum.TextYAlignment.Top
 	Kit.outline(bannerText, 2)
 	Kit.textLimit(bannerText, 20)
 	bannerText.TextTruncate = Enum.TextTruncate.AtEnd
