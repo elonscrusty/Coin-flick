@@ -389,10 +389,51 @@ describe("Round 7", function()
 				expect(n >= math.max(real, 1)).toBe(true)
 				if invite > 0 then
 					expect(invite).toBeAtLeast(PanelView.INVITE_MIN)
-					expect(8 + n * rowH + (n - 1) * 8 + 8 + invite).toBeAtMost(full)
+					expect(8 + n * rowH + (n - 1) * 8 + 8 + invite + PanelView.INVITE_PAD).toBeAtMost(full)
 				end
 			end
 		end)
+	end)
+
+	it("a phone shows at least 2 whole rows (3 at 845x397), tabs fill the row", function()
+		eachScreen(function(screen, _, _, boxH)
+			local header = PanelView.headerHeight(boxH)
+			local avail = boxH - 62 - 44 - header - 20 - 4
+			local fits, h = PanelView.fitRows(avail, 8, 44, 88, 8, 8)
+			expect(fits).toBeAtLeast(2)
+			if screen.name == "runner-phone" then
+				expect(fits).toBeAtLeast(3)
+			end
+			expect(h).toBeAtLeast(44)
+		end)
+		local scale, offset = PanelView.tabSize(3, 6)
+		expect(scale).toBe(1 / 3)
+		expect(offset).toBe(-4)
+		expect(PanelView.tabSize(4, 6)).toBe(0.25)
+	end)
+
+	it("desktop rows are roomy: names >= 18px, icons >= 56px; phones keep 2+ rows", function()
+		eachScreen(function(screen, _, _, boxH)
+			local avail = boxH - 62 - 44 - PanelView.headerHeight(boxH) - 20 - 4
+			local fits, h = PanelView.cardRows(avail, 8, 44, 88)
+			expect(fits).toBeAtLeast(2)
+			if boxH >= 440 then
+				expect(h).toBeAtLeast(64)
+				expect(math.round(h * 0.42)).toBeAtLeast(18)
+				expect(h - 10).toBeAtLeast(56)
+			end
+		end)
+	end)
+
+	it("a price of 0 reads FREE in the bright buy look", function()
+		local card: any = { id = "x", title = "X", line = "", button = "$0", look = "poor", price = 0, order = 1 }
+		PanelView.freePrice(card)
+		expect(card.button).toBe("FREE")
+		expect(card.look).toBe("buy")
+		local paid: any = { id = "y", title = "Y", line = "", button = "$5", look = "poor", price = 5, order = 2 }
+		PanelView.freePrice(paid)
+		expect(paid.button).toBe("$5")
+		expect(paid.look).toBe("poor")
 	end)
 
 	it("banner title row is at least 18px tall on every screen", function()
