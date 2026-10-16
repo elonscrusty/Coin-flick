@@ -7,6 +7,7 @@
 local Config = require(script.Parent.Parent.Config)
 local GoalsConfig = require(script.Parent.Parent.GoalsConfig)
 local Types = require(script.Parent.Parent.Types)
+local Plural = require(script.Parent.Plural)
 
 type Profile = Types.Profile
 type ChallengeState = Types.ChallengeState
@@ -124,7 +125,7 @@ function Goals.challengesFor(week: number): { Challenge }
 			goal = def.goal,
 			flips = def.flips,
 			hats = def.hats,
-			text = string.format(def.text, def.goal),
+			text = Plural.fix(string.format(def.text, def.goal)),
 		})
 	end
 	return list

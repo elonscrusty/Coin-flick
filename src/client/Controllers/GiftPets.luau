@@ -168,7 +168,7 @@ local function renderDaily()
 		Kit.applyLook(giftButton, "poor")
 		return
 	end
-	local rows = GiftPetView.dailyRows(daily, os.time())
+	local rows = GiftPetView.dailyRows(daily, os.time(), playView, os.time() - playAt)
 	for i, ui in cells do
 		local cell = rows.cells[i]
 		if not cell then
@@ -355,6 +355,7 @@ function GiftPets.start(dot: (boolean) -> ())
 		playView = view
 		playAt = os.time()
 		renderPlay()
+		renderDaily()
 		dotHook.fn(GiftPetView.dailyDot(daily, view))
 	end)
 	ClientNet.event("PetState").OnClientEvent:Connect(function(views: { PetRules.PetView })
@@ -365,7 +366,7 @@ function GiftPets.start(dot: (boolean) -> ())
 		while true do
 			task.wait(1)
 			if daily and dailyList.Visible then
-				timerLabel.Text = GiftPetView.dailyRows(daily, os.time()).timer
+				renderDaily()
 			end
 			if playView and dailyList.Visible then
 				renderPlay()

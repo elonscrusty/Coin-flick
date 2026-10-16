@@ -354,3 +354,64 @@ describe("Menu art pass", function()
 		expect(PanelView.tabText("X", "WORD", 140, false)).toBe("X WORD")
 	end)
 end)
+
+describe("Round 11 polish", function()
+	local GiftPetView = require(ReplicatedStorage.Shared.Util.GiftPetView)
+	local EventText = require(ReplicatedStorage.Shared.Util.EventText)
+	local Daily = require(ReplicatedStorage.Shared.Util.Daily)
+	local Plural = require(ReplicatedStorage.Shared.Util.Plural)
+
+	it("the daily gift button and the HUD chip show the same next-gift number", function()
+		local d = Daily.empty()
+		Daily.claimGift(d, 20000)
+		local daily = Daily.view(d, 1, 20000, 2)
+		local now = 20000 * 86400 + 3600
+		local play = {
+			seconds = 0,
+			claimable = 0,
+			gifts = { { slot = 1, minutes = 5, cash = 10, hats = 1, state = "waiting", left = 224 } },
+		}
+		local rows = GiftPetView.dailyRows(daily, now, play, 0)
+		expect(rows.gift.text).toBe("Next gift 3:44")
+		expect(rows.gift.text).toBe((EventText.gift(play, 0)))
+		-- 10 seconds later both tick down together
+		expect(GiftPetView.dailyRows(daily, now, play, 10).gift.text).toBe("Next gift 3:34")
+		expect((EventText.gift(play, 10))).toBe("Next gift 3:34")
+		-- no play gift waiting: the wait for tomorrow
+		expect(GiftPetView.dailyRows(daily, now, nil, 0).gift.text).toBe("Next gift 23h 00m")
+		expect(rows.timer).toBe("Daily gifts reset in 23h 00m")
+	end)
+
+	it("no job or challenge text ever says '1 heads', '2 time' or 'time(s)'", function()
+		for day = 20000, 20040 do
+			for userId = 1, 40 do
+				for _, job in Daily.jobsFor(userId, day) do
+					expect(string.find(job.text, "(s)", 1, true)).toBeNil()
+					expect(string.find(job.text, "1 heads", 1, true)).toBeNil()
+					expect(string.find(job.text, "1 times", 1, true)).toBeNil()
+					expect(string.find(job.text, "%f[%d][2-9]%d* time%f[%W]")).toBeNil()
+				end
+			end
+			for _, ch in Goals.challengesFor(day // 7) do
+				expect(string.find(ch.text, "(s)", 1, true)).toBeNil()
+				expect(string.find(ch.text, "1 heads", 1, true)).toBeNil()
+			end
+		end
+		for _, kind in Config.Daily.JobKinds do
+			expect(string.find(kind.text, "(s)", 1, true)).toBeNil()
+		end
+		expect(Plural.fix("Help flip the mega coin 2 time")).toBe("Help flip the mega coin 2 times")
+	end)
+
+	it("a locked streak look is a bright bar with its number, not a button", function()
+		local rows = GoalsPanelView.ladderRows(viewOf(fresh(1)))
+		expect(rows[1].action).toBe("none")
+		expect(rows[1].count).toBe("1/3")
+		expect(math.abs(rows[1].frac - 1 / 3)).toBeAtMost(0.001)
+		expect(rows[4].count).toBe("1/10")
+		local reached = GoalsPanelView.ladderRows(viewOf(fresh(5)))
+		expect(reached[1].action).toBe("wear")
+		expect(reached[1].frac).toBe(1)
+		expect(reached[3].count).toBe("5/7")
+	end)
+end)

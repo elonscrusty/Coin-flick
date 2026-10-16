@@ -30,7 +30,7 @@ describe("GIFTS tab", function()
 
 	it("the timer counts down to UTC midnight", function()
 		local rows = GiftPetView.dailyRows(view(Daily.empty()), NOW)
-		expect(rows.timer).toBe("New gifts in 23h 00m")
+		expect(rows.timer).toBe("Daily gifts reset in 23h 00m")
 		expect(GiftPetView.timeLeft(125)).toBe("2:05")
 		expect(GiftPetView.timeLeft(9)).toBe("0:09")
 		expect(GiftPetView.timeLeft(-5)).toBe("0:00")

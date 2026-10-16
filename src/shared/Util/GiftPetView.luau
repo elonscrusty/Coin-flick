@@ -58,7 +58,23 @@ local function rewardText(cash: number, hats: number): string
 	return text
 end
 
-function GiftPetView.dailyRows(view: DailyView, now: number): DailyRows
+-- The one "next gift" number the HUD chip also shows: the soonest waiting play gift, else the
+-- wait for tomorrow's daily gift. Returns seconds, or 0 when a play gift is ready to take.
+function GiftPetView.nextGiftSeconds(view: DailyView, now: number, play: Types.PlayGiftView?, playAge: number): number
+	local nearest = math.max(0, view.nextReset - now)
+	if play then
+		for _, g in play.gifts do
+			if g.state == "ready" then
+				return 0
+			elseif g.state == "waiting" then
+				nearest = math.min(nearest, math.max(0, g.left - playAge))
+			end
+		end
+	end
+	return nearest
+end
+
+function GiftPetView.dailyRows(view: DailyView, now: number, play: Types.PlayGiftView?, playAge: number?): DailyRows
 	local gift = view.gift
 	local perHeads = gift.cash / math.max(1, gift.flips)
 	local cells: { GiftCell } = {}
@@ -76,10 +92,13 @@ function GiftPetView.dailyRows(view: DailyView, now: number): DailyRows
 			state = state,
 		})
 	end
-	local timer = `New gifts in {GiftPetView.timeLeft(view.nextReset - now)}`
+	local timer = `Daily gifts reset in {GiftPetView.timeLeft(view.nextReset - now)}`
 	local giftButton: Button = if gift.ready
 		then { text = `GET DAY {gift.dayIndex} GIFT!`, look = "buy" }
-		else { text = EventText.giftWait(view.nextReset - now), look = "done" }
+		else {
+			text = EventText.giftWait(GiftPetView.nextGiftSeconds(view, now, play, playAge or 0)),
+			look = "done",
+		}
 	local jobs: { JobRow } = {}
 	for i, job in view.jobs do
 		local button: Button = if job.claimed
