@@ -73,10 +73,11 @@ function Economy.rollRarity(rarityRoll: number): Rarity
 	for _, def in Config.Rarities do
 		edge += def.chance
 		if rarityRoll < edge then
-			return def.id :: Rarity
+			return (def.id :: any) :: Rarity
 		end
 	end
-	return "normal"
+	local normal: Rarity = "normal"
+	return normal
 end
 
 -- The smallest roll that lands on `rarity` (Studio test button only).
@@ -124,13 +125,13 @@ function Economy.resolveFlip(
 ): (FlipResult, number, number, Rarity)
 	local heads: FlipResult = "heads"
 	local skull: FlipResult = "skull"
-	local rarity = Economy.rollRarity(rarityRoll or 1)
+	local rarity: Rarity = Economy.rollRarity(rarityRoll or 1)
 	local mult = Economy.rarityMult(rarity)
 	if roll < Economy.headsChance(profile.upgrades.luck) then
 		local bonus = math.max(1, cashBonus or 1)
-		return heads, math.floor(Economy.cashPerHeads(profile) * mult * bonus + 0.5), 0, rarity
+		return heads, math.floor(Economy.cashPerHeads(profile) * mult * bonus + 0.5), 0, rarity :: Rarity
 	end
-	return skull, 0, mult, rarity
+	return skull, 0, mult, rarity :: Rarity
 end
 
 -- Taps the whole server needs to flip the mega coin.

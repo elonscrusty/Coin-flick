@@ -32,8 +32,14 @@ local function dress(player: Player)
 	-- Hide the avatar's own hats while a COIN FLICK hat is on (and bring them back after).
 	local wearing = profile.hat ~= ""
 	for _, item in character:GetChildren() do
-		local handle = item:IsA("Accessory") and item:FindFirstChild("Handle")
-		if handle and handle:IsA("BasePart") and (item :: Accessory).AccessoryType == Enum.AccessoryType.Hat then
+		if not item:IsA("Accessory") then
+			continue
+		end
+		if (item :: Accessory).AccessoryType ~= Enum.AccessoryType.Hat then
+			continue
+		end
+		local handle = item:FindFirstChild("Handle")
+		if handle and handle:IsA("BasePart") then
 			if handle:GetAttribute("CoinFlickWas") == nil then
 				handle:SetAttribute("CoinFlickWas", handle.Transparency)
 			end

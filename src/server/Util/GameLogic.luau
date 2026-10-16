@@ -67,7 +67,8 @@ function GameLogic.applyFlip(
 	if rarity ~= "normal" then
 		profile.stats.rares += 1
 	end
-	local outcome: FlipOutcome = { result = result :: FlipResult, cash = cash, hats = hats, rarity = rarity }
+	local outcome: FlipOutcome =
+		{ result = result :: FlipResult, cash = cash, hats = hats, rarity = rarity :: Types.Rarity }
 	return outcome
 end
 

@@ -18,7 +18,11 @@ function Boosts.setPass(player: Player, key: string, owned: boolean)
 		owns = {}
 		passes[player] = owns
 	end
-	owns[key] = if owned then true else nil
+	if owned then
+		owns[key] = true
+	else
+		owns[key] = nil
+	end
 end
 
 function Boosts.owns(player: Player, key: string): boolean
