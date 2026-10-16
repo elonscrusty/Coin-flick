@@ -1175,7 +1175,7 @@ function fitBoard()
 	local content = 8 + rowsShown * rowH + math.max(0, rowsShown - 1) * 8 + 8
 	local listH = math.min(full, content)
 	boardList.Size = UDim2.new(1, 0, 0, listH)
-	myRow.Position = UDim2.new(0, 0, 0, 44 + listH + ARROW_STRIP + 4)
+	myRow.Position = UDim2.fromOffset(0, 44 + listH + ARROW_STRIP + 4)
 end
 
 function Panels.setLayout(l: HudLayout.Layout)
