@@ -12,6 +12,7 @@
 
 local Config = require(script.Parent.Parent.Config)
 local Economy = require(script.Parent.Economy)
+local EventText = require(script.Parent.EventText)
 local Format = require(script.Parent.Format)
 local Types = require(script.Parent.Parent.Types)
 
@@ -400,8 +401,13 @@ end
 
 -- Top 10 --------------------------------------------------------------------
 
-PanelView.BOARD_TABS = { { "flips", "FLIPS" }, { "biggestFlip", "BIGGEST" }, { "resets", "RESETS" } }
-PanelView.BOARD_UNITS = { flips = "flips", biggestFlip = "", resets = "resets" }
+PanelView.BOARD_TABS = {
+	{ "flips", "FLIPS" },
+	{ "weekFlips", "THIS WEEK" },
+	{ "biggestFlip", "BIGGEST" },
+	{ "resets", "RESETS" },
+}
+PanelView.BOARD_UNITS = { flips = "flips", weekFlips = "flips", biggestFlip = "", resets = "resets" }
 
 local MEDALS: { Medal } = { "gold", "silver", "bronze" }
 
@@ -444,9 +450,35 @@ function PanelView.boardRows(key: string, rows: { Types.LeaderRow }?, myName: st
 end
 
 -- Your own live number, pinned under the list (the board itself refreshes slowly).
-function PanelView.myValue(key: string, s: Snapshot): string
-	local value = if key == "flips" then s.flips elseif key == "biggestFlip" then s.biggestFlip else s.resets
+-- `weekValue` = your flips this week, read from the weekly board (the snapshot does not carry it).
+function PanelView.myValue(key: string, s: Snapshot, weekValue: number?): string
+	local value = if key == "flips"
+		then s.flips
+		elseif key == "weekFlips" then weekValue or 0
+		elseif key == "biggestFlip" then s.biggestFlip
+		else s.resets
 	return PanelView.boardValue(key, value)
+end
+
+-- Your own number on the weekly board (0 when you are not in the top 10 yet).
+function PanelView.weekValueOf(rows: { Types.LeaderRow }?, myName: string): number
+	if not rows then
+		return 0
+	end
+	for _, row in rows do
+		if row.name == myName then
+			return row.value
+		end
+	end
+	return 0
+end
+
+-- Extra words under the board: only THIS WEEK has a reset clock ("Resets in 3d 4h").
+function PanelView.boardNote(key: string, weekEndsAt: number?, now: number): string
+	if key ~= "weekFlips" or weekEndsAt == nil or weekEndsAt <= 0 then
+		return ""
+	end
+	return EventText.weekReset(weekEndsAt, now)
 end
 
 -- Big banners ---------------------------------------------------------------
