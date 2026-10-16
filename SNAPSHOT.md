@@ -46,3 +46,14 @@ cash, hatPoints, upgrades{moreCoins,bigCoins,luck,speed}, crew{helperId: level},
 
 ## Key numbers
 10 coins max, 8 plots, heads 50% +3%/Lucky level (max 80%), rares 1/20 3x, 1/100 10x, 1/1000 50x, 1/10000 500x, combo up to 3x, helpers half speed offline max 2 h, reset +50% cash.
+
+## Added in the "whole game" build (phases 1, 3, 4, 5 + map)
+- **Streak (1.3/1.4)**: `stats.bestStreak`/`streakWins`; `Tables` keeps a per-player streak of own taps; 10 heads = prize (`Config` streak goal). Client `Controllers/HudPopups` + `Util/StreakView` (chip, drama at 8+, win pop, welcome-back card).
+- **Multi Flip upgrade** (`Config.Upgrades.multiFlip`), `Snapshot.flipsPerTap`.
+- **Daily (3.1-3.5)**: `Util/Daily`, `Systems/Daily` (7-day gift, 3 jobs, no punishment), `Util/Friends` + `Systems/Friends` (friend in server = 2x cash), 8 h offline pile. Remotes `DailyState`, `ClaimGift`, `ClaimJob`. Profile `daily`.
+- **Play gifts / badges / weekly / events (3.3, 3.6, 5.2, 5.3)**: `Util/PlayGifts`, `Util/Badges` (ids 0, never sent), `Util/WeeklyBoard`, `Util/WeekendEvents`, systems `PlayGifts`, `Badges`, `Events`. Remotes `PlayGiftState`, `ClaimPlayGift`, `BadgeState`, `EventState`; Leaderboards payload gets `weekFlips`. Profile `play`, `badges`, `week`.
+- **Pets (4.1)**: `Util/PetRules`, `Systems/Pets`, `Config` PetConfig. Remotes `PetEquip`, `PetState`, `PetFlipped`. Profile `pets`, `petActive`, `petProgress`. Goal-won, never random.
+- **Goals (4.2-4.4)**: `Util/Goals` + `Systems/Goals`: streak ladder skins (bronze/pearl/neon/crown), 3 weekly challenges + bonus, coin book. Remotes `GoalsState`, `ClaimChallenge`, `WearLadder`. Profile `ladderSkin`, `challenges`, `book`; `Snapshot.ladderSkin`.
+- **Panels**: shop tabs GIFTS (`GiftPets`), PETS, GOALS (`GoalsPanel`, `Ui/PanelWidgets`), THIS WEEK top 10. HUD alert chip (gift ready, rain/luck, friend 2x), banners (`Util/EventText`).
+- **Map (2.1/2.2)**: `Builders/PlotDecor`, `PlotThemes` (meadow, beach, candy, castle, space; theme per reset, own table look), `Util/YardLayout` (props only at back/sides, never in front half), `Util/DecorLayout`, edge tree wall, FREE PLOT markers. Docs: `docs/PLOT_THEMES.md`.
+- Selene quirk: a local reassigned later from a no-arg default function fails `mismatched_arg_count`; use a table field (`hook.fn`).
