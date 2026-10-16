@@ -94,7 +94,7 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	coin:SetAttribute("CoinIndex", index)
 	coin:SetAttribute("Face", face)
 	faceLabel(coin, Enum.NormalId.Right, "$", textColor)
-	faceLabel(coin, Enum.NormalId.Left, "💀", textColor)
+	faceLabel(coin, Enum.NormalId.Left, "🎩", textColor) -- tails gives hat points
 
 	local sparkle = Instance.new("ParticleEmitter")
 	sparkle.Name = "Sparkle"

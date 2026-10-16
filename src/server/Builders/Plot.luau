@@ -47,6 +47,10 @@ local function tree(make: PartMaker, parent: Instance, base: CFrame, size: numbe
 	end
 end
 
+Plot.tree = tree
+Plot.LEAVES = LEAVES
+Plot.FLOWERS = FLOWERS
+
 local function flower(make: PartMaker, parent: Instance, base: CFrame, color: Color3)
 	local stem = make({
 		Name = "Stem",
@@ -189,5 +193,7 @@ function Plot.build(
 
 	folder.Parent = parent
 end
+
+Plot.flower = flower
 
 return Plot

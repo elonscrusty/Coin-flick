@@ -1,5 +1,5 @@
 --!strict
--- Silly hats: bought with hat points (🎩 from skull flips), worn on your head.
+-- Silly hats: bought with hat points (🎩 from tails flips), worn on your head.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -55,6 +55,7 @@ local function dress(player: Player)
 	if not hat then
 		return
 	end
+	hat:ScaleTo(1.6 * head.Size.X / 1.2) -- chunky and easy to see, sized to the head
 	hat:PivotTo(head.CFrame * CFrame.new(0, head.Size.Y / 2 - 0.1, 0))
 	for _, part in hat:GetDescendants() do
 		if part:IsA("BasePart") then

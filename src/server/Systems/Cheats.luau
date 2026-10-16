@@ -17,8 +17,12 @@ local RARE_CYCLE = { "silver", "gold", "rainbow", "giant" }
 local nextRare: { [Player]: number } = {}
 
 -- Studio test players have UserId <= 0; in Team Test only the game's creator.
+-- A place opened from a file has CreatorId 0, and then Play uses your real id.
 local function allowed(player: Player): boolean
-	return RunService:IsStudio() and (player.UserId <= 0 or player.UserId == game.CreatorId)
+	if not RunService:IsStudio() then
+		return false
+	end
+	return player.UserId <= 0 or game.CreatorId == 0 or player.UserId == game.CreatorId
 end
 
 local function onCheat(player: Player, command: unknown)

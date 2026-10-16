@@ -46,9 +46,10 @@ local function update()
 			local back = math.max(1, 1.45 / aspect)
 			camera.CameraType = Enum.CameraType.Scriptable
 			camera.FieldOfView = 55
-			local eye = center - outward * (10 * back) + Vector3.new(0, 13 * back, 0)
-			-- Aim past the middle so flying coins and pop numbers stay below the top bar.
-			camera.CFrame = CFrame.lookAt(eye, center + outward * 1.5)
+			-- Steep, close view; aim past the middle so the coins sit low on
+			-- screen and flying coins + pop numbers stay clear of the top bar.
+			local eye = center - outward * (7 * back) + Vector3.new(0, 16 * back, 0)
+			camera.CFrame = CFrame.lookAt(eye, center + outward * 2.5)
 		end
 	end
 	if os.clock() < shakeUntil then
@@ -83,7 +84,37 @@ function CameraView.shake(power: number, seconds: number)
 	shakeUntil = os.clock() + seconds
 end
 
+-- Normal view: when you spawn, look over your shoulder at your table.
+local function faceTable()
+	task.wait(0.3) -- the server moves you into your yard first
+	local camera = workspace.CurrentCamera
+	local model = myTable()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local center = model and model:GetAttribute("Center")
+	local outward = model and model:GetAttribute("Outward")
+	if enabled or not camera or not root or not root:IsA("BasePart") then
+		return
+	end
+	if typeof(center) ~= "Vector3" or typeof(outward) ~= "Vector3" then
+		return
+	end
+	local eye = root.Position - outward * 9 + Vector3.new(0, 9, 0)
+	camera.CFrame = CFrame.lookAt(eye, center)
+end
+
 function CameraView.init()
+	player.CharacterAdded:Connect(function()
+		task.spawn(faceTable)
+	end)
+	task.spawn(function()
+		-- First spawn: wait for our table to exist.
+		local folder = workspace:WaitForChild("Tables", 30)
+		if folder then
+			folder:WaitForChild(tableName, 30)
+		end
+		faceTable()
+	end)
 	RunService:BindToRenderStep("CoinFlickCamera", Enum.RenderPriority.Camera.Value + 1, update)
 end
 

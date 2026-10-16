@@ -29,7 +29,7 @@ local function buildSign(part: BasePart)
 	gui.Size = UDim2.fromScale(18, 5)
 	gui.StudsOffsetWorldSpace = Vector3.new(0, Config.MEGA_DIAMETER / 2 + 4, 0)
 	gui.LightInfluence = 0
-	gui.MaxDistance = 400
+	gui.MaxDistance = 48 -- up close only; from your yard the HUD shows the count
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
 	title.Size = UDim2.fromScale(1, 0.45)
@@ -105,7 +105,7 @@ local function step(dt: number)
 	local sinceFlip = now - flipAt
 	if sinceFlip < FLIP_TIME then
 		local u = sinceFlip / FLIP_TIME
-		height = 14 * 4 * u * (1 - u)
+		height = 6 * 4 * u * (1 - u)
 		speed = 14 * (1 - u) + 0.6
 	end
 	spin += dt * speed
