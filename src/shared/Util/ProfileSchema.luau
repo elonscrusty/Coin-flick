@@ -3,6 +3,7 @@
 -- Rule: a broken save is an ERROR (so it is never overwritten), never "start fresh".
 
 local Config = require(script.Parent.Parent.Config)
+local PetConfig = require(script.Parent.Parent.PetConfig)
 local Types = require(script.Parent.Parent.Types)
 local Economy = require(script.Parent.Economy)
 local deepCopy = require(script.Parent.DeepCopy)
@@ -28,6 +29,9 @@ local DEFAULT: Profile = {
 	skin = "",
 	helperSlots = 0,
 	receipts = {},
+	pets = { puppy = { level = 1, xp = 0 } },
+	petActive = "puppy",
+	petProgress = { streak = 0, bestStreak = 0, megaBeats = 0 },
 }
 
 function ProfileSchema.default(): Profile
@@ -138,6 +142,32 @@ local function cleanReceipts(value: unknown): { string }
 	return list
 end
 
+local function isPetId(id: unknown): boolean
+	for _, def in PetConfig.Pets do
+		if def.id == id then
+			return true
+		end
+	end
+	return false
+end
+
+-- Known pets only, levels clamped. The free pet is always there (older saves get it too).
+local function cleanPets(value: unknown): { [string]: Types.PetOwned }
+	local pets: { [string]: Types.PetOwned } = {}
+	if typeof(value) == "table" then
+		for id, entry in value :: { [any]: any } do
+			if isPetId(id) and typeof(entry) == "table" then
+				local level = math.clamp(cleanInt(entry.level, 1), 1, PetConfig.MAX_LEVEL)
+				pets[id] = { level = level, xp = if level >= PetConfig.MAX_LEVEL then 0 else cleanInt(entry.xp, 0) }
+			end
+		end
+	end
+	if not pets[PetConfig.FREE_PET] then
+		pets[PetConfig.FREE_PET] = { level = 1, xp = 0 }
+	end
+	return pets
+end
+
 -- Fill any missing or bad field from the defaults (new fields appear this way too).
 local function reconcile(data: { [string]: any }): Profile
 	local d = DEFAULT
@@ -145,6 +175,8 @@ local function reconcile(data: { [string]: any }): Profile
 	local st = if typeof(data.stats) == "table" then data.stats else {}
 	local hats = cleanHats(data.hats)
 	local crew = cleanCrew(data.crew)
+	local pets = cleanPets(data.pets)
+	local pp = if typeof(data.petProgress) == "table" then data.petProgress else {}
 	local profile: Profile = {
 		version = ProfileSchema.CURRENT_VERSION,
 		cash = cleanNumber(data.cash, d.cash),
@@ -172,6 +204,15 @@ local function reconcile(data: { [string]: any }): Profile
 		skin = if isSkinId(data.skin) then data.skin else "",
 		helperSlots = math.min(Config.MAX_EXTRA_HELPER_SLOTS, cleanInt(data.helperSlots, 0)),
 		receipts = cleanReceipts(data.receipts),
+		pets = pets,
+		petActive = if typeof(data.petActive) == "string" and (pets[data.petActive] or data.petActive == "")
+			then data.petActive
+			else PetConfig.FREE_PET,
+		petProgress = {
+			streak = cleanInt(pp.streak, 0),
+			bestStreak = cleanInt(pp.bestStreak, 0),
+			megaBeats = cleanInt(pp.megaBeats, 0),
+		},
 	}
 	profile.team = cleanTeam(data.team, crew, Economy.maxHelpers(profile))
 	return profile
@@ -208,5 +249,6 @@ end
 ProfileSchema.isHatId = isHatId
 ProfileSchema.isSkinId = isSkinId
 ProfileSchema.isHelperId = isHelperId
+ProfileSchema.isPetId = isPetId
 
 return ProfileSchema

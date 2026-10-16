@@ -19,6 +19,19 @@ export type Stats = {
 	rares: number,
 }
 
+-- One coin pet you own.
+export type PetOwned = {
+	level: number, -- 1 to PetConfig.MAX_LEVEL
+	xp: number, -- toward the next level
+}
+
+-- Goal counters for unlocking pets (flips and resets already live elsewhere).
+export type PetProgress = {
+	streak: number, -- heads in a row on your own taps right now
+	bestStreak: number, -- your best heads in a row ever
+	megaBeats: number, -- times you helped flip the MEGA coin
+}
+
 -- Saved player data. Plain JSON-friendly values only.
 export type Profile = {
 	version: number,
@@ -35,6 +48,9 @@ export type Profile = {
 	skin: string, -- chosen coin skin id, "" = classic gold
 	helperSlots: number, -- extra helper slots bought with Robux
 	receipts: { string }, -- recent Robux purchase ids, so one is never granted twice
+	pets: { [string]: PetOwned }, -- coin pets you own (the free puppy is always there)
+	petActive: string, -- the pet out flipping for you, "" = none
+	petProgress: PetProgress,
 }
 
 export type FlipResult = "heads" | "skull"

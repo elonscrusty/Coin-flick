@@ -16,6 +16,7 @@ local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
+local Pets = require(script.Parent.Pets)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
 local Plot = require(script.Parent.Parent.Builders.Plot)
@@ -376,6 +377,9 @@ local function flip(
 		if other == player or (root and (root.Position - tablePos).Magnitude <= SEE_FLIPS_DISTANCE) then
 			flipRemote:FireClient(other, event)
 		end
+	end
+	if combo > 0 then
+		Pets.onTap(player, outcome.result) -- heads-in-a-row goal counts your own taps only
 	end
 	shoutIfRare(player, outcome)
 
