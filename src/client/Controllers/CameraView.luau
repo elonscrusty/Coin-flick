@@ -46,7 +46,7 @@ local function update()
 			local back = math.max(1, 1.45 / aspect)
 			camera.CameraType = Enum.CameraType.Scriptable
 			camera.FieldOfView = 55
-			local eye = center - outward * (15 * back) + Vector3.new(0, 18 * back, 0)
+			local eye = center - outward * (10 * back) + Vector3.new(0, 13 * back, 0)
 			camera.CFrame = CFrame.lookAt(eye, center - outward * 1.5)
 		end
 	end
