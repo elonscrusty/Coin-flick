@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
+local EventText = require(ReplicatedStorage.Shared.Util.EventText)
 local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local StreakView = require(ReplicatedStorage.Shared.Util.StreakView)
 local CameraView = require(script.Parent.CameraView)
@@ -32,12 +33,19 @@ local gui: ScreenGui
 local streakChip: TextLabel
 local streakScale: UIScale
 local streakHint: TextLabel
-local friendChip: TextLabel
+local alertChip: TextLabel
+local alertTap: TextButton
+local onAlertTap: (string) -> () = function() end
+local shownAlert = ""
+local eventView: Types.EventView? = nil
+local giftView: Types.PlayGiftView? = nil
+local giftAt = 0
+local friendMult: number? = nil
 local lastStreak = 0
 local streakToken = 0
 local pulse: Tween? = nil
 local welcome: Frame? = nil
-local friendScale: UIScale
+local alertScale: UIScale
 
 local function setMax(g: GuiObject, height: number)
 	local c = g:FindFirstChildOfClass("UITextSizeConstraint")
@@ -237,14 +245,62 @@ function HudPopups.onFlipped(ev: Types.FlipEvent, goal: number)
 	end
 end
 
--- Friend chip ---------------------------------------------------------------
+-- Alert chip: friend 2x, weekend event and "gift ready" take turns --------
+
+local ALERT_COLORS: { [string]: Color3 } = {
+	gift = UiStyle.GREEN,
+	event = UiStyle.PURPLE,
+	friend = UiStyle.BLUE,
+}
+
+local function refreshAlert()
+	local now = os.time()
+	local list = EventText.alerts(eventView, giftView, os.clock() - giftAt, friendMult, now)
+	local pick = EventText.pick(list, os.clock())
+	if not pick then
+		alertChip.Visible = false
+		shownAlert = ""
+		return
+	end
+	if pick.kind == "event" and eventView and eventView.rain then
+		alertChip.BackgroundColor3 = UiStyle.BLUE
+	else
+		alertChip.BackgroundColor3 = ALERT_COLORS[pick.kind] or UiStyle.ORANGE
+	end
+	alertChip.Text = pick.text
+	alertChip.Visible = true
+	alertTap.Active = pick.tap
+	alertTap.Visible = pick.tap
+	if shownAlert ~= pick.kind then
+		shownAlert = pick.kind
+		UiStyle.popScale(alertScale, 1.15)
+	end
+end
 
 function HudPopups.setFriend(on: boolean)
-	friendChip.Text = StreakView.friendChip(Config.FRIEND_CASH_MULT)
-	friendChip.Visible = on
-	if on then
-		UiStyle.popScale(friendScale, 1.2)
-	end
+	friendMult = if on then Config.FRIEND_CASH_MULT else nil
+	refreshAlert()
+end
+
+function HudPopups.setEvent(view: Types.EventView)
+	eventView = view
+	refreshAlert()
+end
+
+function HudPopups.setGifts(view: Types.PlayGiftView)
+	giftView = view
+	giftAt = os.clock()
+	refreshAlert()
+end
+
+-- fn(kind) runs when a tappable alert (a ready gift) is pressed.
+function HudPopups.onAlertTap(fn: (string) -> ())
+	onAlertTap = fn
+end
+
+-- Call about once a second: keeps countdowns and the turn-taking moving.
+function HudPopups.tick()
+	refreshAlert()
 end
 
 -- Welcome back --------------------------------------------------------------
@@ -356,8 +412,8 @@ end
 function HudPopups.setLayout(l: HudLayout.Layout)
 	place(streakChip, l.streak)
 	setMax(streakChip, l.streak.h)
-	place(friendChip, l.friend)
-	setMax(friendChip, l.friend.h)
+	place(alertChip, l.alert)
+	setMax(alertChip, l.alert.h)
 	streakHint.AnchorPoint = Vector2.new(0.5, 0)
 	streakHint.Position = UDim2.fromOffset(l.streak.x + l.streak.w / 2, l.streak.y + l.streak.h + 2)
 	streakHint.Size = UDim2.fromOffset(l.streak.w, 26)
@@ -377,9 +433,20 @@ function HudPopups.init()
 	textLimit(streakHint, 24)
 	streakHint.Visible = false
 	streakHint.Parent = gui
-	friendChip = chip("Friend", UiStyle.BLUE)
-	friendScale = Instance.new("UIScale")
-	friendScale.Parent = friendChip
+	alertChip = chip("Alert", UiStyle.BLUE)
+	alertScale = Instance.new("UIScale")
+	alertScale.Parent = alertChip
+	alertTap = Instance.new("TextButton")
+	alertTap.Name = "Tap"
+	alertTap.BackgroundTransparency = 1
+	alertTap.Text = ""
+	alertTap.Size = UDim2.fromScale(1, 1)
+	alertTap.ZIndex = 6
+	alertTap.Visible = false
+	alertTap.Activated:Connect(function()
+		onAlertTap(shownAlert)
+	end)
+	alertTap.Parent = alertChip
 	gui.Parent = player:WaitForChild("PlayerGui")
 	HudPopups.setLayout(HudLayout.compute(844, 390, true)) -- redone by the HUD
 end

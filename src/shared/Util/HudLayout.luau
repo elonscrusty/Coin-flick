@@ -16,7 +16,7 @@ export type Layout = {
 	side: Rect, -- 2x2 grid: SHOP RESET / TOP ZOOM
 	sideButtons: { Rect },
 	streak: Rect, -- 🔥 heads-in-a-row counter (top middle, shown during a streak)
-	friend: Rect, -- 👫 friend 2x chip (top middle, shown while a friend is here)
+	alert: Rect, -- chip that shows friend 2x / weekend event / gift ready, by turns
 	-- Pop in for a moment
 	shout: Rect, -- rare coin banner
 	toast: Rect, -- little message
@@ -123,11 +123,11 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local midLeft = reserved.menu.x + reserved.menu.w + 8
 	local midRight = reserved.topRight.x - 8
 	local midW = midRight - midLeft
-	local streakW = math.min(190 * s, midW * 0.6)
-	local friendW = math.min(112 * s, midW * 0.34)
-	local midX = midLeft + (midW - streakW - friendW - gap) / 2
+	local streakW = math.min(150 * s, midW * 0.43)
+	local alertW = math.min(196 * s, midW * 0.54)
+	local midX = midLeft + (midW - streakW - alertW - gap) / 2
 	local streak = rect(midX, 8, streakW, midH)
-	local friend = rect(midX + streakW + gap, 8, friendW, midH)
+	local alert = rect(midX + streakW + gap, 8, alertW, midH)
 
 	-- Right band, top to bottom: mega count chip, 2x boost timer chip, combo
 	-- card, then the 2x2 side buttons above the jump button.
@@ -191,7 +191,7 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 		top = top,
 		info = info,
 		streak = streak,
-		friend = friend,
+		alert = alert,
 		mega = mega,
 		boost = boost,
 		side = side,
