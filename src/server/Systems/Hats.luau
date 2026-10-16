@@ -10,7 +10,7 @@ local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
-local HatBuilder = require(script.Parent.Parent.Builders.HatBuilder)
+local HatBuilder = require(ReplicatedStorage.Shared.Builders.HatBuilder)
 local GameLogic = require(script.Parent.Parent.Util.GameLogic)
 local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
 
