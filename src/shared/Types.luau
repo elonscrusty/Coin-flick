@@ -95,6 +95,7 @@ export type Notice = {
 	text: string,
 	rarity: Rarity?, -- set on "shout"
 	ownerId: number?, -- who flipped it, on "shout"
+	everyone: boolean?, -- on "shout": true = whole server, false = only the flipper
 }
 
 return {}

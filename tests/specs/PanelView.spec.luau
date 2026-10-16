@@ -3,6 +3,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local HatBuilder = require(ReplicatedStorage.Shared.Builders.HatBuilder)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local TapGuard = require(ReplicatedStorage.Shared.Util.TapGuard)
 
 local function snap(over)
 	local s = {
@@ -258,5 +259,42 @@ describe("Reset popup (runner problems 22-23)", function()
 		expect(lines[3].text).toBe("GET: x1.5 cash + new table")
 		expect(lines[4].text).toBe(`NEED: full table (4/{Config.MAX_COINS})`)
 		expect(#PanelView.resetLines(snap({ tableFull = true }))).toBe(3)
+	end)
+end)
+
+describe("Round 4: no wrong buys", function()
+	it("a press only counts when the list did not move and is not coasting", function()
+		expect(TapGuard.ok(100, 100, 1)).toBe(true)
+		expect(TapGuard.ok(100, 103, 1)).toBe(true) -- finger jitter
+		expect(TapGuard.ok(100, 160, 1)).toBe(false) -- list moved under the finger
+		expect(TapGuard.ok(100, 100, 0.05)).toBe(false) -- still coasting
+		expect(TapGuard.ok(100, 100, TapGuard.SETTLE)).toBe(true)
+	end)
+
+	it("hats always ask first; cash buys ask at half your cash or more", function()
+		local s = snap({ cash = 1000, hatPoints = 500 })
+		for _, c in PanelView.hatCards(s) do
+			expect(PanelView.needsConfirm(c, s)).toBe(c.look == "buy")
+		end
+		local big =
+			{ id = "x", title = "x", line = "", button = "", look = "buy", order = 1, price = 500, currency = "cash" }
+		local small =
+			{ id = "x", title = "x", line = "", button = "", look = "buy", order = 1, price = 499, currency = "cash" }
+		expect(PanelView.needsConfirm(big, s)).toBe(true)
+		expect(PanelView.needsConfirm(small, s)).toBe(false)
+		big.look = "poor"
+		expect(PanelView.needsConfirm(big, s)).toBe(false) -- can't afford: nothing to confirm
+		expect(PanelView.needsConfirm({ id = "m", title = "", line = "", button = "", look = "max", order = 1 }, s)).toBe(
+			false
+		)
+	end)
+
+	it("locked crew button is dim, not a bright buy color", function()
+		local s = snap({})
+		for _, c in PanelView.helperCards(s) do
+			if c.look == "locked" then
+				expect(c.button:find("🔒")).toBeTruthy()
+			end
+		end
 	end)
 end)
