@@ -374,7 +374,7 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 			onPick(key)
 		end)
 		b.LayoutOrder = i
-		b.Size = UDim2.new(1 / #tabs - 0.02, 0, 1, 0)
+		b.Size = UDim2.fromScale(1 / #tabs - 0.02, 1)
 		b.ZIndex = 7
 		textLimit(b, 22)
 		b.Parent = row
@@ -515,6 +515,10 @@ local function renderBoard()
 	end
 	for key, b in topTabs do
 		b.BackgroundColor3 = if key == topShown then ORANGE else GREY
+	end
+	local title = topPanel:FindFirstChild("Title")
+	if title and title:IsA("TextLabel") then
+		title.Text = `🏆 {BOARD_TITLES[topShown]}`
 	end
 end
 
