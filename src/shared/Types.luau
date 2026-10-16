@@ -31,7 +31,6 @@ export type DailyState = {
 	giftClaims: number, -- total gifts claimed; picks which of the 7 gift days is next
 }
 
-<<<<<<< HEAD
 -- Weekly challenges, saved in the profile. Weeks are whole UTC weeks (Monday start) since 1970.
 export type ChallengeState = {
 	week: number, -- the week progress / claimed belong to (0 = never)
@@ -44,7 +43,8 @@ export type ChallengeState = {
 export type BookState = {
 	found: { [string]: number }, -- rarity id -> times flipped
 	paid: { [string]: boolean }, -- rarity id -> first-find prize paid; "all" = full book prize
-=======
+}
+
 -- Play-time gifts, saved in the profile.
 export type PlayState = {
 	day: number, -- the UTC day `seconds` and `claimed` belong to (0 = never)
@@ -57,7 +57,6 @@ export type PlayState = {
 export type WeekState = {
 	week: number, -- week number (Monday-based, since 1970)
 	base: number, -- stats.flips at the start of that week
->>>>>>> origin/claude/project-thread-exhqff
 }
 
 -- One coin pet you own.
@@ -88,15 +87,12 @@ export type Profile = {
 	helperSlots: number, -- extra helper slots bought with Robux
 	receipts: { string }, -- recent Robux purchase ids, so one is never granted twice
 	daily: DailyState,
-<<<<<<< HEAD
 	ladderSkin: string, -- worn streak-ladder coin look id, "" = none (earned, never bought)
 	challenges: ChallengeState,
 	book: BookState,
-=======
 	play: PlayState,
 	badges: { [string]: boolean }, -- badge ids earned
 	week: WeekState,
->>>>>>> origin/claude/project-thread-exhqff
 	pets: { [string]: PetOwned }, -- coin pets you own (the free puppy is always there)
 	petActive: string, -- the pet out flipping for you, "" = none
 	petProgress: PetProgress,
