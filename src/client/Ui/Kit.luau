@@ -7,6 +7,9 @@
 -- Text rule: on a colored or busy background, text is bold WHITE with a dark
 -- outline (UiStyle.label does this). Dark INK text only sits on cream cards.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local UiStyle = require(script.Parent.Parent.Controllers.UiStyle)
 
 local Kit = {}
@@ -70,9 +73,12 @@ function Kit.outline(text: TextLabel | TextButton, thickness: number?): UIStroke
 	return UiStyle.textOutline(text, thickness)
 end
 
-function Kit.textLimit(text: TextLabel | TextButton, max: number, _min: number?)
-	UiStyle.textLimit(text, max)
+-- Panel text never shrinks below PANEL_MIN_TEXT (16); names and buttons ask for 18.
+function Kit.textLimit(text: TextLabel | TextButton, max: number, min: number?)
+	UiStyle.textLimit(text, max, min or PanelView.PANEL_MIN_TEXT)
 end
+
+Kit.chunky = UiStyle.chunky
 
 function Kit.padding(parent: GuiObject, x: UDim, y: UDim)
 	local pad = Instance.new("UIPadding")

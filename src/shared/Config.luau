@@ -302,7 +302,7 @@ return table.freeze({
 	BASE_CASH = 1,
 	COIN_BASE_DIAMETER = 3.0,
 	COIN_DIAMETER_PER_LEVEL = 0.08, -- max 3.8, still fits 10 coins on the ring
-	COIN_THICKNESS = 0.5, -- chunky, so a coin seen edge-on is clearly a coin
+	COIN_THICKNESS = 0.8, -- chunky, so a coin seen edge-on is clearly a coin
 	HITBOX_EXTRA = 1.4, -- big invisible tap target around each coin (phone first)
 	-- Streak game: heads is hard at first, so 10 in a row feels special.
 	BASE_HEADS_CHANCE = 0.35,

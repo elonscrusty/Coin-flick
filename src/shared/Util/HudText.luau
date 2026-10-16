@@ -71,9 +71,13 @@ function HudText.reset(full: boolean): string
 	return if full then "RESET!" else "RESET"
 end
 
--- The progress bar inside the RESET button.
+-- The progress bar inside the RESET button: just the coin count (a phone
+-- button's bar is ~40px wide), then GO! when the table is full.
 function HudText.resetCount(coins: number, maxCoins: number): string
-	return `{coins}/{maxCoins}`
+	if maxCoins > 0 and coins >= maxCoins then
+		return "GO!" -- short: the bar inside a phone button is only ~40px wide
+	end
+	return tostring(coins) -- the bar itself shows how much of the table is full
 end
 
 return HudText

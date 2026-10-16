@@ -88,8 +88,26 @@ local function coinFace(parent: BasePart, face: Enum.NormalId, text: string, tex
 		stroke.Parent = frame
 		frame.Parent = gui
 	end
-	ring("Rim", 0.94, 12)
-	ring("Ring", 0.74, 4)
+	ring("Rim", 0.94, 16)
+	ring("Ring", 0.74, 5)
+	-- Bead border between the rim and the inner ring: reads as a minted coin even when small.
+	for i = 1, 16 do
+		local angle = (i - 1) / 16 * math.pi * 2
+		local bead = Instance.new("Frame")
+		bead.Name = "Bead"
+		bead.AnchorPoint = Vector2.new(0.5, 0.5)
+		bead.Position = UDim2.fromScale(0.5 + math.cos(angle) * 0.4, 0.5 + math.sin(angle) * 0.4)
+		bead.Size = UDim2.fromScale(0.07, 0.07)
+		bead.BackgroundTransparency = 1
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = bead
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 4
+		stroke.Color = rimColor
+		stroke.Parent = bead
+		bead.Parent = gui
+	end
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Mark"
@@ -101,6 +119,10 @@ local function coinFace(parent: BasePart, face: Enum.NormalId, text: string, tex
 	label.TextScaled = true
 	label.Font = Enum.Font.FredokaOne
 	label.TextColor3 = textColor
+	local emboss = Instance.new("UIStroke") -- raised-letter edge
+	emboss.Thickness = 4
+	emboss.Color = rimColor
+	emboss.Parent = label
 	label.Parent = gui
 end
 
@@ -260,7 +282,7 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	local rim = World.makePart({
 		Name = "Rim",
 		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.8, radius * 2 + 1.2, radius * 2 + 1.2),
+		Size = Vector3.new(1.4, radius * 2 + 1.8, radius * 2 + 1.8),
 		CFrame = CFrame.new(state.center - Vector3.new(0, topThickness + 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
 		Color = look.rim,
 	})

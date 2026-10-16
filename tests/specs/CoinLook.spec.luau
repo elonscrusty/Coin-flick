@@ -507,3 +507,30 @@ describe("CoinLook round 10: big coins keep clear of neighbours, no marker under
 		expect(#TableLayout.markerSlots(Config.MAX_COINS, Config.MAX_COINS)).toBe(0)
 	end)
 end)
+
+describe("CoinLook round 11: art pass", function()
+	it("landing squash starts and ends at exactly normal size, and never gets thin or fat", function()
+		local main = 0.8
+		for _, t in { 0, 0.5, 0.8, 1 } do
+			local thick, wide = CoinLook.squash(t, main)
+			expect(thick).toBe(1)
+			expect(wide).toBe(1)
+		end
+		local minThick, maxWide = 1, 1
+		for i = 1, 99 do
+			local thick, wide = CoinLook.squash(main + (1 - main) * i / 100, main)
+			minThick = math.min(minThick, thick)
+			maxWide = math.max(maxWide, wide)
+			expect(thick).toBeAtLeast(0.7)
+			expect(wide).toBeAtMost(1.15)
+		end
+		expect(minThick).toBeAtMost(0.9) -- a visible squish
+		expect(maxWide).toBeAtLeast(1.02)
+	end)
+
+	it("hero coins are chunky and landing bursts are big", function()
+		expect(Config.COIN_THICKNESS).toBeAtLeast(0.8)
+		expect(CoinLook.NORMAL.landBurst).toBeAtLeast(20)
+		expect(CoinLook.RARE.giant.landBurst).toBeAtLeast(150)
+	end)
+end)

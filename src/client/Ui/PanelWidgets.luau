@@ -86,7 +86,8 @@ function PanelWidgets.card(parent: ScrollingFrame, name: string, height: number,
 	frame.BackgroundColor3 = Kit.CARD
 	frame.ZIndex = 6
 	Kit.corner(frame, 0.18)
-	local outline = Kit.stroke(frame, 2)
+	local outline = Kit.stroke(frame, 3)
+	Kit.chunky(frame, 0.93)
 	frame.Parent = parent
 	return frame, outline
 end
