@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
+local HatBuilder = require(ReplicatedStorage.Shared.Builders.HatBuilder)
+local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 
 local function snap(over)
 	local s = {
@@ -174,26 +176,71 @@ describe("Money text", function()
 end)
 
 describe("Top 10 board (runner problems 13-15)", function()
-	it("always 10 rows, medals on the first 3, empty rows dashed", function()
+	it("shows only taken seats, medals on the first 3, no dashed empty rows", function()
 		local rows = PanelView.boardRows("flips", { { name = "Ava", value = 50 }, { name = "Me", value = 4 } }, "Me")
-		expect(#rows).toBe(Config.LEADERBOARD_SIZE)
+		expect(#rows).toBe(2)
 		expect(rows[1].medal).toBe("gold")
 		expect(rows[2].medal).toBe("silver")
 		expect(rows[2].me).toBe(true)
-		expect(rows[3].medal).toBe("bronze")
-		expect(rows[3].empty).toBe(true)
-		expect(rows[4].name).toBe("—")
-		expect(rows[4].medal).toBe("none")
+		local ten = {}
+		for i = 1, 12 do
+			table.insert(ten, { name = `P{i}`, value = 100 - i })
+		end
+		local full = PanelView.boardRows("flips", ten, "nobody")
+		expect(#full).toBe(Config.LEADERBOARD_SIZE)
+		expect(full[3].medal).toBe("bronze")
+		expect(full[4].medal).toBe("none")
+	end)
+
+	it("your own row shows your live number, others show the board's", function()
+		local rows =
+			PanelView.boardRows("flips", { { name = "Ava", value = 500 }, { name = "Me", value = 118 } }, "Me", "121")
+		expect(rows[2].value).toBe("121")
+		expect(rows[1].value).toBe("500")
 	end)
 
 	it("no one yet = invite on row 1", function()
 		local rows = PanelView.boardRows("resets", nil, "Me")
+		expect(#rows).toBe(1)
 		expect(rows[1].name).toBe("No one yet. Be first!")
 	end)
 
 	it("your live number comes from your own snapshot", function()
 		expect(PanelView.myValue("flips", snap({ flips = 1234 }))).toBe("1.23K")
 		expect(PanelView.myValue("biggestFlip", snap({ biggestFlip = 2.5 }))).toBe("$2.5")
+	end)
+end)
+
+describe("Round 2 runner problems", function()
+	it("a maxed upgrade does not still describe the next level", function()
+		for _, c in PanelView.upgradeCards(players()[3]) do
+			expect(c.line).toBe("Fully upgraded!")
+		end
+	end)
+
+	it("the mega banner body does not repeat its title", function()
+		expect(PanelView.megaBody("MEGA FLIP! You got +$25")).toBe("You got +$25")
+		expect(PanelView.megaBody("You got +$25")).toBe("You got +$25")
+	end)
+
+	it("a helper level-up never costs less than hiring him", function()
+		for _, def in Config.HelperTypes do
+			expect(Economy.helperLevelCost(def, 1)).toBeAtLeast(def.cost)
+		end
+	end)
+
+	it("cone hats taper smoothly (a cone, not stacked cake tiers)", function()
+		local discs = HatBuilder.cone(8, 1.0, 0.1, 1.3, { Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 255, 0) }, 2)
+		expect(#discs).toBe(8)
+		expect(discs[1].diameter).toBeNear(1.0, 1e-6)
+		expect(discs[8].diameter).toBeNear(0.1, 1e-6)
+		for i = 2, #discs do
+			expect(discs[i].diameter < discs[i - 1].diameter).toBeTruthy()
+			expect(discs[i - 1].diameter - discs[i].diameter).toBeAtMost(0.2) -- no big steps
+			expect(discs[i].y > discs[i - 1].y).toBeTruthy()
+		end
+		expect(discs[1].color).toBe(discs[2].color) -- stripes
+		expect(discs[2].color == discs[3].color).toBeFalsy()
 	end)
 end)
 

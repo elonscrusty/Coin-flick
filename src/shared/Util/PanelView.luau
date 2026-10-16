@@ -89,7 +89,7 @@ function PanelView.upgradeCards(s: Snapshot): { Card }
 		local card: Card = {
 			id = id,
 			title = def.name,
-			line = SHORT_DESC[id] or def.desc,
+			line = if cost then (SHORT_DESC[id] or def.desc) else "Fully upgraded!",
 			badge = `Lv {level}/{def.maxLevel}`,
 			button = if cost then PanelView.money(cost) else "MAXED ★",
 			look = if cost then priceLook(s.cash, cost) else "max",
@@ -298,30 +298,27 @@ function PanelView.boardValue(key: string, value: number): string
 	return Format.short(value)
 end
 
-function PanelView.boardRows(key: string, rows: { Types.LeaderRow }?, myName: string): { BoardRow }
+-- Only the seats that are taken (empty seats are not shown). Your own row shows
+-- your live number (`myValue`) because the board itself refreshes slowly.
+function PanelView.boardRows(key: string, rows: { Types.LeaderRow }?, myName: string, myValue: string?): { BoardRow }
 	local out: { BoardRow } = {}
-	for i = 1, Config.LEADERBOARD_SIZE do
-		local row = rows and rows[i]
-		local medal: Medal = MEDALS[i] or "none"
-		if row then
-			table.insert(out, {
-				rank = tostring(i),
-				name = row.name,
-				value = PanelView.boardValue(key, row.value),
-				medal = medal,
-				me = row.name == myName,
-				empty = false,
-			})
-		else
-			table.insert(out, {
-				rank = tostring(i),
-				name = if i == 1 then "No one yet. Be first!" else "—",
-				value = "",
-				medal = medal,
-				me = false,
-				empty = true,
-			})
-		end
+	for i = 1, math.min(Config.LEADERBOARD_SIZE, if rows then #rows else 0) do
+		local row = (rows :: { Types.LeaderRow })[i]
+		local me = row.name == myName
+		table.insert(out, {
+			rank = tostring(i),
+			name = row.name,
+			value = if me and myValue then myValue else PanelView.boardValue(key, row.value),
+			medal = MEDALS[i] or "none",
+			me = me,
+			empty = false,
+		})
+	end
+	if #out == 0 then
+		table.insert(
+			out,
+			{ rank = "1", name = "No one yet. Be first!", value = "", medal = "gold", me = false, empty = true }
+		)
 	end
 	return out
 end
@@ -330,6 +327,14 @@ end
 function PanelView.myValue(key: string, s: Snapshot): string
 	local value = if key == "flips" then s.flips elseif key == "biggestFlip" then s.biggestFlip else s.resets
 	return PanelView.boardValue(key, value)
+end
+
+-- Big banners ---------------------------------------------------------------
+
+-- The server's mega text starts with "MEGA FLIP!", which the banner title already says.
+function PanelView.megaBody(text: string): string
+	local body = string.gsub(text, "^%s*MEGA FLIP!%s*", "")
+	return body
 end
 
 -- Reset popup ---------------------------------------------------------------

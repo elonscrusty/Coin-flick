@@ -50,28 +50,86 @@ local function coin(model: Model, at: CFrame, diameter: number, face: Color3?, r
 	})
 end
 
-local function helperModel(model: Model, body: Color3, cap: Color3)
-	add(model, { Shape = Enum.PartType.Ball, Size = Vector3.one * 2, CFrame = CFrame.new(), Color = body })
+local function helperModel(model: Model, def: { id: string, body: Color3, cap: Color3 })
+	local skin = Color3.fromRGB(255, 220, 180)
+	local dark = Color3.fromRGB(20, 20, 30)
+	local wide = def.id == "chompy"
 	add(model, {
 		Shape = Enum.PartType.Ball,
-		Size = Vector3.one * 1.6,
-		CFrame = CFrame.new(0, 1.5, 0),
-		Color = Color3.fromRGB(255, 220, 180),
+		Size = if wide then Vector3.new(2.5, 1.8, 2.2) else Vector3.one * 2,
+		CFrame = CFrame.new(),
+		Color = def.body,
 	})
+	add(model, { Shape = Enum.PartType.Ball, Size = Vector3.one * 1.6, CFrame = CFrame.new(0, 1.5, 0), Color = skin })
 	for _, x in { -0.35, 0.35 } do
+		add(
+			model,
+			{ Shape = Enum.PartType.Ball, Size = Vector3.one * 0.35, CFrame = CFrame.new(x, 1.6, -0.7), Color = dark }
+		)
+	end
+	if def.id == "twinkle" then
+		-- star over the head instead of a cap
+		for k = 0, 1 do
+			add(model, {
+				Size = Vector3.new(1.8, 0.3, 0.3),
+				CFrame = CFrame.new(0, 2.7, 0) * CFrame.Angles(0, 0, k * math.pi / 2),
+				Color = def.cap,
+			})
+			add(model, {
+				Size = Vector3.new(1.3, 0.25, 0.25),
+				CFrame = CFrame.new(0, 2.7, 0) * CFrame.Angles(0, 0, math.pi / 4 + k * math.pi / 2),
+				Color = Color3.fromRGB(255, 255, 255),
+			})
+		end
+	elseif def.id == "king" then
+		for k = 0, 4 do
+			local a = k * math.pi * 2 / 5
+			add(model, {
+				Size = Vector3.new(0.3, 0.7, 0.3),
+				CFrame = CFrame.new(math.cos(a) * 0.55, 2.6, math.sin(a) * 0.55),
+				Color = def.cap,
+			})
+		end
 		add(model, {
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.one * 0.35,
-			CFrame = CFrame.new(x, 1.6, -0.7),
-			Color = Color3.fromRGB(20, 20, 30),
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.45, 1.5, 1.5),
+			CFrame = CFrame.new(0, 2.25, 0) * UP,
+			Color = def.cap,
+		})
+	else
+		add(model, {
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.5, 1.5, 1.5),
+			CFrame = CFrame.new(0, 2.25, 0) * UP,
+			Color = def.cap,
 		})
 	end
-	add(model, {
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.5, 1.5, 1.5),
-		CFrame = CFrame.new(0, 2.25, 0) * UP,
-		Color = cap,
-	})
+	if def.id == "zippy" then -- lightning badge on the belly
+		local yellow = Color3.fromRGB(255, 215, 40)
+		add(model, {
+			Size = Vector3.new(0.35, 0.8, 0.2),
+			CFrame = CFrame.new(0.15, 0.35, -1.0) * CFrame.Angles(0, 0, -0.4),
+			Color = yellow,
+		})
+		add(model, {
+			Size = Vector3.new(0.35, 0.8, 0.2),
+			CFrame = CFrame.new(-0.15, -0.3, -1.0) * CFrame.Angles(0, 0, -0.4),
+			Color = yellow,
+		})
+	elseif def.id == "chompy" then -- big grin with teeth
+		add(model, { Size = Vector3.new(0.9, 0.35, 0.2), CFrame = CFrame.new(0, 1.2, -0.78), Color = dark })
+		for _, x in { -0.25, 0.25 } do
+			add(model, {
+				Size = Vector3.new(0.22, 0.2, 0.2),
+				CFrame = CFrame.new(x, 1.32, -0.86),
+				Color = Color3.fromRGB(255, 255, 255),
+			})
+		end
+	elseif def.id == "twinkle" then -- little sparkles on the body
+		for _, p in { Vector3.new(-0.7, 0.3, -0.8), Vector3.new(0.6, -0.4, -0.85) } do
+			add(model, { Size = Vector3.one * 0.3, CFrame = CFrame.new(p), Color = def.cap })
+		end
+	end
 end
 
 local BUILD: { [string]: (Model) -> () } = {
@@ -101,18 +159,18 @@ local BUILD: { [string]: (Model) -> () } = {
 			Color = Color3.fromRGB(50, 150, 60),
 		})
 	end,
-	speed = function(m) -- lightning bolt
-		local yellow = Color3.fromRGB(255, 215, 40)
+	speed = function(m) -- stopwatch
+		local at = CFrame.Angles(math.pi / 2.4, 0, 0)
+		coin(m, at, 2.6, Color3.fromRGB(255, 255, 255), Color3.fromRGB(235, 70, 70))
 		add(m, {
-			Size = Vector3.new(0.7, 1.8, 0.5),
-			CFrame = CFrame.new(0.3, 0.9, 0) * CFrame.Angles(0, 0, -0.35),
-			Color = yellow,
+			Size = Vector3.new(0.18, 0.12, 1.0),
+			CFrame = at * CFrame.new(0.25, 0.3, -0.3) * CFrame.Angles(0, -0.5, 0),
+			Color = Color3.fromRGB(45, 30, 20),
 		})
-		add(m, { Size = Vector3.new(1.4, 0.5, 0.5), CFrame = CFrame.new(0, 0, 0), Color = yellow })
 		add(m, {
-			Size = Vector3.new(0.7, 1.8, 0.5),
-			CFrame = CFrame.new(-0.3, -0.9, 0) * CFrame.Angles(0, 0, -0.35),
-			Color = yellow,
+			Size = Vector3.new(0.5, 0.4, 0.5),
+			CFrame = at * CFrame.new(0, 0.1, -1.55),
+			Color = Color3.fromRGB(235, 70, 70),
 		})
 	end,
 	doubleCash = function(m)
@@ -137,7 +195,7 @@ local BUILD: { [string]: (Model) -> () } = {
 		})
 	end,
 	helperSlot = function(m)
-		helperModel(m, Color3.fromRGB(90, 200, 255), Color3.fromRGB(255, 90, 90))
+		helperModel(m, { id = "buddy", body = Color3.fromRGB(90, 200, 255), cap = Color3.fromRGB(255, 90, 90) })
 		local green = Color3.fromRGB(70, 210, 110)
 		add(m, { Size = Vector3.new(1.4, 0.45, 0.45), CFrame = CFrame.new(1.8, 2.2, -0.3), Color = green })
 		add(m, { Size = Vector3.new(0.45, 1.4, 0.45), CFrame = CFrame.new(1.8, 2.2, -0.3), Color = green })
@@ -195,7 +253,7 @@ end
 
 function Icons.helper(def: Config.HelperDef): ViewportFrame
 	return viewport(`Helper_{def.id}`, function(m)
-		helperModel(m, def.body, def.cap)
+		helperModel(m, def)
 	end, math.rad(160))
 end
 
