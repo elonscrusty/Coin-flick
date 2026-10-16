@@ -97,13 +97,62 @@ describe("CoinLook", function()
 			local t, d = restT * grow, 3.8 * grow
 			for i = 0, 72 do
 				local roll = i / 72 * math.pi * 2
-				local lift = CoinLook.lift(roll, t, d, restT)
+				local lift = CoinLook.lift(roll, t, d, restT, 3.8)
 				-- centre sits restT/2 + lift above the table; lowest point must not go below it
 				local half = t / 2 * math.abs(math.sin(roll)) + d / 2 * math.abs(math.cos(roll))
 				expect(restT / 2 + lift - half).toBeAtLeast(-1e-9)
 			end
 		end
 		-- lying flat at rest: no lift, so landed coins sit on the table
-		expect(CoinLook.lift(math.pi / 2, restT, 3.8, restT)).toBeNear(0, 1e-9)
+		expect(CoinLook.lift(math.pi / 2, restT, 3.8, restT, 3.8)).toBeNear(0, 1e-9)
+	end)
+end)
+
+describe("CoinLook fixes from the runner pictures", function()
+	local ServerScriptService = game:GetService("ServerScriptService")
+	local GameLogic = require(ServerScriptService.Server.Util.GameLogic)
+
+	it("SILVER is never flat white", function()
+		local c = CoinLook.RARE.silver.color
+		expect(math.min(c.R, c.G, c.B) * 255).toBeAtMost(190)
+		expect(CoinLook.distance(c, Color3.fromRGB(255, 255, 255))).toBeAtLeast(80)
+	end)
+
+	it("RAINBOW faces show every color at once, not one solid color", function()
+		local stops = CoinLook.rainbowStops(6)
+		expect(#stops).toBe(6)
+		for i = 1, #stops do
+			for j = i + 1, #stops do
+				expect(CoinLook.distance(stops[i], stops[j])).toBeAtLeast(60)
+			end
+			expect(CoinLook.contrast(CoinLook.RARE.rainbow.text, stops[i])).toBeAtLeast(3)
+		end
+	end)
+
+	it("RAINBOW edge goes through the whole rainbow during one short flip", function()
+		local seen = {}
+		for i = 0, 6 do
+			local c = CoinLook.rainbowColor(i * 0.1) -- 0.6 s of flight
+			seen[#seen + 1] = c
+		end
+		expect(CoinLook.distance(seen[1], seen[4])).toBeAtLeast(100)
+	end)
+
+	it("a grown GIANT clears the coins next to it, a normal coin lands flat", function()
+		local t, d = Config.COIN_THICKNESS, 3.8
+		local grow = 2.5
+		local lift = CoinLook.lift(math.pi / 2, t * grow, d * grow, t, d) -- lying flat, full size
+		-- bottom of the giant (centre minus half its thickness) is above a neighbour's top
+		expect(t / 2 + lift - t * grow / 2).toBeAtLeast(t - 1e-9)
+		expect(CoinLook.lift(math.pi / 2, t, d, t, d)).toBeNear(0, 1e-9)
+	end)
+
+	it("GIANT and RAINBOW are shouted, small rares are not", function()
+		local giant = GameLogic.shoutNotice("Carter", 7, { result = "heads", cash = 500, hats = 0, rarity = "giant" })
+		expect(giant ~= nil).toBeTruthy()
+		expect(giant.rarity).toBe("giant")
+		expect(string.find(giant.text, "GIANT", 1, true) ~= nil).toBeTruthy()
+		expect(GameLogic.shoutNotice("C", 7, { result = "heads", cash = 3, hats = 0, rarity = "silver" })).toBeNil()
+		expect(GameLogic.shoutNotice("C", 7, { result = "heads", cash = 1, hats = 0, rarity = "normal" })).toBeNil()
 	end)
 end)

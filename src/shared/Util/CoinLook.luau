@@ -40,11 +40,11 @@ CoinLook.NORMAL = table.freeze({
 
 local RARE: { [string]: Look } = {
 	silver = table.freeze({
-		color = Color3.fromRGB(222, 232, 248),
+		color = Color3.fromRGB(178, 194, 216), -- steel blue-grey: never flat white
 		material = "Foil",
-		reflectance = 0.35,
-		text = Color3.fromRGB(40, 70, 130),
-		rim = Color3.fromRGB(120, 140, 175),
+		reflectance = 0.4,
+		text = Color3.fromRGB(30, 50, 100),
+		rim = Color3.fromRGB(105, 120, 150),
 		sparkle = { Color3.fromRGB(200, 230, 255), Color3.fromRGB(255, 255, 255) },
 		sparkleSize = 0.7,
 		landBurst = 30,
@@ -124,7 +124,17 @@ end
 -- Soft rainbow: bright enough that the dark marks stay readable at every hue.
 CoinLook.RAINBOW_SATURATION = 0.6
 function CoinLook.rainbowColor(seconds: number): Color3
-	return CoinLook.hsv(seconds * 0.75, CoinLook.RAINBOW_SATURATION, 1)
+	return CoinLook.hsv(seconds * 1.5, CoinLook.RAINBOW_SATURATION, 1)
+end
+
+-- Colors painted across a rainbow coin's faces (so even a still picture shows
+-- every color, not one solid color).
+function CoinLook.rainbowStops(count: number): { Color3 }
+	local out = {}
+	for i = 0, count - 1 do
+		table.insert(out, CoinLook.hsv(i / count, CoinLook.RAINBOW_SATURATION, 1))
+	end
+	return out
 end
 
 -- A darker shade (the rim for a skin color).
@@ -165,10 +175,19 @@ end
 
 -- Extra height so a spinning coin never cuts into the table. The coin's round
 -- faces start pointing up; roll turns it on its edge. restThickness is how
--- high the coin's centre already sits above the table top.
-function CoinLook.lift(roll: number, thickness: number, diameter: number, restThickness: number): number
+-- high the coin's centre already sits above the table top. A grown coin is
+-- wide enough to reach the coins next to it, so it also clears their height.
+function CoinLook.lift(
+	roll: number,
+	thickness: number,
+	diameter: number,
+	restThickness: number,
+	restDiameter: number
+): number
 	local half = thickness / 2 * math.abs(math.sin(roll)) + diameter / 2 * math.abs(math.cos(roll))
-	return math.max(0, half - restThickness / 2)
+	local grownBy = diameter / restDiameter - 1
+	local clearance = restThickness * math.clamp(grownBy * 4, 0, 1)
+	return math.max(0, half - restThickness / 2 + clearance)
 end
 
 -- Every look the coins can wear, for tests and the preview.
