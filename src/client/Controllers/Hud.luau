@@ -108,6 +108,11 @@ local function showCombo(combo: number)
 	comboLabel.Text = `🔥 x{combo}\nCOMBO`
 	comboLabel.TextColor3 = Color3.fromHSV(math.max(0, 0.15 - combo * 0.007), 0.85, 1)
 	UiStyle.showText(comboLabel)
+	comboLabel.BackgroundTransparency = 0.2
+	local card = comboLabel:FindFirstChild("Card")
+	if card and card:IsA("UIStroke") then
+		card.Transparency = 0
+	end
 	comboLabel.Visible = true
 	popScale(comboScale, 1 + math.min(0.6, combo * 0.03))
 	if combo % 5 == 0 then
@@ -118,6 +123,10 @@ local function showCombo(combo: number)
 			return
 		end
 		local fade = UiStyle.fadeText(comboLabel, 1)
+		TweenService:Create(comboLabel, COUNT, { BackgroundTransparency = 1 }):Play()
+		if card and card:IsA("UIStroke") then
+			TweenService:Create(card, COUNT, { Transparency = 1 }):Play()
+		end
 		fade.Completed:Wait()
 		if token == comboToken then
 			comboLabel.Visible = false
@@ -199,7 +208,7 @@ render = function(s: Snapshot)
 	if s.hatPoints > oldHats then
 		popScale(hatScale, 1.15)
 	end
-	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance, s.coinCount, Config.MAX_COINS))
+	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance))
 
 	-- Not full: a gold progress bar fills up inside an orange button (clearly
 	-- "filling", never "broken"). Full: bar goes away, button glows.
@@ -262,12 +271,12 @@ local function applyLayout()
 	place(topFrame, layout.top)
 	setMaxText(cashLabel, layout.top.h * 0.62)
 	setMaxText(hatLabel, layout.top.h * 0.62)
-	setMaxText(infoLabel, layout.info.h * 0.72)
+	setMaxText(infoLabel, layout.info.h * 0.4)
 	setStrip(infoLabel, infoLabel.Text)
-	setMaxText(boostLabel, layout.boost.h * 0.72)
+	setMaxText(boostLabel, layout.boost.h * 0.75)
 	setStrip(boostLabel, boostLabel.Text)
 	place(comboLabel, layout.combo)
-	setMaxText(comboLabel, layout.combo.h * 0.4)
+	setMaxText(comboLabel, layout.combo.h * 0.42)
 
 	place(sideFrame, layout.side)
 	for i, b in sideButtons do
@@ -328,7 +337,7 @@ function Hud.init()
 	local topLayout = Instance.new("UIListLayout")
 	topLayout.FillDirection = Enum.FillDirection.Horizontal
 	topLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	topLayout.Padding = UDim.new(0.02, 0)
+	topLayout.Padding = UDim.new(0, 8) -- a clear gap between the two pills
 	topLayout.Parent = top
 	topFrame = top
 
@@ -346,9 +355,9 @@ function Hud.init()
 		frame.Parent = top
 		return frame, text, scale
 	end
-	local _cashFrame, cl, cs = pill(GREEN, 0.52)
+	local _cashFrame, cl, cs = pill(GREEN, 0.48)
 	cashLabel, cashScale = cl, cs
-	local _hatFrame, hl, hs = pill(PURPLE, 0.43)
+	local _hatFrame, hl, hs = pill(PURPLE, 0.44)
 	hatLabel, hatScale = hl, hs
 	cashLabel.Text = "$0"
 	hatLabel.Text = "🎩 0"
@@ -389,6 +398,17 @@ function Hud.init()
 		ZIndex = 9,
 	})
 	textLimit(comboLabel, 34)
+	-- A dark card so any flame color reads, big number, "COMBO" under it.
+	comboLabel.BackgroundColor3 = INK
+	comboLabel.BackgroundTransparency = 0.2
+	corner(comboLabel, 0.25)
+	stroke(comboLabel, 3).Name = "Card"
+	local comboPad = Instance.new("UIPadding")
+	comboPad.PaddingLeft = UDim.new(0, 6)
+	comboPad.PaddingRight = UDim.new(0, 6)
+	comboPad.PaddingTop = UDim.new(0, 3)
+	comboPad.PaddingBottom = UDim.new(0, 3)
+	comboPad.Parent = comboLabel
 	comboScale = Instance.new("UIScale")
 	comboScale.Parent = comboLabel
 	comboLabel.Parent = gui

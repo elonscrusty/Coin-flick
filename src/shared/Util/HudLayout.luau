@@ -90,29 +90,33 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local jumpTop = if reserved.jump then reserved.jump.y else h
 	local stickTop = if reserved.thumbstick then reserved.thumbstick.y else h
 
-	-- Left band, top to bottom: pills, heads info, boost / mega timer.
+	-- Left band, top to bottom: cash + hat pills, heads info, then the message
+	-- spot (rare banner, toasts) which has the band's leftover room to itself,
+	-- so a message never lands on a pill or card.
 	local colW = clamp(w * 0.25 - 14, 140, 260)
 	local pillH = clamp(34 * s, 32, 48)
 	local top = rect(x0, y0, colW, pillH)
 	local infoH = clamp(40 * s, 38, 64)
 	local info = rect(x0, top.y + top.h + gap, colW, infoH)
-	local boostH = clamp(26 * s, 26, 38)
-	local boost = rect(x0, info.y + info.h + gap, colW, boostH)
-	-- Messages (rare coin banner, toasts) use the info + boost spot: those two
-	-- hide while a message shows, so nothing ever sits on the table.
-	local msg = rect(x0, info.y, colW, boost.y + boost.h - info.y)
+	local msgTop = info.y + info.h + gap
+	local msgBottom = if touch then stickTop - 8 else math.min(h - 12, msgTop + 140 * s)
+	local msgH = clamp(msgBottom - msgTop, 56, 120 * s)
+	local msg = rect(x0, msgTop, colW, msgH)
 	local shout = rect(msg.x, msg.y, msg.w, msg.h)
 	local toast = rect(msg.x, msg.y, msg.w, msg.h)
 
-	-- Right band: combo counter, then the 2x2 side buttons, above the jump button.
+	-- Right band, top to bottom: boost / mega chip, combo card, then the 2x2
+	-- side buttons above the jump button.
 	local availH = jumpTop - 12 - y0
-	local comboH = clamp(44 * s, 40, 64)
-	local btn = math.min(64 * s, 84, (availH - comboH - 2 * gap) / 2)
+	local boostH = clamp(22 * s, 22, 30)
+	local comboH = clamp(50 * s, 48, 72)
+	local btn = math.min(64 * s, 84, (availH - boostH - comboH - 3 * gap) / 2)
 	btn = math.max(btn, HudLayout.MIN_TOUCH)
 	local sideW = btn * 2 + gap
 	local sideH = btn * 2 + gap
 	local sideX = w - 12 - sideW
-	local combo = rect(sideX, y0, sideW, comboH)
+	local boost = rect(sideX, y0, sideW, boostH)
+	local combo = rect(sideX, boost.y + boost.h + gap, sideW, comboH)
 	local sideY = combo.y + combo.h + gap
 	local side = rect(sideX, sideY, sideW, sideH)
 	local sideButtons = {
@@ -126,7 +130,7 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	-- thumbstick, else a row along the bottom between the thumbstick and jump.
 	local cheatH = 30
 	local n = HudLayout.CHEATS
-	local colTop = boost.y + boost.h + gap
+	local colTop = msg.y + msg.h + gap
 	local cheats: Rect
 	if colTop + n * cheatH + (n - 1) * gap <= stickTop - 8 then
 		cheats = rect(x0, colTop, 72, n * cheatH + (n - 1) * gap)
@@ -146,12 +150,16 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local lowW = math.min(520 * s, lowRight - lowLeft)
 	local toastLow = rect(lowLeft + (lowRight - lowLeft - lowW) / 2, lowBottom - toastH, lowW, toastH)
 
-	-- Room for shop / reset / top 10 panels: right of the pills (which stay
-	-- above the dim), left of the side buttons, above the low toast. Touch
-	-- controls hide while a panel is open, so it may reach over them.
-	local panelLeft = top.x + top.w + 8
+	-- Room for shop / reset / top 10 panels: between the two side bands (right
+	-- of the pills and cards, left of the side buttons and combo), under
+	-- Roblox's top bar, above the low toast. Touch controls hide while a panel
+	-- is open, so it may reach over them. Panels pop in with a little
+	-- overshoot, so the box is 5% smaller each side than the free gap.
+	local panelLeft = x0 + colW + 10
 	local panelTop = TOPBAR_H + gap
-	local panel = rect(panelLeft, panelTop, side.x - 12 - panelLeft, toastLow.y - gap - panelTop)
+	local rawW = side.x - 10 - panelLeft
+	local rawH = toastLow.y - gap - panelTop
+	local panel = rect(panelLeft + rawW * 0.05, panelTop + rawH * 0.05, rawW * 0.9, rawH * 0.9)
 
 	return {
 		scale = s,
