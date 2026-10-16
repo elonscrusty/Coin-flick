@@ -10,26 +10,25 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local GiftPetView = require(ReplicatedStorage.Shared.Util.GiftPetView)
 local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local PetRules = require(ReplicatedStorage.Shared.Util.PetRules)
-local TapGuard = require(ReplicatedStorage.Shared.Util.TapGuard)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local Kit = require(script.Parent.Parent.Ui.Kit)
-local Sounds = require(script.Parent.Sounds)
+local Widgets = require(script.Parent.Parent.Ui.PanelWidgets)
 
 local GiftPets = {}
+local label, makeBar, setBar, guard, card = Widgets.label, Widgets.makeBar, Widgets.setBar, Widgets.guard, Widgets.card
 
 local CAL_H = 76
 local GIFT_H = 50
 local TIMER_H = 24
 local JOB_H = 66
 local PET_H = 70
-local TRACK = Color3.fromRGB(226, 220, 208)
 local DAY_COLORS = {
 	claimed = Color3.fromRGB(205, 225, 245),
 	ready = Color3.fromRGB(255, 226, 120),
 	later = Kit.CARD,
 }
 
-type Bar = { track: Frame, fill: Frame, text: TextLabel }
+type Bar = Widgets.Bar
 type CellUi = { frame: Frame, outline: UIStroke, day: TextLabel, amount: TextLabel, extra: TextLabel }
 type JobUi = { frame: Frame, title: TextLabel, bar: Bar, button: TextButton, reward: TextLabel }
 type PetUi = {
@@ -52,83 +51,6 @@ local timerLabel: TextLabel
 local dailyList: ScrollingFrame
 local petList: ScrollingFrame
 local dotHook: { fn: (boolean) -> () } = { fn = function() end }
-
-local function label(props: { [string]: any }, max: number, ink: boolean): TextLabel
-	if ink then
-		props.TextColor3 = Kit.INK
-		props.TextStrokeTransparency = 1
-	end
-	props.ZIndex = props.ZIndex or 7
-	local l = Kit.label(props)
-	Kit.textLimit(l, max)
-	return l
-end
-
-local function makeBar(parent: Frame, position: UDim2, size: UDim2, color: Color3): Bar
-	local track = Instance.new("Frame")
-	track.Name = "Bar"
-	track.Position = position
-	track.Size = size
-	track.BackgroundColor3 = TRACK
-	track.ZIndex = 7
-	Kit.corner(track, 0.5)
-	Kit.stroke(track, 1.5)
-	track.Parent = parent
-	local fill = Instance.new("Frame")
-	fill.Name = "Fill"
-	fill.Size = UDim2.fromScale(0, 1)
-	fill.BackgroundColor3 = color
-	fill.ZIndex = 8
-	Kit.corner(fill, 0.5)
-	fill.Parent = track
-	local text = label({ Name = "Count", Size = UDim2.fromScale(1, 1), ZIndex = 9 }, 16, false)
-	Kit.outline(text, 2)
-	text.Parent = track
-	return { track = track, fill = fill, text = text }
-end
-
-local function setBar(bar: Bar, frac: number, text: string)
-	bar.fill.Size = UDim2.fromScale(math.clamp(frac, 0, 1), 1)
-	bar.text.Text = text
-end
-
--- A press only counts when the list did not move under the finger (same rule as the shop).
-local function guard(list: ScrollingFrame, button: TextButton, fn: () -> ())
-	local downCanvas: number? = nil
-	local lastScroll = -10
-	list:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
-		lastScroll = os.clock()
-	end)
-	button.InputBegan:Connect(function(input: InputObject)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			downCanvas = list.CanvasPosition.Y
-		end
-	end)
-	button.Activated:Connect(function()
-		local at = downCanvas or list.CanvasPosition.Y
-		downCanvas = nil
-		if TapGuard.ok(at, list.CanvasPosition.Y, os.clock() - lastScroll) then
-			Sounds.play("Tap", 0.4)
-			fn()
-		end
-	end)
-end
-
-local function card(parent: ScrollingFrame, name: string, height: number, order: number): (Frame, UIStroke)
-	local frame = Instance.new("Frame")
-	frame.Name = name
-	frame.Size = UDim2.new(1, -10, 0, height)
-	frame.LayoutOrder = order
-	frame.BackgroundColor3 = Kit.CARD
-	frame.ZIndex = 6
-	Kit.corner(frame, 0.18)
-	local outline = Kit.stroke(frame, 2)
-	frame.Parent = parent
-	return frame, outline
-end
 
 -- GIFTS -------------------------------------------------------------------------
 

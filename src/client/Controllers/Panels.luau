@@ -21,6 +21,7 @@ local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local Types = require(ReplicatedStorage.Shared.Types)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local GiftPets = require(script.Parent.GiftPets)
+local GoalsPanel = require(script.Parent.GoalsPanel)
 local Kit = require(script.Parent.Parent.Ui.Kit)
 local Icons = require(script.Parent.Parent.Ui.Icons)
 local CameraView = require(script.Parent.CameraView)
@@ -50,6 +51,7 @@ local TAB_COLORS: { [string]: Color3 } = {
 	hats = Kit.PURPLE,
 	daily = Kit.ORANGE,
 	pets = Kit.TEAL,
+	goals = Kit.PURPLE,
 	robux = Color3.fromRGB(255, 110, 190),
 	flips = Kit.ORANGE,
 	biggestFlip = Kit.GREEN,
@@ -96,7 +98,7 @@ local openListeners: { (boolean) -> () } = {}
 local cards: { [string]: { [string]: CardUi } } = { upgrades = {}, helpers = {}, hats = {}, robux = {} }
 local icons: { [string]: { ViewportFrame } } = { upgrades = {}, helpers = {}, hats = {}, robux = {} }
 local shopTabs: { [string]: TextButton } = {}
-local giftDot: Frame -- red dot on the GIFTS tab: something to claim
+local tabDots: { [string]: Frame } = {} -- red dots on the GIFTS / GOALS tabs: something to claim
 local shopLists: { [string]: ScrollingFrame } = {}
 local shopTab = "upgrades"
 local helperHeader: TextLabel
@@ -854,17 +856,20 @@ local function buildShop()
 		table.insert(tabs, { key, PanelView.TAB_LABEL[key] })
 	end
 	shopTabs = tabRow(body, tabs, pickShopTab)
-	giftDot = Instance.new("Frame")
-	giftDot.Name = "Dot"
-	giftDot.AnchorPoint = Vector2.new(1, 0)
-	giftDot.Position = UDim2.new(1, 8, 0, -6)
-	giftDot.Size = UDim2.fromOffset(16, 16)
-	giftDot.BackgroundColor3 = Kit.RED
-	giftDot.Visible = false
-	giftDot.ZIndex = 12
-	Kit.corner(giftDot, 0.5)
-	Kit.stroke(giftDot, 2, Kit.WHITE)
-	giftDot.Parent = shopTabs.daily
+	for _, key in { "daily", "goals" } do
+		local dot = Instance.new("Frame")
+		dot.Name = "Dot"
+		dot.AnchorPoint = Vector2.new(1, 0)
+		dot.Position = UDim2.new(1, 8, 0, -6)
+		dot.Size = UDim2.fromOffset(16, 16)
+		dot.BackgroundColor3 = Kit.RED
+		dot.Visible = false
+		dot.ZIndex = 12
+		Kit.corner(dot, 0.5)
+		Kit.stroke(dot, 2, Kit.WHITE)
+		dot.Parent = shopTabs[key]
+		tabDots[key] = dot
+	end
 
 	-- COINS
 	local list = scrollList(body, 44)
@@ -978,6 +983,9 @@ local function buildShop()
 	end
 	-- GIFTS and PETS (daily gift + jobs, coin pets).
 	shopLists.daily, shopLists.pets = GiftPets.build(function()
+		return scrollList(body, 44)
+	end)
+	shopLists.goals = GoalsPanel.build(function()
 		return scrollList(body, 44)
 	end)
 	shopTabs.robux.Visible = PanelView.showRobuxTab(nil)
@@ -1505,7 +1513,10 @@ end
 function Panels.start()
 	State.onChange(Panels.render)
 	GiftPets.start(function(show: boolean)
-		giftDot.Visible = show
+		tabDots.daily.Visible = show
+	end)
+	GoalsPanel.start(function(show: boolean)
+		tabDots.goals.Visible = show
 	end)
 	ClientNet.event("Leaderboards").OnClientEvent:Connect(function(data: Types.Leaderboards)
 		boards = data

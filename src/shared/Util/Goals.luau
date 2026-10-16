@@ -63,6 +63,14 @@ function Goals.rungsOwned(profile: Profile): number
 	return n
 end
 
+-- The ladder look being worn (only a rung you reached), or nil.
+function Goals.rungLook(profile: Profile): GoalsConfig.LadderRung?
+	if profile.ladderSkin == "" or not Goals.ownsRung(profile, profile.ladderSkin) then
+		return nil
+	end
+	return Goals.rung(profile.ladderSkin)
+end
+
 -- Wear a ladder look ("" = take it off). Only rungs you reached. Wearing one puts the Robux skin
 -- away, so exactly one coin look shows. Returns true when it changed.
 function Goals.wearRung(profile: Profile, id: unknown): boolean

@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
+local Goals = require(ReplicatedStorage.Shared.Util.Goals)
 local ProfileSchema = require(ReplicatedStorage.Shared.Util.ProfileSchema)
 
 type Profile = Types.Profile
@@ -257,6 +258,18 @@ function GameLogic.wearHat(profile: Profile, id: unknown): boolean
 	return true
 end
 
+-- The colors the player's coins wear: a Robux skin they still own, else the streak-ladder
+-- look they chose (earned, never bought), else nil (the classic gold).
+function GameLogic.coinSkin(profile: Profile, passOwned: boolean): { coin: Color3, text: Color3 }?
+	if profile.skin ~= "" and passOwned then
+		local skin = Economy.skinDef(profile.skin)
+		if skin then
+			return skin
+		end
+	end
+	return Goals.rungLook(profile)
+end
+
 -- Coin skins are Robux passes: the server checks `owned` before calling this.
 function GameLogic.chooseSkin(profile: Profile, id: unknown, owned: boolean): boolean
 	if id == "" then
@@ -331,6 +344,7 @@ function GameLogic.snapshot(profile: Profile, passes: { [string]: boolean }?): S
 		hats = owned,
 		hat = profile.hat,
 		skin = profile.skin,
+		ladderSkin = profile.ladderSkin,
 		maxHelpers = Economy.maxHelpers(profile),
 		helperSlots = profile.helperSlots,
 		passes = if passes then table.clone(passes) else {},
