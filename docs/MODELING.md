@@ -21,3 +21,13 @@ Until a model has an id (0) every caller keeps its Part stand-in, so nothing bre
 3. Build, LOOK at `art/previews/<Name>.png`, iterate. Keep each model under about 1500 faces.
 4. In game code: `Meshes.clone("CF_Tree", cframe, { Leaf = color })` returns a Model, or nil when the model is not
    uploaded yet: keep the old Part code as the fallback. Never invent ids.
+
+## Models in the game (coin side)
+- `CF_Coin` (3 wide, top = heads), `CF_Table`, `CF_MegaCoin`, `CF_GiftBox` (not wired yet), helpers `CF_Buddy CF_Zippy CF_Chompy CF_Twinkle CF_King`
+  (front = -Y in Blender, pieces `Body` and `Cap` take the helper colours), hats `CF_HatParty CF_HatCone CF_HatCowboy CF_HatChef
+  CF_HatPropeller CF_HatDuck CF_HatTop CF_HatCrown` (origin = head top). Game id -> model name lives in `shared/Util/MeshPaint`.
+- Wiring (all fall back to the Part code while the id is 0): `Tables.makeCoin` puts the coin model on the invisible coin part as child `Visual`
+  (the part still does the rest pose, flips and attributes; FlipFx repaints and scales `Visual` for rare coins); `buildTable` swaps Top/Rim/Legs
+  for `TableMesh`; `makeHelper` returns the helper model (pivot one stud above its feet, the client hops it by pivot); `Hats.dress` uses the hat model.
+- Not yet checked in Studio (ids are 0 until the PC uploads): the FBX front direction (helpers/hats should face -Z in Roblox; if they face
+  backwards rotate the model in `Meshes.clone`), and that `Model:ScaleTo` on the welded coin copy behaves.

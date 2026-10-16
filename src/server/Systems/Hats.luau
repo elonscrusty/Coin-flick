@@ -11,6 +11,8 @@ local HatSizes = require(ReplicatedStorage.Shared.Util.HatSizes)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
+local MeshPaint = require(ReplicatedStorage.Shared.Util.MeshPaint)
+local Meshes = require(script.Parent.Meshes)
 local HatBuilder = require(ReplicatedStorage.Shared.Builders.HatBuilder)
 local GameLogic = require(script.Parent.Parent.Util.GameLogic)
 local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
@@ -52,7 +54,14 @@ local function dress(player: Player)
 	if not wearing or not head or not head:IsA("BasePart") then
 		return
 	end
-	local hat = HatBuilder.build(profile.hat, World.makePart)
+	-- The Blender hat when it is uploaded (its pivot is the head-top point, like HatBuilder's), else the Part hat.
+	local meshName = MeshPaint.HATS[profile.hat]
+	local hat = meshName and Meshes.clone(meshName, head.CFrame)
+	if hat then
+		hat.Name = "CoinFlickHat"
+	else
+		hat = HatBuilder.build(profile.hat, World.makePart)
+	end
 	if not hat then
 		return
 	end

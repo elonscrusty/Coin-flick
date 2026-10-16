@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
+local MeshPaint = require(ReplicatedStorage.Shared.Util.MeshPaint)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
@@ -198,6 +199,21 @@ local function onLanded(anim: Anim)
 	end
 end
 
+-- The Blender coin riding on this coin part (nil while the model is not uploaded).
+local function visualOf(coin: BasePart): Model?
+	local v = coin:FindFirstChild("Visual")
+	return if v and v:IsA("Model") then v else nil
+end
+
+-- The coin's resting look, from the attributes the server put on it (falls back to the part itself).
+local function restOf<T>(coin: BasePart, name: string, fallback: T): T
+	local value = coin:GetAttribute(name)
+	if value ~= nil and typeof(value) == typeof(fallback) then
+		return value :: any
+	end
+	return fallback
+end
+
 -- Rare coins wear their CoinLook in the air: color (rainbow cycles), shine,
 -- recolored marks, a sparkle trail and an outline. They grow evenly (never squished).
 local function setMarks(anim: Anim, text: Color3?, rim: Color3?)
@@ -285,15 +301,16 @@ local function dressRare(anim: Anim, now: number, t: number)
 	end
 	local coin = anim.coin
 	local look = CoinLook.forRarity(rare.id)
+	local visual = visualOf(coin) -- the Blender coin, when uploaded
 	if not anim.dressed then
 		anim.dressed = true
 		coin.Material = Enum.Material:FromName(look.material) or Enum.Material.SmoothPlastic
 		coin.Reflectance = look.reflectance
 		setMarks(anim, look.text, look.rim)
-		if look.rainbow then
+		if look.rainbow and not visual then
 			paintRainbow(coin)
 		end
-		if look.stars then
+		if look.stars and not visual then
 			paintStars(coin, Color3.fromRGB(255, 250, 200))
 		end
 		local sparkle = coin:FindFirstChild("Sparkle")
@@ -311,7 +328,7 @@ local function dressRare(anim: Anim, now: number, t: number)
 		if look.outline and not coin:FindFirstChild("RareOutline") then
 			local outline = Instance.new("Highlight")
 			outline.Name = "RareOutline"
-			outline.Adornee = coin
+			outline.Adornee = visual or coin
 			outline.FillTransparency = 1
 			outline.OutlineColor = look.outline
 			outline.OutlineTransparency = 0
@@ -330,6 +347,12 @@ local function dressRare(anim: Anim, now: number, t: number)
 		end
 	end
 	coin.Size = CoinLook.size(anim.restSize, CoinLook.scale(anim.grow, t, MAIN))
+	if visual then
+		-- The model carries its own rim: repaint its pieces and grow it with the coin (no extra ridge part).
+		MeshPaint.paint(visual, MeshPaint.COIN, { Rim = look.rim, Face = coin.Color, Mark = look.text })
+		visual:ScaleTo(MeshPaint.coinScale(coin.Size.Y))
+		return
+	end
 	local ridge = coin:FindFirstChild("RareRidge")
 	if not ridge then
 		local part = Instance.new("Part")
@@ -353,6 +376,15 @@ end
 
 local function undressRare(anim: Anim)
 	local coin = anim.coin
+	local visual = visualOf(coin)
+	if visual then
+		MeshPaint.paint(visual, MeshPaint.COIN, {
+			Rim = restOf(coin, "TintRim", Color3.new(1, 1, 1)),
+			Face = restOf(coin, "TintFace", Color3.new(1, 1, 1)),
+			Mark = restOf(coin, "TintMark", Color3.new(0, 0, 0)),
+		})
+		visual:ScaleTo(MeshPaint.coinScale(anim.restSize.Y))
+	end
 	coin.Size = anim.restSize
 	coin.Color = anim.restColor
 	coin.Material = anim.restMaterial
@@ -385,15 +417,6 @@ local function undressRare(anim: Anim)
 		end
 	end
 	anim.dressed = false
-end
-
--- The coin's resting look, from the attributes the server put on it (falls back to the part itself).
-local function restOf<T>(coin: BasePart, name: string, fallback: T): T
-	local value = coin:GetAttribute(name)
-	if value ~= nil and typeof(value) == typeof(fallback) then
-		return value :: any
-	end
-	return fallback
 end
 
 local function onFlipped(ev: FlipEvent)

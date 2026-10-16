@@ -12,6 +12,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import cfkit  # noqa: E402
 from models import MODELS  # noqa: E402
+from models_coin import MODELS as COIN_MODELS  # noqa: E402
+
+MODELS.update(COIN_MODELS)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
