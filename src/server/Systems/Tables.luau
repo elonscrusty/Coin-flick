@@ -34,6 +34,7 @@ type TableState = {
 	nextAutoFlip: number,
 	combo: number, -- chain flips: taps in a row, each within COMBO_WINDOW
 	lastTapAt: number,
+	streak: number, -- heads in a row from your own taps (helpers and auto-flip never count)
 	characterConn: RBXScriptConnection?,
 }
 
@@ -299,6 +300,13 @@ local function flip(
 		combo
 	)
 
+	-- Only a real tap (combo >= 1) plays the streak game.
+	local streak: GameLogic.StreakOutcome = { streak = 0, nextStreak = state.streak, won = false, cash = 0, hats = 0 }
+	if combo >= 1 then
+		streak = GameLogic.applyStreak(profile, state.streak, outcome.result)
+		state.streak = streak.nextStreak
+	end
+
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,
 		coin = index,
@@ -310,6 +318,10 @@ local function flip(
 		helper = helperId,
 		rarity = outcome.rarity,
 		combo = combo,
+		streak = streak.streak,
+		streakWin = streak.won,
+		streakCash = streak.cash,
+		streakHats = streak.hats,
 	}
 	-- Only players who can actually see this table get the event.
 	local tablePos = state.center
@@ -355,7 +367,11 @@ local function onTap(player: Player, rawIndex: unknown)
 	end
 	state.combo = GameLogic.nextCombo(state.combo, state.lastTapAt, now)
 	state.lastTapAt = now
-	flip(player, state, profile, index, false, state.combo)
+	-- Multi Flip: the tapped coin plus the next ready coins, one tap.
+	local flipCoins = GameLogic.pickTapCoins(index, state.busyUntil, now, Economy.flipsPerTap(profile))
+	for _, coinIndex in flipCoins do
+		flip(player, state, profile, coinIndex, false, state.combo)
+	end
 end
 
 local function placeCharacter(player: Player)
@@ -400,6 +416,7 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 		nextAutoFlip = os.clock() + Config.AUTO_FLIP_INTERVAL,
 		combo = 0,
 		lastTapAt = 0,
+		streak = 0,
 	}
 	states[player] = state
 	buildTable(player, state, profile)

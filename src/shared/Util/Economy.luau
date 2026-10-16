@@ -73,6 +73,16 @@ function Economy.headsChance(luckLevel: number): number
 	return math.min(Config.MAX_HEADS_CHANCE, Config.BASE_HEADS_CHANCE + Config.HEADS_CHANCE_PER_LEVEL * luckLevel)
 end
 
+-- Coins one tap flips: the one you tapped plus one more per Multi Flip level.
+function Economy.flipsPerTap(profile: Profile): number
+	return 1 + math.clamp(profile.upgrades.multiFlip, 0, Config.Upgrades.multiFlip.maxLevel)
+end
+
+-- What a streak of 10 heads pays: cash (heads worth) and hat points.
+function Economy.streakPrize(profile: Profile): (number, number)
+	return Economy.cashPerHeads(profile) * Config.STREAK_PRIZE_FLIPS, Config.STREAK_PRIZE_HATS
+end
+
 function Economy.flipTime(speedLevel: number): number
 	return math.max(Config.MIN_FLIP_TIME, Config.BASE_FLIP_TIME - Config.FLIP_TIME_PER_LEVEL * speedLevel)
 end

@@ -88,7 +88,7 @@ local Upgrades: { [string]: UpgradeDef } = {
 	luck = {
 		name = "Lucky Heads",
 		icon = "🍀",
-		desc = "+3% chance to land heads",
+		desc = "+4.5% chance to land heads",
 		baseCost = 50,
 		growth = 1.9,
 		maxLevel = 10,
@@ -100,6 +100,14 @@ local Upgrades: { [string]: UpgradeDef } = {
 		baseCost = 40,
 		growth = 1.75,
 		maxLevel = 10,
+	},
+	multiFlip = {
+		name = "Multi Flip",
+		icon = "🌀",
+		desc = "One tap flips +1 more coin",
+		baseCost = 150,
+		growth = 2.4,
+		maxLevel = 4,
 	},
 }
 
@@ -290,9 +298,13 @@ return table.freeze({
 	COIN_DIAMETER_PER_LEVEL = 0.08, -- max 3.8, still fits 10 coins on the ring
 	COIN_THICKNESS = 0.35,
 	HITBOX_EXTRA = 1.4, -- big invisible tap target around each coin (phone first)
-	BASE_HEADS_CHANCE = 0.5,
-	HEADS_CHANCE_PER_LEVEL = 0.03,
+	-- Streak game: heads is hard at first, so 10 in a row feels special.
+	BASE_HEADS_CHANCE = 0.35,
+	HEADS_CHANCE_PER_LEVEL = 0.045, -- 10 levels = 80%
 	MAX_HEADS_CHANCE = 0.8,
+	STREAK_GOAL = 10, -- heads in a row (your own taps; helpers don't count)
+	STREAK_PRIZE_FLIPS = 200, -- prize cash = this many heads worth
+	STREAK_PRIZE_HATS = 50, -- and this many hat points
 	BASE_FLIP_TIME = 1.2,
 	FLIP_TIME_PER_LEVEL = 0.075,
 	MIN_FLIP_TIME = 0.45,
@@ -355,7 +367,7 @@ return table.freeze({
 	STUDIO_USE_REAL_TEST_STORE = false,
 
 	Upgrades = table.freeze(Upgrades),
-	UPGRADE_ORDER = table.freeze({ "moreCoins", "bigCoins", "luck", "speed" }),
+	UPGRADE_ORDER = table.freeze({ "moreCoins", "bigCoins", "luck", "speed", "multiFlip" }),
 	TableLooks = table.freeze(TableLooks),
 	Rarities = table.freeze(Rarities),
 	HelperTypes = table.freeze(HelperTypes),
