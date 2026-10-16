@@ -22,6 +22,7 @@ local ORDER = {
 	"Goals",
 	"PlayGifts",
 	"Badges",
+	"Funnel",
 	"Events",
 	"Friends",
 	"Cheats",
