@@ -15,6 +15,8 @@ export type Stats = {
 	heads: number,
 	skulls: number,
 	biggestFlip: number,
+	bestCombo: number,
+	rares: number,
 }
 
 -- Saved player data. Plain JSON-friendly values only.
@@ -27,6 +29,11 @@ export type Profile = {
 	resets: number,
 	stats: Stats,
 	lastSeen: number, -- os.time() of the last save, for the offline bonus
+	hats: { [string]: boolean }, -- owned hat ids
+	hat: string, -- worn hat id, "" = none
+	skin: string, -- chosen coin skin id, "" = classic gold
+	helperSlots: number, -- extra helper slots bought with Robux
+	receipts: { string }, -- recent Robux purchase ids, so one is never granted twice
 }
 
 export type FlipResult = "heads" | "skull"
@@ -43,6 +50,7 @@ export type FlipEvent = {
 	duration: number,
 	byHelper: boolean,
 	rarity: Rarity,
+	combo: number, -- 0 for helper/auto flips
 }
 
 -- Server -> one client: everything the HUD needs.
@@ -59,7 +67,23 @@ export type Snapshot = {
 	cashPerHeads: number,
 	headsChance: number,
 	resetBonus: number,
+	bestCombo: number,
+	hats: { string }, -- owned hat ids
+	hat: string,
+	skin: string,
+	maxHelpers: number,
+	passes: { [string]: boolean }, -- "doubleCash", "autoFlip", and skin ids
 }
+
+-- Server -> all clients: the shared mega coin.
+export type MegaState = {
+	taps: number,
+	goal: number,
+	boostLeft: number, -- seconds of server-wide 2x cash left
+}
+
+export type LeaderRow = { name: string, value: number }
+export type Leaderboards = { [string]: { LeaderRow } }
 
 -- Server -> one client: a short message ("bought", "reset", "offline").
 export type Notice = {

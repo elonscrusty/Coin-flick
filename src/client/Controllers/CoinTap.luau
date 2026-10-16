@@ -7,12 +7,14 @@ local UserInputService = game:GetService("UserInputService")
 
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local FlipFx = require(script.Parent.FlipFx)
+local MegaFx = require(script.Parent.MegaFx)
 local Sounds = require(script.Parent.Sounds)
 
 local CoinTap = {}
 
 local player = Players.LocalPlayer
 local tapRemote: RemoteEvent
+local megaRemote: RemoteEvent
 local params = RaycastParams.new()
 params.FilterType = Enum.RaycastFilterType.Include
 
@@ -38,9 +40,16 @@ local function tapRay(ray: Ray)
 	if not tables then
 		return
 	end
-	params.FilterDescendantsInstances = { tables }
+	local mega = workspace:FindFirstChild("MegaCoin")
+	params.FilterDescendantsInstances = if mega then { tables, mega } else { tables }
 	local result = workspace:Raycast(ray.Origin, ray.Direction * 400, params)
 	if not result then
+		return
+	end
+	if result.Instance:GetAttribute("Mega") then
+		Sounds.play("Tap", 0.35, 0.8)
+		MegaFx.poke()
+		megaRemote:FireServer()
 		return
 	end
 	local index, coin = coinFromHit(result.Instance)
@@ -53,6 +62,7 @@ end
 
 function CoinTap.init()
 	tapRemote = ClientNet.event("TapCoin")
+	megaRemote = ClientNet.event("TapMega")
 
 	-- Phones/tablets. TouchTapInWorld gives viewport coordinates.
 	UserInputService.TouchTapInWorld:Connect(function(position: Vector2, processedByUI: boolean)

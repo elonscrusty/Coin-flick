@@ -12,6 +12,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
+local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
@@ -30,6 +31,9 @@ type TableState = {
 	faces: { FlipResult },
 	busyUntil: { number },
 	nextHelperFlip: number,
+	nextAutoFlip: number,
+	combo: number, -- chain flips: taps in a row, each within COMBO_WINDOW
+	lastTapAt: number,
 	characterConn: RBXScriptConnection?,
 }
 
@@ -69,15 +73,16 @@ local function faceLabel(parent: BasePart, face: Enum.NormalId, text: string, co
 	label.Parent = gui
 end
 
-local function makeCoin(state: TableState, index: number, profile: Profile): BasePart
+local function makeCoin(state: TableState, index: number, profile: Profile, skin: Config.SkinDef?): BasePart
 	local diameter = Economy.coinDiameter(profile.upgrades.bigCoins)
 	local face: FlipResult = state.faces[index] or HEADS
+	local textColor = if skin then skin.text else Color3.fromRGB(255, 255, 255)
 
 	local coin = World.makePart({
 		Name = `Coin_{index}`,
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(Config.COIN_THICKNESS, diameter, diameter),
-		Color = COIN_GOLD,
+		Color = if skin then skin.coin else COIN_GOLD,
 		Material = Enum.Material.SmoothPlastic,
 		Reflectance = 0.15,
 		CanCollide = false,
@@ -88,8 +93,8 @@ local function makeCoin(state: TableState, index: number, profile: Profile): Bas
 	coin.CFrame = restCFrame(state, index, face)
 	coin:SetAttribute("CoinIndex", index)
 	coin:SetAttribute("Face", face)
-	faceLabel(coin, Enum.NormalId.Right, "$", Color3.fromRGB(255, 255, 255))
-	faceLabel(coin, Enum.NormalId.Left, "💀", Color3.fromRGB(255, 255, 255))
+	faceLabel(coin, Enum.NormalId.Right, "$", textColor)
+	faceLabel(coin, Enum.NormalId.Left, "💀", textColor)
 
 	local sparkle = Instance.new("ParticleEmitter")
 	sparkle.Name = "Sparkle"
@@ -229,11 +234,13 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	Plot.build(World.makePart, model, plotCFrame, look, player.DisplayName, profile.resets)
 
 	state.coins = {}
+	-- A skin only shows while the player still owns its pass.
+	local skin = if profile.skin ~= "" and Boosts.owns(player, profile.skin) then Economy.skinDef(profile.skin) else nil
 	local count = Economy.coinCount(profile)
 	for i = 1, count do
 		state.faces[i] = state.faces[i] or HEADS
 		state.busyUntil[i] = state.busyUntil[i] or 0 -- coins in the air stay in the air
-		state.coins[i] = makeCoin(state, i, profile)
+		state.coins[i] = makeCoin(state, i, profile, skin)
 	end
 	for i = count + 1, #state.busyUntil do
 		state.busyUntil[i] = nil
@@ -263,14 +270,21 @@ local function shoutIfRare(player: Player, outcome: GameLogic.FlipOutcome)
 	Net.event("Notice"):FireAllClients(notice)
 end
 
-local function flip(player: Player, state: TableState, profile: Profile, index: number, byHelper: boolean)
+local function flip(
+	player: Player,
+	state: TableState,
+	profile: Profile,
+	index: number,
+	byHelper: boolean,
+	combo: number
+)
 	local now = os.clock()
 	local duration = Economy.flipTime(profile.upgrades.speed)
 	state.busyUntil[index] = now + duration
 	local forced = forcedRarity[player]
 	forcedRarity[player] = nil
 	local rarityRoll = if forced then Economy.rarityRollFor(forced) else rng:NextNumber()
-	local outcome = GameLogic.applyFlip(profile, rng:NextNumber(), rarityRoll)
+	local outcome = GameLogic.applyFlip(profile, rng:NextNumber(), rarityRoll, Boosts.cashMult(player, now), combo)
 
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,
@@ -281,6 +295,7 @@ local function flip(player: Player, state: TableState, profile: Profile, index: 
 		duration = duration,
 		byHelper = byHelper,
 		rarity = outcome.rarity,
+		combo = combo,
 	}
 	-- Only players who can actually see this table get the event.
 	local tablePos = state.center
@@ -320,10 +335,13 @@ local function onTap(player: Player, rawIndex: unknown)
 	if not index then
 		return
 	end
-	if os.clock() < state.busyUntil[index] then
+	local now = os.clock()
+	if now < state.busyUntil[index] then
 		return -- still in the air
 	end
-	flip(player, state, profile, index, false)
+	state.combo = GameLogic.nextCombo(state.combo, state.lastTapAt, now)
+	state.lastTapAt = now
+	flip(player, state, profile, index, false, state.combo)
 end
 
 local function placeCharacter(player: Player)
@@ -365,6 +383,9 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 		faces = {},
 		busyUntil = {},
 		nextHelperFlip = os.clock() + Config.HELPER_FLIP_INTERVAL,
+		nextAutoFlip = os.clock() + Config.AUTO_FLIP_INTERVAL,
+		combo = 0,
+		lastTapAt = 0,
 	}
 	states[player] = state
 	buildTable(player, state, profile)
@@ -430,23 +451,38 @@ function Tables.init()
 	end)
 end
 
+local function randomReadyCoin(state: TableState, now: number): number?
+	local ready: { number } = {}
+	for i = 1, #state.coins do
+		if now >= state.busyUntil[i] then
+			table.insert(ready, i)
+		end
+	end
+	return if #ready > 0 then ready[rng:NextInteger(1, #ready)] else nil
+end
+
 function Tables.start()
-	-- Helper guys flip a random coin that's on the table.
+	-- Helper guys (and the auto-flip pass) flip a random coin that's on the table.
 	while true do
-		task.wait(0.2)
+		task.wait(0.1)
 		local now = os.clock()
 		for player, state in states do
 			local profile = PlayerData.get(player)
-			if profile and profile.helpers > 0 and now >= state.nextHelperFlip then
+			if not profile then
+				continue
+			end
+			if profile.helpers > 0 and now >= state.nextHelperFlip then
 				state.nextHelperFlip = now + Config.HELPER_FLIP_INTERVAL / profile.helpers
-				local ready: { number } = {}
-				for i = 1, #state.coins do
-					if now >= state.busyUntil[i] then
-						table.insert(ready, i)
-					end
+				local index = randomReadyCoin(state, now)
+				if index then
+					flip(player, state, profile, index, true, 0)
 				end
-				if #ready > 0 then
-					flip(player, state, profile, ready[rng:NextInteger(1, #ready)], true)
+			end
+			if Boosts.owns(player, "autoFlip") and now >= state.nextAutoFlip then
+				state.nextAutoFlip = now + Config.AUTO_FLIP_INTERVAL
+				local index = randomReadyCoin(state, now)
+				if index then
+					flip(player, state, profile, index, false, 0)
 				end
 			end
 		end

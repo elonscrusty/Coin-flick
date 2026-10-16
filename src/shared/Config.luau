@@ -30,6 +30,24 @@ export type RarityDef = {
 	shout: boolean, -- tell the whole server
 }
 
+-- A silly hat bought with hat points (🎩). Built from chunky parts on your head.
+export type HatDef = {
+	id: string,
+	name: string,
+	icon: string,
+	cost: number,
+}
+
+-- A Robux coin skin (a game pass). passId 0 = carter hasn't made it yet.
+export type SkinDef = {
+	id: string,
+	name: string,
+	icon: string,
+	passId: number,
+	coin: Color3,
+	text: Color3,
+}
+
 local Upgrades: { [string]: UpgradeDef } = {
 	moreCoins = {
 		name = "More Coins",
@@ -138,6 +156,45 @@ local Rarities: { RarityDef } = {
 	},
 }
 
+-- Cheapest first. Everything is goofy, nothing scary.
+local Hats: { HatDef } = {
+	{ id = "party", name = "Party Hat", icon = "🥳", cost = 5 },
+	{ id = "cone", name = "Traffic Cone", icon = "🚧", cost = 15 },
+	{ id = "cowboy", name = "Cowboy Hat", icon = "🤠", cost = 30 },
+	{ id = "chef", name = "Chef Hat", icon = "👨‍🍳", cost = 60 },
+	{ id = "propeller", name = "Propeller Cap", icon = "🚁", cost = 100 },
+	{ id = "duck", name = "Rubber Duck", icon = "🦆", cost = 200 },
+	{ id = "tophat", name = "Fancy Top Hat", icon = "🎩", cost = 400 },
+	{ id = "crown", name = "Golden Crown", icon = "👑", cost = 800 },
+}
+
+local Skins: { SkinDef } = {
+	{
+		id = "candy",
+		name = "Candy Coins",
+		icon = "🍬",
+		passId = 0,
+		coin = Color3.fromRGB(255, 120, 190),
+		text = Color3.fromRGB(255, 255, 255),
+	},
+	{
+		id = "ice",
+		name = "Ice Coins",
+		icon = "🧊",
+		passId = 0,
+		coin = Color3.fromRGB(150, 225, 255),
+		text = Color3.fromRGB(40, 90, 160),
+	},
+	{
+		id = "lava",
+		name = "Lava Coins",
+		icon = "🌋",
+		passId = 0,
+		coin = Color3.fromRGB(255, 90, 40),
+		text = Color3.fromRGB(255, 240, 120),
+	},
+}
+
 return table.freeze({
 	-- World
 	MAX_PLOTS = 8,
@@ -169,6 +226,34 @@ return table.freeze({
 	OFFLINE_RATE = 0.5, -- helpers earn half speed while you're away
 	OFFLINE_CAP_SECONDS = 2 * 60 * 60, -- and at most 2 hours of it
 
+	-- Chain flips: tap again within the window to grow the combo.
+	COMBO_WINDOW = 1.5,
+	COMBO_BONUS_PER_STEP = 0.1, -- +10% cash per combo step
+	COMBO_MAX_MULT = 3, -- reached at a 21 combo
+
+	-- Shared mega coin in the middle of the server
+	MEGA_BASE_TAPS = 60,
+	MEGA_TAPS_PER_PLAYER = 30,
+	MEGA_REWARD_FLIPS = 25, -- everyone who tapped gets 25 heads worth of cash
+	MEGA_REWARD_HATS = 5,
+	MEGA_BOOST_MULT = 2, -- then the whole server gets 2x cash...
+	MEGA_BOOST_SECONDS = 60, -- ...for this long
+	MEGA_TAP_RATE = 6,
+	MEGA_TAP_BURST = 10,
+	MEGA_DIAMETER = 16,
+	MEGA_HEIGHT = 12, -- coin centre above the ground (sits just above the 3.2 tall pedestal)
+
+	-- Leaderboards (global, OrderedDataStore)
+	LEADERBOARD_SIZE = 10,
+	LEADERBOARD_REFRESH = 120,
+	LEADERBOARD_WRITE_INTERVAL = 120,
+
+	-- Robux extras
+	PASS_CASH_MULT = 2,
+	AUTO_FLIP_INTERVAL = 0.6, -- auto-flip pass flips one coin this often
+	MAX_EXTRA_HELPER_SLOTS = 3,
+	MAX_SAVED_RECEIPTS = 50,
+
 	-- Reset (prestige)
 	RESET_CASH_BONUS = 0.5, -- each reset = +50% cash forever
 
@@ -190,6 +275,9 @@ return table.freeze({
 	UPGRADE_ORDER = table.freeze({ "moreCoins", "bigCoins", "luck", "speed" }),
 	TableLooks = table.freeze(TableLooks),
 	Rarities = table.freeze(Rarities),
+	Hats = table.freeze(Hats),
+	Skins = table.freeze(Skins),
+	LEADERBOARDS = table.freeze({ "flips", "biggestFlip", "resets" }),
 
 	-- Built-in Roblox sounds (ship with every client). Swap for nicer ones any time.
 	Sounds = table.freeze({
@@ -201,10 +289,13 @@ return table.freeze({
 		Buy = "rbxasset://sounds/button.wav",
 		Reset = "rbxasset://sounds/snap.wav",
 		Rare = "rbxasset://sounds/victory.wav",
+		Combo = "rbxasset://sounds/electronicpingshort.wav",
+		Mega = "rbxasset://sounds/victory.wav",
 	} :: { [string]: string }),
 
-	-- Robux shop (built in step 2). Ids come from carter; 0 means "not set yet".
-	-- Prices are set on the Roblox website, never in code.
+	-- Robux shop. Ids come from carter; 0 means "not set yet" (shows SOON).
+	-- Prices are set on the Roblox website and read live, never written in code.
+	-- Coin skin pass ids live in Skins above.
 	Products = table.freeze({
 		DoubleCashPassId = 0,
 		AutoFlipPassId = 0,

@@ -24,8 +24,13 @@ function Economy.upgradeCost(id: string, level: number): number?
 	return math.floor(def.baseCost * def.growth ^ level + 0.5)
 end
 
-function Economy.helperCost(owned: number): number?
-	if owned >= Config.MAX_HELPERS then
+-- Helper slots: the free ones plus any bought with Robux.
+function Economy.maxHelpers(profile: Profile): number
+	return Config.MAX_HELPERS + math.min(profile.helperSlots, Config.MAX_EXTRA_HELPER_SLOTS)
+end
+
+function Economy.helperCost(owned: number, maxHelpers: number?): number?
+	if owned >= (maxHelpers or Config.MAX_HELPERS) then
 		return nil
 	end
 	return math.floor(Config.HELPER_COST * 4 ^ owned + 0.5)
@@ -100,17 +105,68 @@ function Economy.rarityMult(rarity: string): number
 	return if def then def.mult else 1
 end
 
+-- Chain flips: combo 1 = x1, each step +10%, capped.
+function Economy.comboMult(combo: number): number
+	if combo <= 1 then
+		return 1
+	end
+	return math.min(Config.COMBO_MAX_MULT, 1 + Config.COMBO_BONUS_PER_STEP * (combo - 1))
+end
+
 -- `roll` and `rarityRoll` are numbers in [0, 1) from the server's random generator.
+-- `cashBonus` stacks combo, mega boost and the 2x pass (heads cash only).
 -- Returns result, cash, hat points, rarity.
-function Economy.resolveFlip(profile: Profile, roll: number, rarityRoll: number?): (FlipResult, number, number, Rarity)
+function Economy.resolveFlip(
+	profile: Profile,
+	roll: number,
+	rarityRoll: number?,
+	cashBonus: number?
+): (FlipResult, number, number, Rarity)
 	local heads: FlipResult = "heads"
 	local skull: FlipResult = "skull"
 	local rarity = Economy.rollRarity(rarityRoll or 1)
 	local mult = Economy.rarityMult(rarity)
 	if roll < Economy.headsChance(profile.upgrades.luck) then
-		return heads, Economy.cashPerHeads(profile) * mult, 0, rarity
+		local bonus = math.max(1, cashBonus or 1)
+		return heads, math.floor(Economy.cashPerHeads(profile) * mult * bonus + 0.5), 0, rarity
 	end
 	return skull, 0, mult, rarity
+end
+
+-- Taps the whole server needs to flip the mega coin.
+function Economy.megaGoal(playerCount: number): number
+	return Config.MEGA_BASE_TAPS + Config.MEGA_TAPS_PER_PLAYER * math.max(1, playerCount)
+end
+
+-- What each player who tapped the mega coin gets when it flips.
+function Economy.megaReward(profile: Profile): (number, number)
+	return Economy.cashPerHeads(profile) * Config.MEGA_REWARD_FLIPS, Config.MEGA_REWARD_HATS
+end
+
+function Economy.hatDef(id: unknown): Config.HatDef?
+	for _, def in Config.Hats do
+		if def.id == id then
+			return def
+		end
+	end
+	return nil
+end
+
+function Economy.skinDef(id: unknown): Config.SkinDef?
+	for _, def in Config.Skins do
+		if def.id == id then
+			return def
+		end
+	end
+	return nil
+end
+
+-- OrderedDataStore only takes whole numbers in a safe range.
+function Economy.leaderboardValue(value: number): number
+	if value ~= value or value <= 0 then
+		return 0
+	end
+	return math.min(math.floor(value), 2 ^ 53)
 end
 
 -- Average cash per second all helpers make together.

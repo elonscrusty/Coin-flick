@@ -4,7 +4,7 @@
 
 local Controllers = script.Controllers
 
-local ORDER = { "State", "Sounds", "CameraView", "FlipFx", "Helpers", "CoinTap", "Hud" }
+local ORDER = { "State", "Sounds", "CameraView", "FlipFx", "MegaFx", "Helpers", "CoinTap", "Hud" }
 
 type Controller = { init: (() -> ())?, start: (() -> ())? }
 

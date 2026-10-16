@@ -5,7 +5,19 @@
 local Systems = script.Systems
 
 -- Fixed order: Net creates the remotes the others need.
-local ORDER = { "Net", "World", "PlayerData", "Tables", "Shop", "Cheats" }
+local ORDER = {
+	"Net",
+	"Boosts",
+	"World",
+	"PlayerData",
+	"Tables",
+	"Shop",
+	"Mega",
+	"Hats",
+	"Robux",
+	"Leaderboards",
+	"Cheats",
+}
 
 type System = { init: (() -> ())?, start: (() -> ())? }
 

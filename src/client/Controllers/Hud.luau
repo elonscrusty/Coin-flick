@@ -1,8 +1,10 @@
 --!strict
--- Phone-first HUD: cash + hat points on top, big SHOP / RESET / VIEW buttons
--- on the right (clear of the thumbstick and jump button), the upgrade shop,
--- the reset popup, and little toast messages.
+-- Phone-first HUD: cash + hat points on top, big SHOP / RESET / TOP / VIEW
+-- buttons on the right (clear of the thumbstick and jump button), the shop
+-- (upgrades, hats, Robux), the reset popup, top 10 boards, combo counter,
+-- mega boost timer, and little toast messages.
 
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -131,10 +133,25 @@ local resetPanel: Frame
 local resetBody: TextLabel
 local resetButton: TextButton
 local resetPulse: Tween?
-local shopCards: { [string]: { level: TextLabel, buy: TextButton } } = {}
-local helperCard: { level: TextLabel, buy: TextButton }
+type Card = { level: TextLabel, buy: TextButton }
+local shopCards: { [string]: Card } = {}
+local helperCard: Card
+local hatCards: { [string]: Card } = {}
+local robuxCards: { [string]: Card } = {}
+local topPanel: Frame
+local topRows: { TextLabel } = {}
+local topTabs: { [string]: TextButton } = {}
+local topShown = "flips"
+local boards: Types.Leaderboards = {}
+local boostLabel: TextLabel
+local boostEnds = 0
+local comboLabel: TextLabel
+local comboScale: UIScale
+local comboToken = 0
+local prices: { [string]: string } = {} -- live Robux prices from Roblox
 
 local shownCash = Instance.new("NumberValue")
+local render: (Snapshot) -> ()
 local toastToken = 0
 
 local function toast(text: string, color: Color3?)
@@ -207,6 +224,7 @@ end
 local function closePanels()
 	shopPanel.Visible = false
 	resetPanel.Visible = false
+	topPanel.Visible = false
 end
 
 local function makePanel(name: string, title: string): (Frame, Frame)
@@ -314,11 +332,10 @@ local function shopCard(parent: ScrollingFrame, order: number, icon: string, nam
 	return { level = level, buy = buy }
 end
 
-local function buildShop()
-	local panel, body = makePanel("Shop", "UPGRADES")
-	shopPanel = panel
+local function scrollList(parent: Frame, top: number): ScrollingFrame
 	local list = Instance.new("ScrollingFrame")
-	list.Size = UDim2.fromScale(1, 1)
+	list.Position = UDim2.fromOffset(0, top)
+	list.Size = UDim2.new(1, 0, 1, -top)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = 8
@@ -334,7 +351,80 @@ local function buildShop()
 	pad.PaddingTop = UDim.new(0, 4)
 	pad.PaddingBottom = UDim.new(0, 4)
 	pad.Parent = list
-	list.Parent = body
+	list.Parent = parent
+	return list
+end
+
+-- A row of big tab buttons. Returns the buttons by key.
+local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> ()): { [string]: TextButton }
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 44)
+	row.BackgroundTransparency = 1
+	row.ZIndex = 6
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Horizontal
+	layout.Padding = UDim.new(0.02, 0)
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = row
+	local buttons: { [string]: TextButton } = {}
+	for i, tab in tabs do
+		local key = tab[1]
+		local b = button(tab[2], GREY, function()
+			Sounds.play("Tap", 0.4)
+			onPick(key)
+		end)
+		b.LayoutOrder = i
+		b.Size = UDim2.new(1 / #tabs - 0.02, 0, 1, 0)
+		b.ZIndex = 7
+		textLimit(b, 22)
+		b.Parent = row
+		buttons[key] = b
+	end
+	row.Parent = parent
+	return buttons
+end
+
+local function pickTab(buttons: { [string]: TextButton }, lists: { [string]: GuiObject }, key: string)
+	for k, b in buttons do
+		b.BackgroundColor3 = if k == key then ORANGE else GREY
+	end
+	for k, list in lists do
+		list.Visible = k == key
+	end
+end
+
+local function robuxPrice(key: string, id: number, info: Enum.InfoType)
+	if id <= 0 or prices[key] then
+		return
+	end
+	task.spawn(function()
+		local ok, result = pcall(function()
+			return MarketplaceService:GetProductInfo(id, info)
+		end)
+		if ok and typeof(result) == "table" and typeof(result.PriceInRobux) == "number" then
+			prices[key] = `R$ {result.PriceInRobux}`
+			local s = State.get()
+			if s then
+				render(s)
+			end
+		end
+	end)
+end
+
+local function buildShop()
+	local panel, body = makePanel("Shop", "SHOP")
+	shopPanel = panel
+	local lists: { [string]: GuiObject } = {}
+	local tabs: { [string]: TextButton } = {}
+	tabs = tabRow(
+		body,
+		{ { "upgrades", "🪙 COINS" }, { "hats", "🎩 HATS" }, { "robux", "💎 EXTRAS" } },
+		function(key)
+			pickTab(tabs, lists, key)
+		end
+	)
+	local list = scrollList(body, 52)
+	lists.upgrades = list
 
 	local buyRemote = ClientNet.event("BuyUpgrade")
 	for i, id in Config.UPGRADE_ORDER do
@@ -346,6 +436,136 @@ local function buildShop()
 	local helperRemote = ClientNet.event("BuyHelper")
 	helperCard = shopCard(list, 100, "👷", "Helper Guy", function()
 		helperRemote:FireServer()
+	end)
+
+	-- Hats: buy with 🎩, tap again to wear or take off.
+	local hatList = scrollList(body, 52)
+	lists.hats = hatList
+	local buyHat = ClientNet.event("BuyHat")
+	local wearHat = ClientNet.event("WearHat")
+	for i, def in Config.Hats do
+		hatCards[def.id] = shopCard(hatList, i, def.icon, def.name, function()
+			local s = State.get()
+			if not s then
+				return
+			end
+			if s.hat == def.id then
+				wearHat:FireServer("")
+			elseif table.find(s.hats, def.id) then
+				wearHat:FireServer(def.id)
+			else
+				buyHat:FireServer(def.id)
+			end
+		end)
+	end
+
+	-- Robux extras. No random boxes. SOON until carter adds the ids.
+	local robuxList = scrollList(body, 52)
+	lists.robux = robuxList
+	local buyRobux = ClientNet.event("BuyRobux")
+	local chooseSkin = ClientNet.event("ChooseSkin")
+	local extras = {
+		{ "doubleCash", "💰", "2x Cash Forever" },
+		{ "autoFlip", "🤖", "Auto Flip" },
+		{ "helperSlot", "👷", "+1 Helper Slot" },
+	}
+	for i, item in extras do
+		local key = item[1]
+		robuxCards[key] = shopCard(robuxList, i, item[2], item[3], function()
+			buyRobux:FireServer(key)
+		end)
+	end
+	for i, skin in Config.Skins do
+		robuxCards[skin.id] = shopCard(robuxList, 10 + i, skin.icon, skin.name, function()
+			local s = State.get()
+			if s and s.passes[skin.id] then
+				chooseSkin:FireServer(if s.skin == skin.id then "" else skin.id)
+			else
+				buyRobux:FireServer(skin.id)
+			end
+		end)
+		robuxPrice(skin.id, skin.passId, Enum.InfoType.GamePass)
+	end
+	robuxPrice("doubleCash", Config.Products.DoubleCashPassId, Enum.InfoType.GamePass)
+	robuxPrice("autoFlip", Config.Products.AutoFlipPassId, Enum.InfoType.GamePass)
+	robuxPrice("helperSlot", Config.Products.ExtraHelperSlotProductId, Enum.InfoType.Product)
+	pickTab(tabs, lists, "upgrades")
+end
+
+-- Top 10 boards ----------------------------------------------------------
+
+local BOARD_TITLES: { [string]: string } = {
+	flips = "MOST FLIPS",
+	biggestFlip = "BIGGEST FLIP",
+	resets = "MOST RESETS",
+}
+
+local function renderBoard()
+	local rows = boards[topShown] or {}
+	for i, rowLabel in topRows do
+		local row = rows[i]
+		if row then
+			local value = if topShown == "biggestFlip" then `${Format.short(row.value)}` else Format.short(row.value)
+			rowLabel.Text = `{i}. {row.name}  •  {value}`
+			rowLabel.TextColor3 = if i == 1 then ORANGE elseif row.name == player.DisplayName then GREEN else INK
+		else
+			rowLabel.Text = if i == 1 then "No one yet. Be first!" else ""
+			rowLabel.TextColor3 = INK
+		end
+	end
+	for key, b in topTabs do
+		b.BackgroundColor3 = if key == topShown then ORANGE else GREY
+	end
+end
+
+local function buildTop()
+	local panel, body = makePanel("Top", "🏆 TOP 10")
+	topPanel = panel
+	topTabs = tabRow(body, { { "flips", "FLIPS" }, { "biggestFlip", "BIGGEST" }, { "resets", "RESETS" } }, function(key)
+		topShown = key
+		renderBoard()
+	end)
+	local list = scrollList(body, 52)
+	for i = 1, Config.LEADERBOARD_SIZE do
+		local row = label({
+			Name = `Row{i}`,
+			LayoutOrder = i,
+			Size = UDim2.new(1, -10, 0, 30),
+			TextColor3 = INK,
+			TextStrokeTransparency = 1,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 7,
+		})
+		textLimit(row, 22)
+		row.Parent = list
+		topRows[i] = row
+	end
+	renderBoard()
+end
+
+-- Combo counter: grows with every quick tap, fades when the chain breaks.
+local function showCombo(combo: number)
+	comboToken += 1
+	local token = comboToken
+	comboLabel.Text = `🔥 x{combo}\nCOMBO`
+	comboLabel.TextColor3 = Color3.fromHSV(math.max(0, 0.15 - combo * 0.007), 0.85, 1)
+	comboLabel.TextTransparency = 0
+	comboLabel.TextStrokeTransparency = 0
+	comboLabel.Visible = true
+	popScale(comboScale, 1 + math.min(0.6, combo * 0.03))
+	if combo % 5 == 0 then
+		Sounds.play("Combo", 0.5, 1 + math.min(1, combo / 20))
+	end
+	task.delay(Config.COMBO_WINDOW, function()
+		if token ~= comboToken then
+			return
+		end
+		local fade = TweenService:Create(comboLabel, COUNT, { TextTransparency = 1, TextStrokeTransparency = 1 })
+		fade:Play()
+		fade.Completed:Wait()
+		if token == comboToken then
+			comboLabel.Visible = false
+		end
 	end)
 end
 
@@ -381,7 +601,7 @@ end
 local function sideButton(order: number, text: string, color: Color3, onPress: () -> ()): TextButton
 	local b = button(text, color, onPress)
 	b.LayoutOrder = order
-	b.Size = UDim2.fromScale(1, 0.3)
+	b.Size = UDim2.fromScale(1, 0.22)
 	local aspect = Instance.new("UIAspectRatioConstraint")
 	aspect.AspectRatio = 1
 	aspect.DominantAxis = Enum.DominantAxis.Height
@@ -399,11 +619,11 @@ local function buildCheats(parent: ScreenGui)
 	frame.Name = "StudioCheats"
 	frame.BackgroundTransparency = 1
 	frame.Position = UDim2.new(0, 8, 0.2, 0)
-	frame.Size = UDim2.fromOffset(90, 200)
+	frame.Size = UDim2.fromOffset(90, 250)
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 6)
 	layout.Parent = frame
-	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "WIPE", "wipe" } } do
+	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "MEGA", "mega" }, { "WIPE", "wipe" } } do
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)
@@ -413,7 +633,7 @@ local function buildCheats(parent: ScreenGui)
 	frame.Parent = parent
 end
 
-local function render(s: Snapshot)
+render = function(s: Snapshot)
 	-- Cash counts up instead of snapping.
 	local oldCash = shownCash.Value
 	TweenService:Create(shownCash, COUNT, { Value = s.cash }):Play()
@@ -442,14 +662,78 @@ local function render(s: Snapshot)
 			card.buy.BackgroundColor3 = BLUE
 		end
 	end
-	local helperCost = Economy.helperCost(s.helpers)
-	helperCard.level.Text = `{s.helpers}/{Config.MAX_HELPERS}  •  Flips for you, even when you're away`
+	local helperCost = Economy.helperCost(s.helpers, s.maxHelpers)
+	helperCard.level.Text = `{s.helpers}/{s.maxHelpers}  •  Flips for you, even when you're away`
 	if helperCost then
 		helperCard.buy.Text = `${Format.short(helperCost)}`
 		helperCard.buy.BackgroundColor3 = if s.cash >= helperCost then GREEN else GREY
 	else
 		helperCard.buy.Text = "MAX"
 		helperCard.buy.BackgroundColor3 = BLUE
+	end
+
+	for _, def in Config.Hats do
+		local card = hatCards[def.id]
+		local owned = table.find(s.hats, def.id) ~= nil
+		if s.hat == def.id then
+			card.level.Text = "On your head! Tap to take off"
+			card.buy.Text = "ON ✓"
+			card.buy.BackgroundColor3 = ORANGE
+		elseif owned then
+			card.level.Text = "Yours! Tap to wear"
+			card.buy.Text = "WEAR"
+			card.buy.BackgroundColor3 = BLUE
+		else
+			card.level.Text = "Buy with hat points from 💀 flips"
+			card.buy.Text = `🎩 {def.cost}`
+			card.buy.BackgroundColor3 = if s.hatPoints >= def.cost then GREEN else GREY
+		end
+	end
+
+	local function robuxButton(card: Card, key: string, desc: string, owned: boolean, id: number)
+		card.level.Text = desc
+		if owned then
+			card.buy.Text = "OWNED"
+			card.buy.BackgroundColor3 = BLUE
+		elseif id <= 0 then
+			card.buy.Text = "SOON"
+			card.buy.BackgroundColor3 = GREY
+		else
+			card.buy.Text = prices[key] or "BUY"
+			card.buy.BackgroundColor3 = GREEN
+		end
+	end
+	robuxButton(
+		robuxCards.doubleCash,
+		"doubleCash",
+		"Double cash on every heads",
+		s.passes.doubleCash == true,
+		Config.Products.DoubleCashPassId
+	)
+	robuxButton(
+		robuxCards.autoFlip,
+		"autoFlip",
+		"Your coins flip by themselves",
+		s.passes.autoFlip == true,
+		Config.Products.AutoFlipPassId
+	)
+	local slotsFull = s.maxHelpers >= Config.MAX_HELPERS + Config.MAX_EXTRA_HELPER_SLOTS
+	robuxButton(
+		robuxCards.helperSlot,
+		"helperSlot",
+		`Room for one more helper guy ({s.maxHelpers}/{Config.MAX_HELPERS + Config.MAX_EXTRA_HELPER_SLOTS})`,
+		slotsFull,
+		Config.Products.ExtraHelperSlotProductId
+	)
+	for _, skin in Config.Skins do
+		local card = robuxCards[skin.id]
+		if s.passes[skin.id] then
+			card.level.Text = if s.skin == skin.id then "On your coins! Tap for gold" else "Yours! Tap to use"
+			card.buy.Text = if s.skin == skin.id then "ON ✓" else "USE"
+			card.buy.BackgroundColor3 = if s.skin == skin.id then ORANGE else BLUE
+		else
+			robuxButton(card, skin.id, "A new look for every coin", false, skin.passId)
+		end
 	end
 
 	resetBody.Text =
@@ -555,12 +839,37 @@ function Hud.init()
 	shoutScale.Parent = shoutLabel
 	shoutLabel.Parent = gui
 
+	boostLabel = label({
+		Name = "Boost",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0.155, 14),
+		Size = UDim2.fromScale(0.4, 0.05),
+		TextColor3 = Color3.fromRGB(255, 220, 60),
+		Visible = false,
+	})
+	textLimit(boostLabel, 24)
+	boostLabel.Parent = gui
+
+	-- Left side, above the phone thumbstick.
+	comboLabel = label({
+		Name = "Combo",
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 14, 0.38, 0),
+		Size = UDim2.fromScale(0.16, 0.16),
+		Visible = false,
+		ZIndex = 9,
+	})
+	textLimit(comboLabel, 34)
+	comboScale = Instance.new("UIScale")
+	comboScale.Parent = comboLabel
+	comboLabel.Parent = gui
+
 	-- Right side: big buttons, above the phone jump button.
 	local side = Instance.new("Frame")
 	side.Name = "Side"
 	side.AnchorPoint = Vector2.new(1, 0.5)
-	side.Position = UDim2.new(1, -10, 0.42, 0)
-	side.Size = UDim2.fromScale(0.2, 0.52)
+	side.Position = UDim2.new(1, -10, 0.45, 0)
+	side.Size = UDim2.fromScale(0.2, 0.64)
 	side.BackgroundTransparency = 1
 	local sideLayout = Instance.new("UIListLayout")
 	sideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
@@ -586,8 +895,14 @@ function Hud.init()
 		end
 	end)
 	resetButton.Parent = side
+	local topButton = sideButton(3, "🏆\nTOP", PURPLE, function()
+		Sounds.play("Tap", 0.4)
+		closePanels()
+		openPanel(topPanel)
+	end)
+	topButton.Parent = side
 	local viewButton: TextButton
-	viewButton = sideButton(3, "🔍\nZOOM", BLUE, function()
+	viewButton = sideButton(4, "🔍\nZOOM", BLUE, function()
 		local tableView = CameraView.toggle()
 		viewButton.Text = if tableView then "🏃\nWALK" else "🔍\nZOOM"
 	end)
@@ -596,6 +911,7 @@ function Hud.init()
 
 	buildShop()
 	buildReset()
+	buildTop()
 	buildCheats(gui)
 
 	shownCash.Changed:Connect(function(value: number)
@@ -607,6 +923,28 @@ end
 
 function Hud.start()
 	State.onChange(render)
+	ClientNet.event("Leaderboards").OnClientEvent:Connect(function(data: Types.Leaderboards)
+		boards = data
+		renderBoard()
+	end)
+	ClientNet.event("Flipped").OnClientEvent:Connect(function(ev: Types.FlipEvent)
+		if ev.ownerId == player.UserId and ev.combo >= 2 then
+			showCombo(ev.combo)
+		end
+	end)
+	ClientNet.event("MegaState").OnClientEvent:Connect(function(state: Types.MegaState)
+		boostEnds = os.clock() + state.boostLeft
+	end)
+	task.spawn(function()
+		while true do
+			local left = math.ceil(boostEnds - os.clock())
+			boostLabel.Visible = left > 0
+			if left > 0 then
+				boostLabel.Text = `⚡ MEGA BOOST: 2x CASH  {left // 60}:{string.format("%02d", left % 60)}`
+			end
+			task.wait(0.25)
+		end
+	end)
 	ClientNet.event("Notice").OnClientEvent:Connect(function(notice: Types.Notice)
 		if notice.kind == "reset" then
 			Sounds.play("Reset", 0.8)
@@ -614,6 +952,8 @@ function Hud.start()
 			toast(notice.text, ORANGE)
 		elseif notice.kind == "shout" then
 			shout(notice)
+		elseif notice.kind == "mega" then
+			toast(notice.text, Color3.fromRGB(255, 220, 60))
 		elseif notice.kind == "bought" then
 			Sounds.play("Buy", 0.6)
 			toast(notice.text, Color3.fromRGB(150, 255, 150))

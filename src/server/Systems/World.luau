@@ -74,7 +74,7 @@ function World.init()
 	spawn.Name = "Spawn"
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(10, 1, 10)
-	spawn.Position = Vector3.new(0, 0.5, 0)
+	spawn.Position = Vector3.new(0, 0.5, 26) -- the mega coin stands in the very middle
 	spawn.Color = Color3.fromRGB(255, 220, 80)
 	spawn.Material = Enum.Material.SmoothPlastic
 	spawn.Duration = 0

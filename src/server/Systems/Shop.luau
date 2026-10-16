@@ -1,5 +1,5 @@
 --!strict
--- Cash shop (upgrades + helper) and the table RESET. Robux shop comes in step 2.
+-- Cash shop (upgrades + helper) and the table RESET. Hats and Robux live in Hats and Robux.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")

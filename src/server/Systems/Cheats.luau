@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
+local Mega = require(script.Parent.Mega)
 local Tables = require(script.Parent.Tables)
 local GameLogic = require(script.Parent.Parent.Util.GameLogic)
 local ProfileSchema = require(ReplicatedStorage.Shared.Util.ProfileSchema)
@@ -30,9 +31,13 @@ local function onCheat(player: Player, command: unknown)
 	end
 	if command == "cash" then
 		profile.cash += 1000000
+		profile.hatPoints += 1000
 	elseif command == "fill" then
 		GameLogic.fillTable(profile)
 		Tables.refresh(player)
+	elseif command == "mega" then
+		Mega.debugFlip(player)
+		return
 	elseif command == "rare" then
 		-- Next flip is the next rare coin in the list, so each look can be checked.
 		local i = (nextRare[player] or 0) % #RARE_CYCLE + 1

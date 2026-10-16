@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
+local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
 local GameLogic = require(script.Parent.Parent.Util.GameLogic)
 local KeyedMutex = require(script.Parent.Parent.Util.KeyedMutex)
@@ -193,7 +194,7 @@ function PlayerData.start()
 			dirty[player] = nil
 			local profile = profiles[player]
 			if profile then
-				stateRemote:FireClient(player, GameLogic.snapshot(profile))
+				stateRemote:FireClient(player, GameLogic.snapshot(profile, Boosts.passes(player)))
 				local stats = leaderstats[player]
 				if stats then
 					stats.cash.Value = profile.cash
@@ -214,6 +215,15 @@ function PlayerData.changed(player: Player)
 	if profiles[player] then
 		dirty[player] = true
 	end
+end
+
+-- Save right now (used after a Robux purchase). True only if it really saved.
+function PlayerData.save(player: Player): boolean
+	local profile = profiles[player]
+	if not profile then
+		return false
+	end
+	return saveNow(player, profile, false) == "ok"
 end
 
 function PlayerData.onLoaded(callback: LoadedCallback)

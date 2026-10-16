@@ -1,0 +1,202 @@
+--!strict
+-- The shared MEGA coin in the middle of the server. Everyone taps the same
+-- coin; when the server's taps reach the goal it flips (always a happy flip,
+-- no chance involved). Everyone who tapped gets a reward, and the whole
+-- server gets 2x cash for a minute.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local Types = require(ReplicatedStorage.Shared.Types)
+local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local Format = require(ReplicatedStorage.Shared.Util.Format)
+local Boosts = require(script.Parent.Boosts)
+local Net = require(script.Parent.Net)
+local PlayerData = require(script.Parent.PlayerData)
+local World = require(script.Parent.World)
+local GameLogic = require(script.Parent.Parent.Util.GameLogic)
+local MegaCoin = require(script.Parent.Parent.Util.MegaCoin)
+local RateLimiter = require(script.Parent.Parent.Util.RateLimiter)
+
+local Mega = {}
+
+local counter = MegaCoin.new()
+local limiter = RateLimiter.new(Config.MEGA_TAP_RATE, Config.MEGA_TAP_BURST, os.clock)
+local flipping = false
+local dirty = true
+
+local GOLD = Color3.fromRGB(255, 200, 40)
+
+local function goal(): number
+	return Economy.megaGoal(#Players:GetPlayers())
+end
+
+local function faceLabel(parent: BasePart, face: Enum.NormalId, text: string)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = face
+	gui.LightInfluence = 0.3
+	gui.CanvasSize = Vector2.new(400, 400)
+	gui.Parent = parent
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextScaled = true
+	label.Font = Enum.Font.FredokaOne
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextStrokeColor3 = Color3.fromRGB(150, 90, 10)
+	label.TextStrokeTransparency = 0
+	label.Parent = gui
+end
+
+local function build()
+	local model = Instance.new("Model")
+	model.Name = "MegaCoin"
+	local make = World.makePart
+	-- Chunky stepped pedestal.
+	local steps = {
+		{ height = 1.2, diameter = 20, color = Color3.fromRGB(255, 255, 255) },
+		{ height = 1.2, diameter = 16, color = Color3.fromRGB(90, 200, 255) },
+		{ height = 0.8, diameter = 12, color = Color3.fromRGB(255, 120, 190) },
+	}
+	local y = 0
+	for i, step in steps do
+		local part = make({
+			Name = `Step{i}`,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(step.height, step.diameter, step.diameter),
+			CFrame = CFrame.new(0, y + step.height / 2, 0) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = step.color,
+		})
+		part.Parent = model
+		y += step.height
+	end
+	-- The coin stands on its edge, facing the spawn. The client spins it.
+	local coin = make({
+		Name = "Coin",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(1.6, Config.MEGA_DIAMETER, Config.MEGA_DIAMETER),
+		CFrame = CFrame.new(0, Config.MEGA_HEIGHT, 0) * CFrame.Angles(0, math.pi / 2, 0),
+		Color = GOLD,
+		Reflectance = 0.15,
+		CanCollide = false,
+		CanQuery = false,
+	})
+	faceLabel(coin, Enum.NormalId.Right, "$")
+	faceLabel(coin, Enum.NormalId.Left, "⭐")
+	local sparkle = Instance.new("ParticleEmitter")
+	sparkle.Name = "Sparkle"
+	sparkle.Rate = 4
+	sparkle.Lifetime = NumberRange.new(0.6, 1.2)
+	sparkle.Speed = NumberRange.new(4, 10)
+	sparkle.SpreadAngle = Vector2.new(180, 180)
+	sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.2), NumberSequenceKeypoint.new(1, 0) })
+	sparkle.Color = ColorSequence.new(Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255))
+	sparkle.LightEmission = 1
+	sparkle.Parent = coin
+	coin.Parent = model
+
+	-- A big still ball for taps (the coin itself moves on each client).
+	local hitbox = make({
+		Name = "Hitbox",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.one * (Config.MEGA_DIAMETER + 2),
+		Position = Vector3.new(0, Config.MEGA_HEIGHT, 0),
+		Transparency = 1,
+		CanCollide = false,
+		CanQuery = true,
+		CastShadow = false,
+	})
+	hitbox:SetAttribute("Mega", true)
+	hitbox.Parent = model
+	model.Parent = workspace
+end
+
+local function notify(player: Player, text: string)
+	local notice: Types.Notice = { kind = "mega", text = text }
+	Net.event("Notice"):FireClient(player, notice)
+end
+
+local function megaFlip()
+	Net.event("MegaFlipped"):FireAllClients()
+	local helpers = counter:finish()
+	Boosts.startMega(os.clock())
+	dirty = true
+	local helped: { [number]: boolean } = {}
+	for _, userId in helpers do
+		helped[userId] = true
+		local player = Players:GetPlayerByUserId(userId)
+		local profile = player and PlayerData.get(player)
+		if player and profile then
+			local cash, hats = GameLogic.megaReward(profile)
+			PlayerData.changed(player)
+			notify(player, `MEGA FLIP! You got +${Format.short(cash)} and +{hats} 🎩. 2x cash for everyone!`)
+		end
+	end
+	for _, player in Players:GetPlayers() do
+		if not helped[player.UserId] then
+			notify(player, "MEGA FLIP! 2x cash for everyone! Tap the mega coin next time for a prize!")
+		end
+	end
+	task.wait(3) -- let the big flip finish before counting again
+	flipping = false
+	dirty = true
+end
+
+local function onTap(player: Player)
+	if flipping or not limiter:allow(player) or not PlayerData.get(player) then
+		return
+	end
+	dirty = true
+	if counter:tap(player.UserId, goal()) then
+		flipping = true
+		task.spawn(megaFlip)
+	end
+end
+
+-- Studio test button: flip the mega coin now (this player counts as a helper).
+function Mega.debugFlip(player: Player)
+	if flipping then
+		return
+	end
+	counter:tap(player.UserId, 1)
+	flipping = true
+	task.spawn(megaFlip)
+end
+
+function Mega.init()
+	build()
+	Net.event("TapMega").OnServerEvent:Connect(onTap)
+	Players.PlayerAdded:Connect(function()
+		dirty = true
+	end)
+	Players.PlayerRemoving:Connect(function(player: Player)
+		counter:forget(player.UserId)
+		limiter:remove(player)
+		dirty = true
+	end)
+end
+
+function Mega.start()
+	local stateRemote = Net.event("MegaState")
+	local lastSent = 0
+	while true do
+		task.wait(0.25)
+		local now = os.clock()
+		local boostLeft = Boosts.megaLeft(now)
+		-- Send on change, plus once a second while the boost counts down.
+		if dirty or (boostLeft > 0 and now - lastSent >= 1) then
+			dirty = false
+			lastSent = now
+			local state: Types.MegaState = {
+				taps = counter.taps,
+				goal = goal(),
+				boostLeft = boostLeft,
+			}
+			stateRemote:FireAllClients(state)
+		end
+	end
+end
+
+return Mega

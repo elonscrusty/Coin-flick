@@ -11,6 +11,14 @@ return table.freeze({
 		"State", -- server -> client: (Snapshot)
 		"Flipped", -- server -> all: (FlipEvent)
 		"Notice", -- server -> client: (Notice)
+		"TapMega", -- client -> server: ()
+		"MegaState", -- server -> all: (MegaState)
+		"MegaFlipped", -- server -> all: ()
+		"BuyHat", -- client -> server: (hatId: string)
+		"WearHat", -- client -> server: (hatId: string, "" = take off)
+		"ChooseSkin", -- client -> server: (skinId: string, "" = classic)
+		"BuyRobux", -- client -> server: (item: string) server opens the Roblox buy window
+		"Leaderboards", -- server -> client: (Leaderboards)
 	}),
 	-- Only created when running in Roblox Studio. Never exists in a live game.
 	StudioOnly = table.freeze({
