@@ -79,8 +79,10 @@ function Economy.flipsPerTap(profile: Profile): number
 end
 
 -- What a streak of 10 heads pays: cash (heads worth) and hat points.
-function Economy.streakPrize(profile: Profile): (number, number)
-	return Economy.cashPerHeads(profile) * Config.STREAK_PRIZE_FLIPS, Config.STREAK_PRIZE_HATS
+-- `boost` is the cash boost (2x pass, mega boost); it only multiplies the cash.
+function Economy.streakPrize(profile: Profile, boost: number?): (number, number)
+	local cash = Economy.cashPerHeads(profile) * Config.STREAK_PRIZE_FLIPS * math.max(1, boost or 1)
+	return math.floor(cash + 0.5), Config.STREAK_PRIZE_HATS
 end
 
 function Economy.flipTime(speedLevel: number): number

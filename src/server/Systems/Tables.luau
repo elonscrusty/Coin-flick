@@ -303,7 +303,7 @@ local function flip(
 	-- Only a real tap (combo >= 1) plays the streak game.
 	local streak: GameLogic.StreakOutcome = { streak = 0, nextStreak = state.streak, won = false, cash = 0, hats = 0 }
 	if combo >= 1 then
-		streak = GameLogic.applyStreak(profile, state.streak, outcome.result)
+		streak = GameLogic.applyStreak(profile, state.streak, outcome.result, Boosts.cashMult(player, now))
 		state.streak = streak.nextStreak
 	end
 

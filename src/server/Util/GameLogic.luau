@@ -83,7 +83,12 @@ export type StreakOutcome = {
 -- Call once per flip of the player's OWN tap, in flip order, after applyFlip.
 -- Heads grows the streak, a skull breaks it. Hitting the goal pays the prize
 -- once and starts over. The server decides; nothing here is random.
-function GameLogic.applyStreak(profile: Profile, streak: number, result: FlipResult): StreakOutcome
+function GameLogic.applyStreak(
+	profile: Profile,
+	streak: number,
+	result: FlipResult,
+	boost: number?
+): StreakOutcome
 	if result ~= "heads" then
 		return { streak = 0, nextStreak = 0, won = false, cash = 0, hats = 0 }
 	end
@@ -94,7 +99,7 @@ function GameLogic.applyStreak(profile: Profile, streak: number, result: FlipRes
 	if count < Config.STREAK_GOAL then
 		return { streak = count, nextStreak = count, won = false, cash = 0, hats = 0 }
 	end
-	local cash, hats = Economy.streakPrize(profile)
+	local cash, hats = Economy.streakPrize(profile, boost)
 	profile.cash += cash
 	profile.hatPoints += hats
 	profile.stats.streakWins += 1
