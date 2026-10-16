@@ -237,6 +237,34 @@ local function paintRainbow(coin: BasePart)
 	end
 end
 
+-- A ring of stars around both faces (gold coins).
+local function paintStars(coin: BasePart, color: Color3)
+	for _, gui in coin:GetChildren() do
+		if gui:IsA("SurfaceGui") then
+			local ring = Instance.new("Frame")
+			ring.Name = "StarRing"
+			ring.Size = UDim2.fromScale(1, 1)
+			ring.BackgroundTransparency = 1
+			ring.ZIndex = 3
+			for _, spot in CoinLook.starRing(10, 0.34) do
+				local star = Instance.new("TextLabel")
+				star.AnchorPoint = Vector2.new(0.5, 0.5)
+				star.Position = UDim2.fromScale(spot.x, spot.y)
+				star.Size = UDim2.fromScale(0.14, 0.14)
+				star.BackgroundTransparency = 1
+				star.Text = "★"
+				star.TextScaled = true
+				star.Font = Enum.Font.FredokaOne
+				star.TextColor3 = color
+				star.TextStrokeColor3 = Color3.fromRGB(90, 35, 0)
+				star.TextStrokeTransparency = 0
+				star.Parent = ring
+			end
+			ring.Parent = gui
+		end
+	end
+end
+
 local function dressRare(anim: Anim, now: number, t: number)
 	local rare = anim.rare
 	if not rare then
@@ -251,6 +279,9 @@ local function dressRare(anim: Anim, now: number, t: number)
 		setMarks(anim, look.text, look.rim)
 		if look.rainbow then
 			paintRainbow(coin)
+		end
+		if look.stars then
+			paintStars(coin, Color3.fromRGB(255, 250, 200))
 		end
 		local sparkle = coin:FindFirstChild("Sparkle")
 		if sparkle and sparkle:IsA("ParticleEmitter") then
@@ -336,9 +367,11 @@ local function undressRare(anim: Anim)
 		ridge:Destroy()
 	end
 	for _, gui in coin:GetChildren() do
-		local disc = gui:FindFirstChild("RainbowFace")
-		if disc then
-			disc:Destroy()
+		for _, name in { "RainbowFace", "StarRing" } do
+			local extra = gui:FindFirstChild(name)
+			if extra then
+				extra:Destroy()
+			end
 		end
 	end
 	anim.dressed = false
@@ -441,6 +474,7 @@ local function step()
 		dressRare(anim, now, t)
 		-- Never let the spinning (or grown) coin cut into the table top.
 		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y)
+			+ CoinLook.hover(coin.Size.Y / anim.restSize.Y)
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0))
 			* CFrame.Angles(0, anim.yaw, 0)
 			* CFrame.Angles(0, 0, roll)
