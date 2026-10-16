@@ -338,7 +338,7 @@ local function dressRare(anim: Anim, now: number, t: number)
 	if ridge and ridge:IsA("BasePart") then
 		local thickness, diameter = CoinLook.ridge(coin.Size.X, coin.Size.Y)
 		ridge.Size = Vector3.new(thickness, diameter, diameter)
-		ridge.Color = look.rim
+		ridge.Color = if look.rainbow then CoinLook.darker(CoinLook.rainbowColor(now + 0.5), 0.55) else look.rim
 	end
 end
 
@@ -405,7 +405,8 @@ local function onFlipped(ev: FlipEvent)
 	if old then
 		undressRare(old) -- a re-flip mid-air starts from the plain coin
 	end
-	local base = if old then old.base else coin.Position
+	-- The slot the coin always returns to (from the server), never wherever the part happens to be.
+	local base = restOf(coin, "RestPos", if old then old.base else coin.Position)
 	local restSize = restOf(coin, "RestSize", coin.Size)
 	local restColor = restOf(coin, "RestColor", coin.Color)
 	local restMaterial = Enum.Material:FromName(restOf(coin, "RestMaterial", coin.Material.Name)) or coin.Material
@@ -470,6 +471,10 @@ local function step()
 		else
 			if not anim.landed then
 				anim.landed = true
+				local drift = Vector3.new(coin.Position.X - anim.base.X, 0, coin.Position.Z - anim.base.Z).Magnitude
+				if Config.LOG_COIN_DRIFT and drift > 0.3 then
+					warn(`CoinFlick: {coin.Name} landed {string.format("%.2f", drift)} studs off its slot (snapped back)`)
+				end
 				trailOn(coin, false)
 				onLanded(anim)
 			end
@@ -485,9 +490,7 @@ local function step()
 			warn("CoinFlick: rare coin look failed (the coin still lands normally)")
 		end
 		-- Never let the spinning (or grown) coin cut into the table top.
-		height += CoinLook.lift(roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y) + CoinLook.hover(
-			coin.Size.Y / anim.restSize.Y
-		)
+		height = CoinLook.flightHeight(height, roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y)
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0))
 			* CFrame.Angles(0, anim.yaw, 0)
 			* CFrame.Angles(0, 0, roll)
@@ -497,8 +500,9 @@ local function step()
 		end
 		if t >= 1 then
 			undressRare(anim)
+			-- Landing: always the slot's rest pose for this result, whatever happened in the air.
 			coin.CFrame = CFrame.new(anim.base)
-				* CFrame.Angles(0, anim.yaw, 0)
+				* CFrame.Angles(0, restOf(coin, "RestYaw", anim.yaw), 0)
 				* CFrame.Angles(0, 0, rollFor(anim.event.result))
 			if anim.shadow then
 				anim.shadow:Destroy()

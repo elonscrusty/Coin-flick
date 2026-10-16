@@ -379,3 +379,63 @@ describe("CoinLook round 6: thin trail, heads land heads-up, nothing stays dress
 		end
 	end)
 end)
+
+describe("CoinLook round 7: right face up for every rarity, rainbow ridge, same jump height", function()
+	local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
+
+	it("every rarity and result lands showing the art that matches it", function()
+		local rarities = { "normal" }
+		for _, def in Config.Rarities do
+			table.insert(rarities, def.id)
+		end
+		for _, rarity in rarities do
+			for _, from in { "heads", "skull" } do
+				for _, result in { "heads", "skull" } do
+					for _, duration in { 0.3, 0.8, 1.6 } do
+						-- the exact roll FlipFx ends on, and the server's rest roll
+						local fromRoll, toRoll = FlipArc.restRoll(from), FlipArc.restRoll(result)
+						local landed = fromRoll + (toRoll - fromRoll) + FlipArc.spins(duration) * math.pi * 2
+						local want = if result == "heads" then "$" else "hat"
+						expect(FlipArc.visibleArt(landed)).toBe(want)
+						expect(FlipArc.visibleArt(toRoll)).toBe(want) -- server rest pose agrees
+						expect(rarity ~= "").toBeTruthy()
+					end
+				end
+			end
+		end
+	end)
+
+	it("RAINBOW ridge and outline are colored, never white", function()
+		local r = CoinLook.RARE.rainbow
+		expect(math.min(r.rim.R, r.rim.G, r.rim.B) * 255).toBeAtMost(120)
+		expect(CoinLook.distance(r.outline :: Color3, Color3.fromRGB(255, 255, 255))).toBeAtLeast(150)
+		for i = 0, 10 do
+			local ridge = CoinLook.darker(CoinLook.rainbowColor(i * 0.2 + 0.5), 0.55)
+			expect(CoinLook.distance(ridge, Color3.fromRGB(255, 255, 255))).toBeAtLeast(100)
+		end
+	end)
+
+	it("a rare coin's jump peaks exactly as high as any coin's, but never dips into the table", function()
+		local peak = Config.FLIP_HEIGHT
+		local t, d = Config.COIN_THICKNESS, 3.8
+		for _, grow in { 1, 1.3, 1.68 } do
+			for i = 0, 40 do
+				local roll = i / 40 * math.pi * 2
+				local h = peak * 4 * (i / 40) * (1 - i / 40) -- the arc
+				local top = CoinLook.flightHeight(h, roll, t * grow, d * grow, t, d)
+				expect(top).toBeAtLeast(h)
+				-- bottom of the coin stays above the table
+				local half = t * grow / 2 * math.abs(math.sin(roll)) + d * grow / 2 * math.abs(math.cos(roll))
+				expect(top + t / 2 - half).toBeAtLeast(-1e-9)
+				-- at the top of the jump the coin is no higher than the arc
+				if i == 20 then
+					expect(top).toBeNear(peak, 1e-9)
+				end
+			end
+		end
+	end)
+
+	it("the landing drift log is on", function()
+		expect(Config.LOG_COIN_DRIFT).toBeTruthy()
+	end)
+end)

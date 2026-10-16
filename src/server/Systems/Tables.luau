@@ -124,6 +124,8 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	coin:SetAttribute("Face", face)
 	-- What the coin looks like at rest. The client dresses rare coins in the air and always restores
 	-- THIS (never whatever it finds on the part), so a coin can never stay big or colored.
+	coin:SetAttribute("RestPos", restCFrame(state, index, HEADS).Position)
+	coin:SetAttribute("RestYaw", state.yaw)
 	coin:SetAttribute("RestSize", coin.Size)
 	coin:SetAttribute("RestColor", coin.Color)
 	coin:SetAttribute("RestMaterial", coin.Material.Name)

@@ -77,12 +77,12 @@ local RARE: { [string]: Look } = {
 		material = "SmoothPlastic",
 		reflectance = 0.2,
 		text = Color3.fromRGB(45, 20, 80),
-		rim = Color3.fromRGB(255, 255, 255),
+		rim = Color3.fromRGB(110, 50, 190), -- violet ridge: seen edge-on it is a colored band, never a thin white line
 		sparkle = { Color3.fromRGB(255, 120, 220), Color3.fromRGB(120, 220, 255) },
 		sparkleSize = 1.0,
 		landBurst = 80,
 		trail = 45,
-		outline = Color3.fromRGB(255, 255, 255),
+		outline = Color3.fromRGB(70, 25, 130),
 		rainbow = true,
 		stars = false,
 	} :: Look),
@@ -231,6 +231,22 @@ CoinLook.MAX_DIAMETER = 6.4 -- no rare coin is ever wider than this in the air (
 
 function CoinLook.growFor(grow: number, index: number, restDiameter: number): number
 	return math.max(1, math.min(grow, CoinLook.maxScale(index, restDiameter), CoinLook.MAX_DIAMETER / restDiameter))
+end
+
+-- Height of the coin's centre above its rest spot: the flight arc `h`, but never so low that the coin
+-- (turning, or grown) cuts into the table or brushes the helpers. A max, not a sum, so the top of a
+-- rare coin's jump is the same height as any other coin's.
+function CoinLook.flightHeight(
+	h: number,
+	roll: number,
+	thickness: number,
+	diameter: number,
+	restThickness: number,
+	restDiameter: number
+): number
+	local need = CoinLook.lift(roll, thickness, diameter, restThickness, restDiameter)
+		+ CoinLook.hover(diameter / restDiameter)
+	return math.max(h, need)
 end
 
 -- A grown coin also hovers a bit higher, so it flies over the helpers and the coins behind it.
