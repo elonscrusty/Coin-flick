@@ -568,6 +568,130 @@ function PROPS.lamp(make, parent, base, s, theme)
 	)
 end
 
+-- Real Blender models --------------------------------------------------------------------------------
+-- Each piece below has a Blender model (blender/models_world.py). When the model is uploaded
+-- (Meshes.clone returns a Model) it replaces the Part version; until then (id 0) the Parts above are used.
+
+type Tints = { [string]: Color3 }
+local MESH_TREES: { [string]: { name: string, tints: (theme: Theme) -> Tints } } = {
+	oak = {
+		name = "CF_Tree",
+		tints = function(t)
+			return { Bark = t.trunk, Leaf = pick(t.foliage, 1), LeafLight = pick(t.foliage, 2) }
+		end,
+	},
+	palm = {
+		name = "CF_TreePalm",
+		tints = function(t)
+			return { Bark = t.trunk, Leaf = pick(t.foliage, 1), LeafLight = pick(t.foliage, 2) }
+		end,
+	},
+	lolly = {
+		name = "CF_TreeCandy",
+		tints = function(t)
+			return { Stick = t.trunk, Candy = pick(t.foliage, 1), Stripe = pick(t.foliage, 2) }
+		end,
+	},
+	tower = {
+		name = "CF_Tower",
+		tints = function(t)
+			return {
+				Stone = t.trunk,
+				StoneLight = pick(t.foliage, 1),
+				Roof = pick(t.foliage, 2),
+				Trim = t.accent[1],
+				Window = pick(t.accent, 3),
+			}
+		end,
+	},
+	crystal = {
+		name = "CF_TreeCrystal",
+		tints = function(t)
+			return { Crystal = pick(t.foliage, 1), CrystalB = pick(t.foliage, 2), Stem = pick(t.stone, 1) }
+		end,
+	},
+}
+local MESH_PROPS: { [string]: { name: string, tints: (theme: Theme) -> Tints } } = {
+	bench = {
+		name = "CF_Bench",
+		tints = function(t)
+			return { Wood = t.post, Leg = t.border }
+		end,
+	},
+	boulder = {
+		name = "CF_Rock",
+		tints = function(t)
+			return { Stone = pick(t.stone, 1), StoneLight = pick(t.stone, 2) }
+		end,
+	},
+	bush = {
+		name = "CF_Bush",
+		tints = function()
+			return {}
+		end,
+	},
+	umbrella = {
+		name = "CF_Umbrella",
+		tints = function(t)
+			return { Canopy = t.accent[1] }
+		end,
+	},
+	shell = {
+		name = "CF_Shell",
+		tints = function(t)
+			return { Shell = t.accent[1] }
+		end,
+	},
+	candycane = {
+		name = "CF_CandyCane",
+		tints = function(t)
+			return { Red = t.accent[1] }
+		end,
+	},
+	mushroom = {
+		name = "CF_Mushroom",
+		tints = function()
+			return {}
+		end,
+	},
+	flowerbed = {
+		name = "CF_Flowers",
+		tints = function(t)
+			return { Petal = pick(t.accent, 1), PetalB = pick(t.accent, 2), PetalC = pick(t.accent, 3) }
+		end,
+	},
+	lamp = {
+		name = "CF_Lamp",
+		tints = function(t)
+			return { Lamp = pick(t.accent, 2) }
+		end,
+	},
+}
+
+-- Wraps every Part piece that has a model: model first, Parts when it is not available.
+local function withModels(
+	pieces: { [string]: Piece },
+	models: { [string]: { name: string, tints: (theme: Theme) -> Tints } }
+)
+	for kind, entry in models do
+		local fallback = pieces[kind]
+		if fallback then
+			pieces[kind] = function(make, parent, base, s, theme)
+				-- required here: Meshes reads Enum values the offline tests lack
+				local Meshes = require(script.Parent.Parent.Systems.Meshes)
+				local model = Meshes.clone(entry.name, base, entry.tints(theme), nil, true, s)
+				if model then
+					model.Parent = parent
+				else
+					fallback(make, parent, base, s, theme)
+				end
+			end
+		end
+	end
+end
+withModels(TREES, MESH_TREES)
+withModels(PROPS, MESH_PROPS)
+
 PlotDecor.trees = TREES
 PlotDecor.props = PROPS
 

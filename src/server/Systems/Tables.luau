@@ -15,9 +15,11 @@ local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
 local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local WeekendEvents = require(ReplicatedStorage.Shared.Util.WeekendEvents)
+local MeshPaint = require(ReplicatedStorage.Shared.Util.MeshPaint)
 local Boosts = require(script.Parent.Boosts)
 local Daily = require(script.Parent.Daily)
 local Goals = require(script.Parent.Goals)
+local Meshes = require(script.Parent.Meshes)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
@@ -165,6 +167,28 @@ local function makeCoin(
 	coinFace(coin, Enum.NormalId.Right, "$", textColor, rimColor)
 	coinFace(coin, Enum.NormalId.Left, "🎩", textColor, rimColor) -- tails gives hat points
 
+	-- The Blender coin when it is uploaded: it rides on the (now invisible) coin part, which keeps doing all
+	-- the work (rest pose, flips, attributes). Heads = the model's +Y, which is the part's +X.
+	local visual = Meshes.clone(
+		MeshPaint.COIN,
+		coin.CFrame * CFrame.Angles(0, 0, -math.pi / 2),
+		{ Rim = rimColor, Face = coinColor, Mark = textColor }
+	)
+	if visual then
+		visual.Name = "Visual"
+		visual:ScaleTo(MeshPaint.coinScale(diameter))
+		Meshes.attach(visual, coin)
+		coin.Transparency = 1
+		for _, gui in coin:GetChildren() do
+			if gui:IsA("SurfaceGui") then
+				gui.Enabled = false
+			end
+		end
+		coin:SetAttribute("TintRim", rimColor)
+		coin:SetAttribute("TintFace", coinColor)
+		coin:SetAttribute("TintMark", textColor)
+	end
+
 	local sparkle = Instance.new("ParticleEmitter")
 	sparkle.Name = "Sparkle"
 	sparkle.Enabled = false
@@ -196,7 +220,34 @@ local function makeCoin(
 	return coin
 end
 
+local function finishHelper(state: TableState, helper: Model, index: number, def: Config.HelperDef)
+	-- The client walks it around the table (smooth, and no network traffic).
+	helper:SetAttribute("OrbitCenter", state.center - Vector3.new(0, Config.TABLE_HEIGHT - 1, 0))
+	helper:SetAttribute("OrbitRadius", Config.TABLE_RADIUS + 2)
+	helper:SetAttribute("Phase", index * 2.1)
+	helper:SetAttribute("HelperId", def.id)
+	helper.Parent = state.model:FindFirstChild("Helpers")
+	CollectionService:AddTag(helper, "Helper")
+end
+
 local function makeHelper(state: TableState, index: number, def: Config.HelperDef, level: number): Model
+	-- The Blender helper when it is uploaded (the client hops it around the table by its pivot, which sits
+	-- one stud above the floor like the body ball of the Part helper).
+	local modelName = MeshPaint.HELPERS[def.id]
+	local mesh = modelName
+		and Meshes.clone(
+			modelName,
+			CFrame.new(state.center + Vector3.new(Config.TABLE_RADIUS + 2, -Config.TABLE_HEIGHT + 1, 0)),
+			{ Body = def.body, Cap = def.cap },
+			1,
+			true
+		)
+	if mesh then
+		mesh.Name = `Helper_{def.id}`
+		mesh:ScaleTo(1 + level * 0.03)
+		finishHelper(state, mesh, index, def)
+		return mesh
+	end
 	local helper = Instance.new("Model")
 	helper.Name = `Helper_{def.id}`
 	local body = World.makePart({
@@ -244,13 +295,7 @@ local function makeHelper(state: TableState, index: number, def: Config.HelperDe
 		part.Parent = helper
 	end
 	helper.PrimaryPart = body
-	-- The client walks it around the table (smooth, and no network traffic).
-	helper:SetAttribute("OrbitCenter", state.center - Vector3.new(0, Config.TABLE_HEIGHT - 1, 0))
-	helper:SetAttribute("OrbitRadius", Config.TABLE_RADIUS + 2)
-	helper:SetAttribute("Phase", index * 2.1)
-	helper:SetAttribute("HelperId", def.id)
-	helper.Parent = state.model:FindFirstChild("Helpers")
-	CollectionService:AddTag(helper, "Helper")
+	finishHelper(state, helper, index, def)
 	return helper
 end
 
@@ -270,35 +315,49 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 	local radius = Config.TABLE_RADIUS
 	local topThickness = 1.2
 
-	local top = World.makePart({
-		Name = "Top",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(topThickness, radius * 2, radius * 2),
-		CFrame = CFrame.new(state.center - Vector3.new(0, topThickness / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = look.top,
-	})
-	top.Parent = model
-
-	local rim = World.makePart({
-		Name = "Rim",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(1.4, radius * 2 + 1.8, radius * 2 + 1.8),
-		CFrame = CFrame.new(state.center - Vector3.new(0, topThickness + 0.2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = look.rim,
-	})
-	rim.Parent = model
-
-	local legHeight = Config.TABLE_HEIGHT - topThickness - 0.6
-	for i = 0, 3 do
-		local angle = i * math.pi / 2 + math.pi / 4
-		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius * 0.6)
-		local leg = World.makePart({
-			Name = "Leg",
-			Size = Vector3.new(1.4, legHeight, 1.4),
-			Position = groundCenter + offset + Vector3.new(0, legHeight / 2, 0),
-			Color = look.legs,
+	-- The Blender table when it is uploaded, else the chunky Part table.
+	local meshTable = Meshes.clone(
+		MeshPaint.TABLE,
+		CFrame.new(groundCenter),
+		{ Top = look.top, Rim = look.rim, Legs = look.legs },
+		nil,
+		true
+	)
+	if meshTable then
+		meshTable.Name = "TableMesh"
+		meshTable.Parent = model
+	else
+		local top = World.makePart({
+			Name = "Top",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(topThickness, radius * 2, radius * 2),
+			CFrame = CFrame.new(state.center - Vector3.new(0, topThickness / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = look.top,
 		})
-		leg.Parent = model
+		top.Parent = model
+
+		local rim = World.makePart({
+			Name = "Rim",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1.4, radius * 2 + 1.8, radius * 2 + 1.8),
+			CFrame = CFrame.new(state.center - Vector3.new(0, topThickness + 0.2, 0))
+				* CFrame.Angles(0, 0, math.pi / 2),
+			Color = look.rim,
+		})
+		rim.Parent = model
+
+		local legHeight = Config.TABLE_HEIGHT - topThickness - 0.6
+		for i = 0, 3 do
+			local angle = i * math.pi / 2 + math.pi / 4
+			local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (radius * 0.6)
+			local leg = World.makePart({
+				Name = "Leg",
+				Size = Vector3.new(1.4, legHeight, 1.4),
+				Position = groundCenter + offset + Vector3.new(0, legHeight / 2, 0),
+				Color = look.legs,
+			})
+			leg.Parent = model
+		end
 	end
 
 	-- The yard around the table (fence, name arch, trees).

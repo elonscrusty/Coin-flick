@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local SkyLayout = require(ReplicatedStorage.Shared.Util.SkyLayout)
+local Meshes = require(script.Parent.Parent.Systems.Meshes)
 
 type PartMaker = (props: { [string]: any }) -> Part
 
@@ -83,6 +84,12 @@ end
 -- Sky ---------------------------------------------------------------------------------------------
 
 function WorldArt.cloud(make: PartMaker, parent: Instance, item: SkyLayout.Item)
+	local real = Meshes.clone("CF_Cloud", CFrame.new(item.x, item.y, item.z), nil, 6.54, true, item.scale)
+	if real then
+		real.Parent = parent
+		bobbing(real, 1.5 * item.scale, 0.25 + item.spin * 0.2, 0, item.phase)
+		return
+	end
 	local model = Instance.new("Model")
 	model.Name = "Cloud"
 	local s = item.scale
@@ -112,6 +119,19 @@ function WorldArt.cloud(make: PartMaker, parent: Instance, item: SkyLayout.Item)
 end
 
 function WorldArt.balloon(make: PartMaker, parent: Instance, item: SkyLayout.Item)
+	local real = Meshes.clone(
+		"CF_Balloon",
+		CFrame.new(item.x, item.y, item.z),
+		{ Envelope = SkyLayout.BALLOONS[item.color] },
+		6.4,
+		true,
+		item.scale
+	)
+	if real then
+		real.Parent = parent
+		bobbing(real, 3 * item.scale, 0.5, item.spin * 0.4, item.phase)
+		return
+	end
 	local model = Instance.new("Model")
 	model.Name = "Balloon"
 	local s = item.scale
@@ -149,6 +169,13 @@ function WorldArt.balloon(make: PartMaker, parent: Instance, item: SkyLayout.Ite
 end
 
 function WorldArt.island(make: PartMaker, parent: Instance, item: SkyLayout.Item)
+	local real =
+		Meshes.clone("CF_Island", CFrame.new(item.x, item.y + 0.6 * item.scale, item.z), nil, 12.8, true, item.scale)
+	if real then
+		real.Parent = parent
+		bobbing(real, 2.5 * item.scale, 0.3, item.spin * 0.25, item.phase)
+		return
+	end
 	local model = Instance.new("Model")
 	model.Name = "FloatingIsland"
 	local s = item.scale
@@ -233,6 +260,11 @@ end
 -- Plaza ---------------------------------------------------------------------------------------------
 
 local function fountain(make: PartMaker, parent: Instance, at: Vector3)
+	local real = Meshes.clone("CF_Fountain", CFrame.new(at), nil, nil, true)
+	if real then
+		real.Parent = parent
+		return
+	end
 	local model = Instance.new("Model")
 	model.Name = "Fountain"
 	local stone = Color3.fromRGB(235, 232, 245)
@@ -272,8 +304,15 @@ end
 
 -- Coloured rings on the sandy plaza, and four fountains.
 function WorldArt.plaza(make: PartMaker, parent: Instance)
+	local tile = Meshes.clone("CF_PlazaTile", CFrame.new(0, 0.2, 0), nil, nil, true)
 	for i, ring in SkyLayout.PLAZA_RINGS do
+		if tile then
+			break
+		end
 		upCyl(make, parent, `PlazaRing{i}`, Vector3.new(0, 0.2 + i * 0.012, 0), ring.diameter, 0.04, ring.color)
+	end
+	if tile then
+		tile.Parent = parent
 	end
 	for _, spot in SkyLayout.fountains(Config.MAX_PLOTS) do
 		fountain(make, parent, Vector3.new(spot.x, 0, spot.z))

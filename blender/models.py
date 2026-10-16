@@ -8,40 +8,54 @@ TAU = math.tau
 
 
 def coin():
-    """Chunky gold coin lying flat: 3 wide, 0.8 thick, origin = centre. Star on top (heads), ring underneath."""
+    """Chunky minted coin lying flat: 3 wide, 0.9 thick, origin = centre. Top = heads (big star), bottom = tails (top hat)."""
     m = Model("CF_Coin")
     rim = m.slot("Rim", "#e89a00")
-    rim.cyl(1.5, 1.5, 0.8, seg=20, bevel=0.07)
-    # raised bead ring just inside the rim
-    for i in range(20):
-        a = i / 20 * TAU
-        rim.ball(0.1, loc=(math.cos(a) * 1.3, math.sin(a) * 1.3, 0.42), seg=5, rings=3)
+    rim.cyl(1.5, 1.5, 0.9, seg=24, bevel=0.1)
+    # reeded edge: little ribs round the side
+    for i in range(24):
+        a = i / 24 * TAU
+        rim.box((0.12, 0.14, 0.72), loc=(math.cos(a) * 1.5, math.sin(a) * 1.5, 0), rot=(0, 0, a))
+    # bead ring on both faces
+    for z in (0.47, -0.47):
+        for i in range(16):
+            a = i / 16 * TAU
+            rim.ball(0.1, loc=(math.cos(a) * 1.18, math.sin(a) * 1.18, z), seg=5, rings=3)
     face = m.slot("Face", "#ffd23a")
-    face.cyl(1.32, 1.32, 0.86, seg=20, bevel=0.03)
+    face.cyl(1.3, 1.3, 0.76, seg=24, bevel=0.04)
     mark = m.slot("Mark", "#8a4a00")
-    mark.star(0.82, 0.38, 0.12, loc=(0, 0, 0.47))
-    mark.cyl(0.55, 0.55, 0.1, seg=12, loc=(0, 0, -0.45))
+    mark.star(0.86, 0.4, 0.14, loc=(0, 0, 0.4))
+    mark.cyl(0.18, 0.18, 0.16, seg=8, loc=(0, 0, 0.4))
+    # tails: a little top hat
+    mark.cyl(0.62, 0.62, 0.1, seg=14, loc=(0, 0, -0.4))
+    mark.cyl(0.38, 0.38, 0.36, seg=12, loc=(0, 0, -0.5))
     return m
 
 
 def table():
-    """Round coin table: top r 9, total height 3.6, origin = floor centre."""
+    """Round coin table: top r 9, total height 3.6, origin = floor centre. Top surface is z = 3.6."""
     m = Model("CF_Table")
     top = m.slot("Top", "#d6965a")
     top.cyl(8.6, 8.6, 0.7, seg=24, loc=(0, 0, 3.25), bevel=0.05)
     rim = m.slot("Rim", "#96602f")
-    rim.cyl(9.0, 9.0, 1.0, seg=24, loc=(0, 0, 3.0), bevel=0.12)
+    rim.cyl(9.1, 9.1, 1.1, seg=24, loc=(0, 0, 3.0), bevel=0.14)
+    # scalloped apron under the rim
+    for i in range(14):
+        a = i / 14 * TAU
+        rim.ball(0.7, loc=(math.cos(a) * 8.1, math.sin(a) * 8.1, 2.35), scale=(1, 1, 0.8), seg=5, rings=3)
+    rim.cyl(7.6, 7.2, 0.8, seg=20, loc=(0, 0, 2.5))
     trim = m.slot("Trim", "#ffd23a")
     for i in range(16):
         a = i / 16 * TAU
-        trim.ball(0.28, loc=(math.cos(a) * 9.0, math.sin(a) * 9.0, 3.25), seg=5, rings=3)
+        trim.ball(0.36, loc=(math.cos(a) * 9.05, math.sin(a) * 9.05, 3.3), seg=5, rings=3)
     legs = m.slot("Legs", "#78502a")
     for i in range(4):
         a = i / 4 * TAU + TAU / 8
         x, y = math.cos(a) * 6.4, math.sin(a) * 6.4
-        legs.cyl(0.85, 0.65, 2.6, seg=8, loc=(x, y, 1.3), bevel=0.05)
-        legs.cyl(1.25, 1.25, 0.35, seg=8, loc=(x, y, 0.18), bevel=0.04)
-    legs.cyl(1.2, 1.2, 0.5, seg=10, loc=(0, 0, 2.7))
+        legs.cyl(1.0, 0.75, 2.3, seg=8, loc=(x, y, 1.45), bevel=0.05)
+        legs.ball(1.05, loc=(x, y, 0.45), scale=(1.15, 1.15, 0.55), seg=8, rings=4)
+    legs.cyl(1.4, 1.4, 1.0, seg=10, loc=(0, 0, 1.9))
+    legs.cyl(2.0, 2.0, 0.4, seg=10, loc=(0, 0, 0.2))
     return m
 
 
