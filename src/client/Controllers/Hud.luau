@@ -1080,6 +1080,12 @@ function Hud.start()
 			else
 				toast(notice.text, Color3.fromRGB(150, 255, 150))
 			end
+		elseif notice.kind == "soon" or notice.kind == "full" then
+			Sounds.play("Denied", 0.5)
+			toast(notice.text)
+		elseif notice.kind == "offline" then
+			Sounds.play("Gift", 0.7)
+			toast(notice.text)
 		else
 			toast(notice.text)
 		end
