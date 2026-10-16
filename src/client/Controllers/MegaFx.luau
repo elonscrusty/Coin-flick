@@ -17,7 +17,7 @@ local MegaFx = {}
 local coin: BasePart? = nil
 local base: CFrame = CFrame.new()
 local bar: Frame? = nil
-local countLabel: TextLabel? = nil
+local sign: BillboardGui? = nil
 local wobbleAt = -10
 local flipAt = -10
 local FLIP_TIME = 2.6
@@ -44,7 +44,7 @@ local function buildSign(part: BasePart)
 	local track = Instance.new("Frame")
 	track.Position = UDim2.fromScale(0.05, 0.55)
 	track.Size = UDim2.fromScale(0.9, 0.4)
-	track.BackgroundColor3 = Color3.fromRGB(70, 50, 40) -- dark, so the white count reads when the bar is empty
+	track.BackgroundColor3 = Color3.fromRGB(70, 50, 40) -- dark track, the green fill shows clearly
 	local trackCorner = Instance.new("UICorner")
 	trackCorner.CornerRadius = UDim.new(0.5, 0)
 	trackCorner.Parent = track
@@ -59,29 +59,15 @@ local function buildSign(part: BasePart)
 	fillCorner.CornerRadius = UDim.new(0.5, 0)
 	fillCorner.Parent = fill
 	fill.Parent = track
-	local count = Instance.new("TextLabel")
-	count.BackgroundTransparency = 1
-	count.Size = UDim2.fromScale(1, 1)
-	count.Font = Enum.Font.FredokaOne
-	count.TextScaled = true
-	count.TextColor3 = Color3.fromRGB(255, 255, 255)
-	count.TextStrokeColor3 = Color3.fromRGB(45, 30, 20)
-	count.TextStrokeTransparency = 0
-	count.Text = ""
-	count.ZIndex = 2
-	count.Parent = track
 	track.Parent = gui
 	gui.Parent = part
 	bar = fill
-	countLabel = count
+	sign = gui
 end
 
 local function onState(state: Types.MegaState)
 	if bar then
 		bar.Size = UDim2.fromScale(math.clamp(state.taps / math.max(1, state.goal), 0, 1), 1)
-	end
-	if countLabel then
-		countLabel.Text = `{state.taps} / {state.goal}`
 	end
 end
 
@@ -104,6 +90,10 @@ local function step()
 	local height = 0
 	local turn = 0
 	local sinceFlip = now - flipAt
+	if sign then
+		-- The sign would fly off the top of the screen with the coin; the HUD chip shows the count.
+		sign.Enabled = sinceFlip >= FLIP_TIME
+	end
 	if sinceFlip < FLIP_TIME then
 		local u = sinceFlip / FLIP_TIME
 		height = 6 * 4 * u * (1 - u)
