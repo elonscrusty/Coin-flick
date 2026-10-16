@@ -68,6 +68,7 @@ local function chip(name: string, fill: Color3): TextLabel
 	l.BackgroundTransparency = 0
 	corner(l, 0.4)
 	stroke(l, 3)
+	UiStyle.gloss(l, 0.8)
 	local outline = l:FindFirstChild("TextOutline")
 	if outline and outline:IsA("UIStroke") then
 		outline.Thickness = 1.5

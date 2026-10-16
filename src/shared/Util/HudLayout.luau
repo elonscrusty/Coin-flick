@@ -101,12 +101,12 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	-- spot (rare banner, toasts) which has the band's leftover room to itself,
 	-- so a message never lands on a pill or card.
 	local colW = clamp(w * 0.25 - 14, 140, 260)
-	local pillH = clamp(34 * s, 32, 48)
+	local pillH = clamp(40 * s, 38, 54) -- the cash counter is the hero: big
 	local top = rect(x0, y0, colW, pillH)
 	-- Tall as the room allows (a short phone gives some to the message spot).
-	local infoH = clamp(48 * s, 40, 70)
+	local infoH = clamp(48 * s, 38, 70)
 	if touch then
-		infoH = clamp(math.min(infoH, stickTop - 10 - 56 - (top.y + top.h + gap) - 10), 40, 70)
+		infoH = clamp(math.min(infoH, stickTop - 10 - 56 - (top.y + top.h + gap) - 10), 38, 70)
 	end
 	local info = rect(x0, top.y + top.h + gap, colW, infoH)
 	local margin = HudLayout.MSG_MARGIN
@@ -205,13 +205,14 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 end
 
 -- Inside the RESET button (pixels from its top-left corner, before the
--- button's own padding): the word on top, the progress bar along the bottom.
-function HudLayout.resetParts(w: number, h: number): { word: Rect, bar: Rect }
+-- button's own padding): the 🔄 icon on top, the progress bar along the bottom
+-- (no word: "RESET" never fit the button).
+function HudLayout.resetParts(w: number, h: number): { icon: Rect, bar: Rect }
 	local barH = math.max(HudLayout.RESET_BAR_MIN, h * 0.44)
 	local barY = h - barH - math.max(3, h * 0.06)
 	local bar = rect(w * 0.06, barY, w * 0.88, barH)
-	local word = rect(0, 2, w, math.max(12, barY - 4))
-	return { word = word, bar = bar }
+	local icon = rect(0, 2, w, math.max(12, barY - 4))
+	return { icon = icon, bar = bar }
 end
 
 -- Screen sizes the tests (and the runner) check. Width x height in px,

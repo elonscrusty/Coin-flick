@@ -74,7 +74,8 @@ local resetButton: TextButton
 local resetBar: Frame
 local resetFill: Frame
 local resetCount: TextLabel
-local resetWord: TextLabel
+local resetIcon: TextLabel
+local resetSpin: Tween?
 local resetPulse: Tween?
 local megaLabel: TextLabel
 local boostLabel: TextLabel
@@ -154,6 +155,10 @@ local function sideButton(
 	onPress: () -> ()
 ): (TextButton, TextLabel, TextLabel)
 	local b = button("", color, onPress)
+	local outline = b:FindFirstChildOfClass("UIStroke")
+	if outline and outline.Name ~= "TextOutline" then
+		outline.Thickness = 4 -- chunky
+	end
 	local iconLabel = label({
 		Name = "Icon",
 		Text = icon,
@@ -229,7 +234,19 @@ render = function(s: Snapshot)
 		UDim2.fromScale(if s.coinCount <= 0 then 0 else math.clamp(s.coinCount / Config.MAX_COINS, 0.12, 1), 1)
 	resetFill.BackgroundColor3 = if full then Color3.fromRGB(255, 245, 120) else Color3.fromRGB(255, 205, 40)
 	resetCount.Text = HudText.resetCount(s.coinCount, Config.MAX_COINS)
-	resetWord.Text = HudText.reset(full)
+	if full and not resetSpin then
+		local spin = TweenService:Create(
+			resetIcon,
+			TweenInfo.new(1.2, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1),
+			{ Rotation = 360 }
+		)
+		spin:Play()
+		resetSpin = spin
+	elseif not full and resetSpin then
+		resetSpin:Cancel()
+		resetSpin = nil
+		resetIcon.Rotation = 0
+	end
 	-- Glow the RESET button's outline when the table is full. (Pulsing the
 	-- outline, not the size, so the press-pop animation can't cancel it.)
 	local outline = resetButton:FindFirstChildOfClass("UIStroke")
@@ -267,8 +284,8 @@ local function applyLayout()
 	local s = layout.scale
 
 	place(topFrame, layout.top)
-	setMaxText(cashLabel, layout.top.h * 0.62)
-	setMaxText(hatLabel, layout.top.h * 0.62)
+	setMaxText(cashLabel, layout.top.h * 0.72)
+	setMaxText(hatLabel, layout.top.h * 0.66)
 	setMaxText(infoLabel, layout.info.h * 0.4)
 	setStrip(infoLabel, infoLabel.Text)
 	setMaxText(megaLabel, layout.mega.h * 0.75)
@@ -295,9 +312,9 @@ local function applyLayout()
 			local padT = if pad then pad.PaddingTop.Scale * r.h + pad.PaddingTop.Offset else 0
 			resetBar.Position = UDim2.fromOffset(parts.bar.x - padL, parts.bar.y - padT)
 			resetBar.Size = UDim2.fromOffset(parts.bar.w, parts.bar.h)
-			resetWord.Position = UDim2.fromOffset(parts.word.x - padL, parts.word.y - padT)
-			resetWord.Size = UDim2.fromOffset(parts.word.w, parts.word.h)
-			setMaxText(resetWord, parts.word.h)
+			resetIcon.Position = UDim2.fromOffset(parts.icon.x - padL, parts.icon.y - padT)
+			resetIcon.Size = UDim2.fromOffset(parts.icon.w, parts.icon.h)
+			setMaxText(resetIcon, parts.icon.h)
 			setMaxText(resetCount, parts.bar.h * 0.8)
 		end
 	end
@@ -361,11 +378,12 @@ function Hud.init()
 		frame.Size = UDim2.fromScale(width, 1)
 		frame.BackgroundColor3 = color
 		corner(frame, 0.5)
-		stroke(frame, 3)
+		stroke(frame, 4)
+		UiStyle.gloss(frame)
 		local scale = Instance.new("UIScale")
 		scale.Parent = frame
-		local text = label({ Size = UDim2.fromScale(0.86, 0.8), Position = UDim2.fromScale(0.07, 0.1) })
-		textLimit(text, 40)
+		local text = label({ Size = UDim2.fromScale(0.86, 0.84), Position = UDim2.fromScale(0.07, 0.08), ZIndex = 3 })
+		textLimit(text, 44)
 		text.Parent = frame
 		frame.Parent = top
 		return frame, text, scale
@@ -395,6 +413,7 @@ function Hud.init()
 		l.BackgroundTransparency = 0
 		corner(l, 0.4)
 		stroke(l, 3)
+		UiStyle.gloss(l, 0.9)
 		local outline = l:FindFirstChild("TextOutline")
 		if outline and outline:IsA("UIStroke") then
 			outline.Thickness = 1.5 -- thin, so the letters stay open
@@ -409,6 +428,10 @@ function Hud.init()
 		return l
 	end
 	infoLabel = strip("Info", "Tap a coin to flip it!", WHITE, INK, gui)
+	local infoGloss = infoLabel:FindFirstChild("Gloss")
+	if infoGloss then
+		infoGloss:Destroy() -- white text sits on this card; a band would wash it
+	end
 	boostLabel = strip("Boost", "", WHITE, Color3.fromRGB(232, 96, 20), pillGui)
 	boostLabel.Visible = false
 	megaLabel = strip("Mega", "", WHITE, PURPLE, pillGui)
@@ -455,10 +478,9 @@ function Hud.init()
 			Panels.toast(`Fill your table first! ({count}/{Config.MAX_COINS} coins)`)
 		end
 	end)
-	resetButton, resetWord = resetB, resetW
-	resetI.Visible = false -- no icon: the bar says it all
-	resetWord.Position = UDim2.fromScale(0, 0.04)
-	resetWord.Size = UDim2.fromScale(1, 0.4)
+	resetButton, resetIcon = resetB, resetI
+	resetW.Visible = false -- no word: "RESET" never fit; the icon + bar say it
+	textLimit(resetIcon, 60)
 	-- The word sits on top; a roomy gold bar with the coin count fills the bottom.
 	resetBar = Instance.new("Frame")
 	resetBar.Name = "Bar"

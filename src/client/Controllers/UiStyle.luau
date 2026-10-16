@@ -132,6 +132,24 @@ function UiStyle.popScale(scale: UIScale, amount: number)
 	TweenService:Create(scale, UiStyle.BOUNCY, { Scale = 1 }):Play()
 end
 
+-- A glossy highlight across the top of a chunky piece (pills, chips, buttons):
+-- a soft white band under the labels, so the piece looks like shiny plastic.
+function UiStyle.gloss(parent: GuiObject, transparency: number?): Frame
+	local band = Instance.new("Frame")
+	band.Name = "Gloss"
+	band.AnchorPoint = Vector2.new(0.5, 0)
+	band.Position = UDim2.fromScale(0.5, 0.07)
+	band.Size = UDim2.fromScale(0.86, 0.34)
+	band.BackgroundColor3 = UiStyle.WHITE
+	band.BackgroundTransparency = transparency or 0.72
+	band.BorderSizePixel = 0
+	band.Active = false
+	band.ZIndex = 2
+	UiStyle.corner(band, 0.5)
+	band.Parent = parent
+	return band
+end
+
 -- A chunky cartoon button that squishes when pressed.
 function UiStyle.button(text: string, color: Color3, onPress: () -> ()): TextButton
 	local b = Instance.new("TextButton")
@@ -143,9 +161,15 @@ function UiStyle.button(text: string, color: Color3, onPress: () -> ()): TextBut
 	b.TextColor3 = UiStyle.WHITE
 	b.TextStrokeColor3 = UiStyle.INK
 	UiStyle.corner(b)
+<<<<<<< HEAD
 	UiStyle.stroke(b, 3.5)
 	UiStyle.textOutline(b, 2.5)
 	UiStyle.chunky(b, 0.84)
+=======
+	UiStyle.stroke(b)
+	UiStyle.textOutline(b, 2)
+	UiStyle.gloss(b, 0.9)
+>>>>>>> origin/claude/project-thread-fjf6yi
 	local scale = Instance.new("UIScale")
 	scale.Parent = b
 	local pad = Instance.new("UIPadding")
