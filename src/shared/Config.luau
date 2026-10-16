@@ -175,7 +175,7 @@ local Rarities: { RarityDef } = {
 		name = "GOLD",
 		chance = 1 / 100,
 		mult = 10,
-		color = Color3.fromRGB(255, 200, 30),
+		color = Color3.fromRGB(255, 160, 0),
 		grow = 1.3,
 		shout = false,
 	},

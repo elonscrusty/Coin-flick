@@ -31,11 +31,11 @@ CoinLook.SPARKLE_LIGHT = 0.35
 
 -- Warm coin gold. Rare GOLD is a brighter lemon gold so the two never look alike.
 CoinLook.NORMAL = table.freeze({
-	color = Color3.fromRGB(176, 110, 28), -- warm bronze-gold, clearly darker than lemon GOLD and cooler SILVER
-	material = "SmoothPlastic",
-	reflectance = 0.15,
-	text = Color3.fromRGB(255, 235, 170),
-	rim = Color3.fromRGB(110, 60, 8),
+	color = Color3.fromRGB(255, 210, 40), -- bright sunny gold: shiny and high value, never brown or cookie-like
+	material = "Metal",
+	reflectance = 0.3,
+	text = Color3.fromRGB(120, 55, 0),
+	rim = Color3.fromRGB(255, 240, 150), -- light, shiny rim
 	sparkle = { Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255) },
 	sparkleSize = 0.6,
 	landBurst = 20,
@@ -60,11 +60,11 @@ local RARE: { [string]: Look } = {
 		stars = false,
 	} :: Look),
 	gold = table.freeze({
-		color = Color3.fromRGB(255, 200, 30), -- rich yellow-gold
+		color = Color3.fromRGB(255, 160, 0), -- deeper amber-gold, clearly richer than the plain sunny coin
 		material = "Foil",
 		reflectance = 0.3,
 		text = Color3.fromRGB(100, 40, 0),
-		rim = Color3.fromRGB(160, 90, 0), -- warm ridge
+		rim = Color3.fromRGB(140, 65, 0), -- dark ridge
 		sparkle = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 255, 200) },
 		sparkleSize = 0.9,
 		landBurst = 70,
@@ -77,7 +77,7 @@ local RARE: { [string]: Look } = {
 		color = Color3.fromRGB(255, 120, 220), -- starting color; cycles in the air
 		material = "SmoothPlastic",
 		reflectance = 0.2,
-		text = Color3.fromRGB(45, 20, 80),
+		text = Color3.fromRGB(20, 0, 50),
 		rim = Color3.fromRGB(110, 50, 190), -- violet ridge: seen edge-on it is a colored band, never a thin white line
 		sparkle = { Color3.fromRGB(255, 120, 220), Color3.fromRGB(120, 220, 255) },
 		sparkleSize = 1.0,
@@ -137,7 +137,13 @@ function CoinLook.hsv(h: number, s: number, v: number): Color3
 end
 
 -- Soft rainbow: bright enough that the dark marks stay readable at every hue.
-CoinLook.RAINBOW_SATURATION = 0.6
+CoinLook.RAINBOW_SATURATION = 0.75
+-- The rainbow coin's edge ring: fully saturated and opposite in hue to the face, so edge-on it is a
+-- bright moving band (a darkened rainbow looked like a brown slab).
+function CoinLook.rainbowRidge(seconds: number): Color3
+	return CoinLook.hsv(seconds * 1.5 + 0.5, 1, 0.95)
+end
+
 function CoinLook.rainbowColor(seconds: number): Color3
 	return CoinLook.hsv(seconds * 1.5, CoinLook.RAINBOW_SATURATION, 1)
 end
