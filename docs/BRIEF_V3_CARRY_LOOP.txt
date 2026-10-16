@@ -1,0 +1,179 @@
+CRACK THE ROCKS! — CORE LOOP REVISION DURING PHASES 2–4
+Claude implementation prompt. User decision overrides earlier instructions permitting cracking at the central pile.
+
+CONTEXT AND PRIORITY
+You are already implementing phases 2–4 of this Roblox game. Integrate this revision into that work. Inspect the existing project and in-progress changes before editing. Preserve working party/lobby systems, equipment ownership, collection, saves, reward safeguards and mobile layout improvements. Do not restart the entire project or create a second competing implementation. Update the phase plan and all affected tutorial/UI text to reflect this gameplay change.
+
+The user wants the handling loop inspired by their Peel the Potatoes gameplay reference: collect objects from a central pile and bring them to a processing station. Do not copy another game's branding or assets.
+
+MANDATORY NEW LOOP
+ONE shared pile of individually selectable rocks -> collect uncrushed rocks -> visibly carry them to your assigned crushing table -> deposit -> physically crack one rock at a time -> ordinary rocks become sellable rubble; exactly one target rock reveals the winning geode -> winner keeps and displays that specimen in the shared lobby.
+
+No hammering or jackhammering at the central pile. The pile is a collection source. Tools operate at processing stations. A winner is determined by completing the crushing of the target rock, not by picking it up or depositing it.
+
+1. RECORDING REVIEW: WHAT TO PRESERVE AND WHAT TO FIX
+The latest supplied recording is approximately 40 seconds long, landscape mobile, 1108 x 512. Sampled frames show:
+- Shared lobby, collection panel, equipment shop, solo entry and an 80-rock arena round.
+- Left-side buttons and bottom equipment cards now fit much more cleanly than before.
+- Central pile still reads as one tightly fused/angular mound, with small fragments scattered around it. Highlighting something inside the mound does not make individual pick-up rocks clearly legible.
+- Player stands against pile, holds HOLD TO CRACK, and earns rubble immediately. This is the wrong interaction for the newly specified loop.
+- Arena shows sell hopper and an empty machine bay. Functional processing tables must become the focus of the arena.
+- Collection panel includes a Citrine card, but no completed gallery placement is demonstrated in this recording.
+- Tutorial continues to prompt placing a geode in the gallery while the player is in an arena hunting more rocks. Investigate context/step gating so guidance follows the current activity.
+- Collection, shop and party panels use the same dark/yellow industrial visual language; preserve that consistency.
+- Device notification overlays are external to the game and are not UI defects.
+This video does not prove whether individual rock records exist internally, whether multiplayer races are safe, or whether saving is correct. Inspect the code. Fix observed behavior and verify uncertain systems rather than assuming every system is broken.
+
+2. ROUND AND ROCK STATE MODEL
+Each solo/party match is private to its participants, with up to 4 players. Exactly one shared central pile, not separate piles for each player. Solo uses one assigned station; multiplayer gives each participant one assigned station arranged evenly around that same pile.
+
+Create authoritative records for every eligible round rock:
+RockId, RoundId, opaque appearance seed, current state, current carrier/station owner, current cracking progress. Keep target-rock identity server-only. Never put IsGeode, target IDs or clues in replicated attributes, object names, client remotes or client-visible configuration. Clients may know an opaque RockId but not whether it is the winner.
+
+State transitions:
+InPile -> Carried -> QueuedAtStation -> Processing -> ResolvedOrdinary or ResolvedGeode.
+Interrupted carriers can return to InPile. A processing interruption pauses safely. Only one state/location exists per rock. Use server-side validation and atomic state transitions; never let two players claim the same rock or duplicate a queued rock.
+
+Recommended starting round: 80 unique rock records; retain the existing short tutorial round (e.g. 12 rocks). Select exactly one target uniformly from eligible records at round generation, server-side. Never silently reroll the geode as players collect rocks. Preserve existing configured totals if already intentionally balanced, but expose them as centralized tuning values.
+
+Each exterior is visually neutral. Valuable rock must not glow, be larger, have a special outline, or appear in a predictably privileged position before it is opened.
+
+Counter rules:
+- 'Unopened rocks: N' counts all unresolved rocks, including carried/queued/processing; decreases on completed crushing only.
+- 'Pile rocks: N' is optional, distinct from unopened count; decreases on pickup, increases on return.
+- 'Carrying: X / 5' counts uncrushed rocks in player carry basket.
+- 'Rubble: Y / capacity' counts already crushed ordinary material.
+Do not reuse the rubble storage counter for uncrushed rocks. Do not claim 'rocks left' means pile count if it actually tracks unresolved rocks.
+
+3. BUILD A PILE THAT LOOKS LIKE INDIVIDUAL ROCKS
+Inspect how the current pile is built. Retain useful server rock records but replace the fused-looking presentation.
+
+Create at least 10 reusable rock silhouettes: rounded boulder, squat angular rock, oblong river rock, wedge, flattened oval, rough cube with softened corners, asymmetric lump, triangular chunk, tall irregular stone and small barrel-shaped stone. Use low-poly meshes or composed Parts with clean silhouettes; no need for expensive realism. Each rock should read as one object. Vary neutral grey/taupe colors, rotation and scale within a modest range; all target probabilities remain equal regardless of appearance.
+
+Use one visible Model per collectible rock, with a unique opaque ID, pivot and a designated interaction bounds part. Mesh/visual subparts belong to that single rock. Scatter decorative grit separately with no interaction prompts. Grit must be smaller/duller so players understand it is decoration.
+
+Place the mound using a seeded, layered arrangement with distinct silhouettes and some gaps. Avoid identical rectangular slabs tiled into a solid iceberg. Don't bury the majority of selectable rocks inside a single facade mesh. Remove the exact selected rock on pickup, animate it toward the basket, and update the pile visual without leaving an invisible blocker. Reveal newly accessible rocks as the mound shrinks.
+
+Use stable anchored arrangements and authored pickup animations. Avoid making 80 boulders loose physics objects that explode when avatars collide. Set collision groups so decorative rock visuals do not trap or launch players. Interaction geometry and reachable selection must remain usable from the mound perimeter. Don't force players to climb a dense collision pile to reach a target.
+
+Show a restrained yellow outline on exactly one eligible rock near the player's aim/proximity. It must select the same record that the server validates. Show 'PICK UP ROCK', never 'CRACK', here.
+
+4. PICKUP AND CARRYING
+Baseline CarryCapacity = 5 uncrushed rocks. This is a starting tuning choice, independent from rubble capacity. Keep it configurable. Add carry upgrades later through existing economy architecture only if within current phase scope.
+
+Mobile: large contextual PICK UP button when in valid pile range; tap collects one rock. Holding may repeatedly collect at a controlled interval (start at 0.45 seconds per pickup), never instant-vacuum the whole pile. Keyboard E, gamepad mapped interact; match on-screen hints to device. Validate proximity, round participation, state and capacity on server for every pickup.
+
+Visual: issue a small carry basket/crate that attaches visibly to the actual supported avatar. Show 1–5 neutral rock miniatures as it fills. Add brief pickup reach/scoop motion and rock arc. Keep avatar movement responsive. Do not require a standard R15 rig if the current player avatar isn't one; inspect the current rig and implement supported animation/attachment fallbacks.
+
+If full, show 'Basket full — take rocks to your table' and a clear arrow to assigned station. No hammer held out while collecting. Hide or stow equipped cracking tool until processing. Carry motion and station tool motion must not fight over the same joints.
+
+No stealing from another player's basket or table, no PvP hits, no body blocking as a mechanic. A player may inspect their own queue. Raw-rock carrying is round-local, never added to persistent geode inventory or sold as rubble.
+
+On player departure, reset, or disconnect before round completion: return unresolved carried and queued rocks to accessible pile positions, release locks, clear the abandoned station queue, and make sure the one target remains recoverable. Handle current processing record explicitly. Ordinary resolved rewards must not be reversed or duplicated. Resetting must not grant extra rocks.
+
+5. CRUSHING TABLES: LAYOUT AND MODEL
+Build four equal processing bays around the single shared pile; assign one per participant. Equal walking distances, matching access width and consistent visibility. In solo, one is active and unused bays are clearly inactive. These are round workstations, not new personal rock piles. Keep hopper separate and retain lobby showroom/gallery.
+
+Starting table model:
+- sturdy steel frame with four legs and diagonal braces;
+- thick worn wood or metal work surface;
+- distinct steel anvil/crushing plate at center;
+- input tray holding visible queued whole rocks;
+- shallow output tray for rubble;
+- side basket docking point;
+- small safety shield, rubber pads, bolts and tool hooks;
+- yellow industrial corner marking and player-color/nameplate;
+- readable station sign and restrained activation light.
+Target dimensions roughly 7 studs wide x 4 deep x 3 tall, adjusted to real avatar reach/camera testing. Keep the processing rock visible and centered on the plate. Compose believable industrial props rather than a blank block plus floating label.
+
+User interaction: enter own station range -> contextual DEPOSIT ROCKS -> deposit all carried records atomically into queue, up to station capacity. Start with StationQueueCapacity = 10; partial transfers retain overflow in basket and tell player exactly what happened. Don't discard extras. Input tray must visually represent pending rocks and show accurate queue count.
+
+Next contextual action: HOLD TO CRUSH at own station. Server moves next queued rock to plate and validates processing. Player may choose deposit or crush without fiddly tiny buttons. Support mobile camera that frames player, plate and rock; never locks controls permanently. Another player's station can show progress but must not accept deposit or tool actions.
+
+6. TOOL PROGRESSION MUST PROCESS THE TABLE QUEUE
+Preserve existing purchased equipment and economy/configuration where possible. Map tools into this loop:
+- Starter Hammer: player swings at the rock ON THE TABLE. Clear visible handle/head, grip, wind-up, contact, recoil. Distinct dent/crack progression and final shell split.
+- Steel Hammer: larger readable model; existing damage/cadence upgrades apply at table.
+- Jackhammer: player operates it over table plate, with visible bit, short vibration, controlled dust and server-authorized damage pulses.
+- Automatic Cracking Machine: machine installed at player's station accepts deposited rocks, feeds and processes them automatically while player returns to central pile to collect more. Do not automatically harvest rocks from pile.
+- Hydraulic Press: station machine loads one rock, lowers platen, compresses, splits and raises before next rock. It does not hit every rock in the arena.
+- Industrial Crusher: station-attached hopper/conveyor processes deposited queue at upgraded rate with believable synchronized motion. It never replaces all 4 players' equipment or consumes another player's queue.
+
+One active processing mechanism per station, one current rock per station. Do not double-process a rock with a manual tool and machine simultaneously. Manual interaction on an automatic station may deposit/inspect; it must not add unintended extra damage. Preserve existing server cooldowns, progression and ownership checks. Don't change all shop prices merely because carrying was introduced; expose time/queue/damage tuning for playtesting.
+
+Machine owner receives their processed ordinary rubble. If their station finishes the target rock, that owner wins even if elsewhere collecting. Clearly announce this rule in the tutorial and party briefing. Server determines final valid completion; never client timestamps. Upgrades can give the earned speed advantage already intended, without introducing unrelated monetization.
+
+Rubble-capacity policy must not reveal target identity: before starting ANY new rock, reserve enough storage for one ordinary result, regardless of whether the server knows it is the target. If no space is available, pause all new processing and show 'Rubble bag full — sell at hopper'. Preserve queued records and existing progress. An already processing rock finishes against its reserved capacity; an ordinary result consumes that reservation, while a geode releases it and awards the specimen. Reserve server-side, including interactions with sale/storage changes, so no ordinary reward is silently lost. Never let only the target bypass a full-bag pause, which would reveal hidden information. Resume after sale.
+
+7. CRACKING FEEDBACK AND WIN PRESENTATION
+At table, rock visibly progresses through intact -> hairline fractures -> wider fractures/chips -> final break. Reuse mesh variants/effects with lightweight pooled chips. Progress reflects authoritative damage; animation alone cannot resolve records. Avoid opaque dust obscuring the whole plate.
+
+Ordinary: short subdued split, rubble enters output/bag, tiny counter update, queue advances.
+Geode: slower readable shell opening, rough outer shell plus actual hollow cavity, thick rim and multiple faceted inner crystals with varied heights; compelling colored light concentrated inside. No flat coin/badge standing in for a crystal specimen. On reveal, pause all stations, disable new collection, announce the discovering station/player, present the specimen and results. Ensure queued machine hits are invalidated on round end.
+
+Maintain exactly one geode award and one round resolution. A concurrent second completion cannot award another geode or overwrite winner. Persist via existing idempotent reward path. Solo Find count stays distinct from multiplayer Wins. Other participants retain their personally earned ordinary rubble and receive no consolation geodes.
+
+Ensure tutorial/round cancellation and exiting results do not lose an already committed geode. Give collection entry a stable specimen ID. The recording does not show a new reveal here; verify rather than assert that the prior reveal fix was successful.
+
+8. UI AND TUTORIAL REVISION
+Replace every instruction, tooltip, party description and old HOLD TO CRACK action that implies cracking at pile. Party briefing should say: 'Collect rocks from one shared pile. Carry them to your station and crack them. First station to reveal the geode wins.'
+
+Context button states:
+- Pile, space available: PICK UP ROCK.
+- Pile, basket full: TAKE TO TABLE, with station arrow.
+- Own table, carrying rocks: DEPOSIT ROCKS.
+- Own table, queued rock, manual tool: HOLD TO CRUSH.
+- Own automatic table: DEPOSIT ROCKS / MACHINE RUNNING as appropriate.
+- Own empty table: COLLECT ROCKS.
+- Sell hopper: SELL RUBBLE, only showing correct eligible material.
+- Too far: MOVE CLOSER or no action, accurately tied to nearest relevant task.
+
+Display carry amount and rubble amount separately with different icons. Show unobtrusive own station queue and current-rock progress while processing. Preserve compact left navigation and existing improved mobile card sizing. Never overlay joystick, jump, Roblox menu/insets, or critical world view. Test narrow and wide phone landscape plus tablet/desktop. Use safe-area-aware layouts, readable type, adequate touch targets and no clipped captions.
+
+Guided first session:
+1. Join practice round.
+2. Pick up at least one rock; teach basket.
+3. Walk to highlighted assigned table.
+4. Deposit rocks.
+5. Crush a rock at table.
+6. Continue collection/processing until geode found.
+7. Results: explain specimen added to collection.
+8. Return lobby and place specimen in available gallery slot.
+9. Teach rubble sale when player has rubble; don't deadlock if practice geode is found first.
+
+Persist existing tutorial state safely; migrate any old 'crack at pile' step. If user leaves gallery tutorial to start a round, suppress incompatible lobby instruction while in arena and offer appropriate arena guidance. Resume display guidance when back in lobby. Gallery must offer actual selection and placement, not a sign alone. Collection card should show specimen render/thumbnail, rarity, name and weight with readable layout; don't force unrelated collection polishing ahead of the core loop revision.
+
+9. ENGINEERING INTEGRATION
+Before changes, identify source locations for round rock generation, interaction targeting, player damage remotes, reward resolution, machine processing, party transitions, UI/tutorial and equipment rigs. Summarize what must change in current phases. Route pickup, deposit and processing through one authoritative rock service; keep all old direct-pile damage paths disabled/removed. Do not leave the old remote exploitable even if its button is gone.
+
+Server validates round membership, station ownership, proximity, capacity, equipment entitlement, action cadence and state. Client sends action intent, not reward values, target status or arbitrary station ownership. Rate limit and reject duplicate/stale requests. Clean up models, arrows, carry props, connections and scheduled callbacks on exit/rematch. Cross-round RockIds cannot act on the new round.
+
+Keep persistent schema compatible. Carrying/queues are ephemeral round state; permanent equipment/geodes/currency stay in the existing persistence design. Add migrations only where required, and don't reset real progress to simplify implementation.
+
+For performance use reusable low-poly rock meshes, anchored idle models, pooled short-lived VFX and bounded machine animations. Don't run one unbounded per-frame loop per decorative fragment. Profile a full 4-player round with 80 rocks and 4 active machines.
+
+10. ACCEPTANCE CHECKS — DEMONSTRATE THESE
+A. Mobile player picks a visibly separate rock; that exact object disappears into visible basket. No rubble is granted for pickup.
+B. Multiple pickups reach 5/5; extra requests are rejected without losing pile records. Carry and rubble counters remain independent.
+C. Player walks to own table, deposits basket, sees distinct queued rocks and starts hammering a rock on plate. Hitting at pile causes no damage or reward.
+D. Each ordinary rock resolves once, grants correct rubble to processor, updates unopened count once and advances queue.
+E. Two players attempt same pickup: only one owns it. Opponents cannot deposit into or process another's station.
+F. Four players use one shared pile and four assigned stations; all have comparable route distances.
+G. Automatic machine continues processing deposited queue while owner collects. It never consumes uncollected pile rocks or another queue.
+H. Target can be collected early and remain queued without leaking identity. Winner resolves only after it is crushed. Exactly one geode persists.
+I. Disconnect/reset returns unresolved held/queued target to reachable pile. No unwinnable round or duplicate geodes.
+J. Rubble-full handling is consistent, explains pause, preserves records/progress and cannot silently discard rewards or reveal target early.
+K. Round completion halts all pending machine/manual actions. Rematch starts fresh ephemeral state; old requests don't affect new round.
+L. New player completes pickup/deposit/crush/reveal/display tutorial without stale lobby instructions blocking arena view.
+M. Current avatar visibly holds/operates tools without unsupported-rig errors or invisible equipment.
+N. Existing party, shop purchases, collection save and gallery features still work; solo finds don't count as multiplayer wins.
+
+DELIVERY ORDER
+1. Integrate authoritative pickup/carry/deposit states and eliminate at-pile cracking.
+2. Build individual readable rock pile and functional assigned hammer tables.
+3. Update contextual mobile controls and tutorial.
+4. Adapt jackhammer/auto machine/press/crusher work in phases 2–4 to table queues.
+5. Verify rewards, concurrency, disconnect recovery and save compatibility.
+6. Polish table props, carrying/tool animations, fracture effects and 3D geode reveal.
+
+Finish by reporting changed source files, implemented behavior, verification actually performed, remaining known limits and which planned phase items remain. Do not claim multiplayer or device checks passed if you only inspected code. Provide a short playable demonstration path: collect -> carry -> deposit -> crush -> reveal -> display.

@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Installs the check tools into "${CTR_TOOLS:-/tmp/ctr-tools}" (idempotent; re-running skips
+# what is already in place):
+#   $T/rojo/rojo                 Rojo 7.4.4 (rojo-rbx/rojo)
+#   $T/lsp/luau-lsp              luau-lsp 1.52.1 (JohnnyMorganz/luau-lsp)
+#   $T/globalTypes.d.luau        Roblox global types for luau-lsp
+#   $T/luau/luau-compile         luau-compile (luau-lang/luau, luau-ubuntu.zip)
+#   $T/lune/lune                 Lune 0.10.4 (offline rule tests)
+#   bash tools/setup_tools.sh
+set -euo pipefail
+cd "$(dirname "$0")/.."
+T="${CTR_TOOLS:-/tmp/ctr-tools}"
+ROJO_VERSION="7.4.4"
+LSP_VERSION="1.52.1"
+
+# Downloads are fetched with curl -fsSL (TLS verification stays on; the agent proxy CA is
+# picked up from the environment) and unpacked with python3 zipfile.
+fetch() { # url dest
+	curl -fsSL -o "$2" "$1"
+}
+
+extract_bin() { # zip binary-name dest
+	local zip="$1" name="$2" dest="$3" tmp src
+	tmp="$(mktemp -d)"
+	python3 -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$zip" "$tmp"
+	src="$(find "$tmp" -type f -name "$name" | head -n 1)"
+	if [ -z "$src" ]; then
+		echo "setup_tools: $name not found in $(basename "$zip")" >&2
+		rm -rf "$tmp"
+		exit 1
+	fi
+	cp -f "$src" "$dest"
+	chmod +x "$dest"
+	rm -rf "$tmp"
+}
+
+mkdir -p "$T/rojo" "$T/lsp" "$T/luau" "$T/lune"
+TMP="$(mktemp -d)"
+trap 'rm -rf "$TMP"' EXIT
+
+# Rojo
+if ! { [ -x "$T/rojo/rojo" ] && "$T/rojo/rojo" --version 2>/dev/null | grep -q "$ROJO_VERSION"; }; then
+	echo "setup_tools: installing Rojo $ROJO_VERSION"
+	fetch "https://github.com/rojo-rbx/rojo/releases/download/v$ROJO_VERSION/rojo-$ROJO_VERSION-linux-x86_64.zip" "$TMP/rojo.zip"
+	extract_bin "$TMP/rojo.zip" rojo "$T/rojo/rojo"
+fi
+
+# luau-lsp
+if ! { [ -x "$T/lsp/luau-lsp" ] && "$T/lsp/luau-lsp" --version 2>/dev/null | grep -q "$LSP_VERSION"; }; then
+	echo "setup_tools: installing luau-lsp $LSP_VERSION"
+	fetch "https://github.com/JohnnyMorganz/luau-lsp/releases/download/$LSP_VERSION/luau-lsp-linux.zip" "$TMP/luau-lsp.zip"
+	extract_bin "$TMP/luau-lsp.zip" luau-lsp "$T/lsp/luau-lsp"
+fi
+
+# Roblox global type definitions, taken from the same luau-lsp release tag as the binary.
+# The main-branch file uses attribute syntax that luau-lsp 1.52.1 cannot parse, so the tag
+# copy is used. Replaced only when the content differs.
+fetch "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/$LSP_VERSION/scripts/globalTypes.d.luau" "$TMP/globalTypes.d.luau"
+if ! cmp -s "$TMP/globalTypes.d.luau" "$T/globalTypes.d.luau" 2>/dev/null; then
+	echo "setup_tools: installing globalTypes.d.luau ($LSP_VERSION)"
+	cp -f "$TMP/globalTypes.d.luau" "$T/globalTypes.d.luau"
+fi
+
+# luau-compile (latest stable release of luau-lang/luau)
+if [ ! -x "$T/luau/luau-compile" ]; then
+	echo "setup_tools: installing luau-compile"
+	fetch "https://github.com/luau-lang/luau/releases/latest/download/luau-ubuntu.zip" "$TMP/luau.zip"
+	extract_bin "$TMP/luau.zip" luau-compile "$T/luau/luau-compile"
+fi
+
+# Lune (offline rule tests)
+LUNE_VERSION="0.10.4"
+if [ ! -x "$T/lune/lune" ]; then
+	echo "setup_tools: installing Lune $LUNE_VERSION"
+	mkdir -p "$T/lune"
+	fetch "https://github.com/lune-org/lune/releases/download/v$LUNE_VERSION/lune-$LUNE_VERSION-linux-x86_64.zip" "$TMP/lune.zip"
+	extract_bin "$TMP/lune.zip" lune "$T/lune/lune"
+fi
+
+echo "setup_tools: ok (rojo $("$T/rojo/rojo" --version | awk '{print $2}'), lune $("$T/lune/lune" --version | awk '{print $2}'))"

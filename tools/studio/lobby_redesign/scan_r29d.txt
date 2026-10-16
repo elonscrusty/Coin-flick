@@ -1,0 +1,2 @@
+# glitch_scan.luau on main 1b15f5c, restored place + 39-pet swap, 2026-10-15
+GLITCHES 0  (objects 5786, flat parts 2256, z-fight pairs 0)

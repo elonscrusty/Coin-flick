@@ -1,0 +1,191 @@
+# UI style audit: Roblox pet game, 17 shots
+
+**Reference style:** white dotted panel, blue outline frame, red X, chunky outlined title, green/blue pill buttons, rounded corners.
+
+**Caveat:** each cell is roughly 812×250 and the label strip covers the bottom edge. Some "clipped at the bottom" items may be a short capture viewport rather than a real bug. They are still worth checking at the real minimum screen size. I'm reading this from one downscaled sheet, so the small text is hard to read.
+
+## Per-shot verdicts
+
+| Shot | Verdict |
+|---|---|
+| u_00 HUD | PARTLY |
+| u_01 Pet Book: Pets | IN STYLE |
+| u_02 Pet Book: Book | IN STYLE (minor) |
+| u_03 Pet Book: Records | IN STYLE |
+| u_04 Pet Book: Stats | PARTLY |
+| u_05 Pet Book: Display | PARTLY |
+| u_06 Upgrades | PARTLY |
+| u_07 Start Hunt | IN STYLE |
+| u_08 Settings | IN STYLE (minor) |
+| u_09 Daily | PARTLY |
+| u_10 Battle | IN STYLE |
+| u_11 Tower | PARTLY |
+| u_12 Shop: Featured | NOT IN STYLE |
+| u_13 Shop: Eggs | NOT IN STYLE |
+| u_14 Shop: Passes | NOT IN STYLE |
+| u_15 Shop: Potions | NOT IN STYLE |
+| u_16 DEV panel | NOT IN STYLE (dev-only) |
+
+**u_00 HUD: PARTLY**
+- The shot is captured with the DEV panel open, so it is identical to u_16. There is no clean HUD capture.
+- **Buttons:** the left stack uses mixed treatments. PLAY is bright green, GIFT is red/green, TOWER is a muted grey-green, BATTLE is dark red, and DAILY is blue. Several look desaturated, and none are consistent pills.
+- **Coin counter:** it is a dark/black pill, not blue or white.
+- **Right stack:** My Pets, Upgrade, Party and Settings are translucent icon tiles with tiny labels.
+- **Missing label:** the bottom "EGG" button is half hidden behind the dev panel and its label is clipped.
+- **Overlap:** the dev panel covers the centre-left HUD and the egg button.
+- **Text:** the subtitles ("Egg hunt race", "Train pets", "Pet vs pet") are about 6px.
+- **Naming:** the HUD says "Party" but the window is titled "Start Hunt".
+
+**u_01 Pet Book, Pets tab: IN STYLE**
+- Frame, dotted white panel, green tab pill, red X and green START HUNT all match.
+- **Empty state:** it is good. It has an egg icon, a message and a CTA.
+- **Clipped text:** the footer "Owned 0/100 · Showing 0/1 · Display slots 0/3" is tiny and cut off at the bottom edge.
+- **Panel width:** about 288px, versus about 389px on the other four Pet Book tabs. The window resizes when you switch tabs.
+- **Cursor:** a stray hand cursor sits outside the panel.
+
+**u_02 Pet Book, Book tab: IN STYLE (minor)**
+- **Frame and buttons:** these match. The filter chips (All/Meadow/Forest/Snow/Volcano/Space) are blue pills.
+- **Tiny text:** the progress line "Pet Book 0% complete – 0/39 pets", the rarity-odds boxes (Common 60%, Uncommon 25%, Rare 11%, Epic 3.5%, Legendary 0.1%) and "Legendary in 1000 batches" are all about 6–7px.
+- **Clipped:** the "MEADOW" section header and its content are cut off at the bottom. The list is not visible at all.
+- **Overlap:** the hand cursor sits on the Book tab and a filter chip.
+- **Colour:** the rarity boxes use five outline colours, which is a bit busy next to the chips.
+
+**u_03 Pet Book, Records tab: IN STYLE**
+- Pale-blue rows with an icon, an outlined label and a white value box. This is the cleanest tab.
+- **Clipped:** the third row, "Matches played", is cut off at the bottom.
+- **Cursor:** the cursor hides part of the "Records" tab label.
+
+**u_04 Pet Book, Stats tab: PARTLY**
+- The rows are flat grey-blue and thin with small left-aligned text. They do not match the chunky Records rows, so the same window has two row styles.
+- **Clipped:** the last row, "Your pet gives / none yet", is cut off.
+- **Scrollbar:** a hairline scrollbar sits very close to the rows.
+- **Cursor:** the cursor hides the "Stats" label.
+
+**u_05 Pet Book, Display tab: PARTLY**
+- **Bottom bar:** the "NO PETS YET" bar is dark navy/grey and flat. It should be a blue or green pill, or a disabled-grey pill, and it is cut off.
+- **Slot cards:** the cards (+ / Empty / lock "500 coins") are pale tiles with thin outlines. The selected slot has a gold outline that appears nowhere else.
+- **Tiny text:** the header "Display slots 0/3 (upgrade in Upgrades > Gallery)" is about 6px and crammed. Prices under the locks are also tiny.
+- **Empty state:** there is no CTA to get a pet.
+
+**u_06 Upgrades: PARTLY**
+- **Frame, title and X:** these match.
+- **Panel:** it is narrower than Pet Book and looks pale blue, not white dotted.
+- **Coin pill:** it is dark.
+- **Tabs:** "Gear" and "Robux" are both green, so the selected tab is ambiguous.
+- **Equipped button:** the "EQUIPPED" button and the selected list row are muddy gold/orange, off-palette.
+- **Clipped:** the list is cut after "Pet Whistle". The detail pane is cut at the bottom, with the EQUIPPED button half hidden.
+- **Text:** "Find power 1→0.5 taps/s" looks odd. "Helps you hatch eggs at your next." looks truncated.
+- **Tiny text:** the item prices ("150 coins", "1,800 coins") are very small.
+
+**u_07 Start Hunt (Party): IN STYLE**
+- The white dotted panel, outlined title, two large blue cards and green START / CREATE PARTY pills all match. Use this as a reference.
+- **Clipped:** the green buttons sit on or past the bottom edge of the panel.
+- **Tiny text:** the subtitles ("A small pile to learn the ropes", "Up to 4 players, one pet") are about 6px.
+- **Cards:** they touch each other with almost no gap.
+- **Naming:** the HUD says "Party" and the window says "Start Hunt".
+
+**u_08 Settings: IN STYLE (minor)**
+- **Rows:** saturated cyan rows with outlined white labels, orange slider handles, and a green ON toggle.
+- **Off toggles:** the OFF toggles are black pills, which reads as heavy and off-palette. Use a grey or blue pill.
+- **Clipped:** the footer "Saves are off here: changes last until you leave." is cut off.
+- **Cursor:** a stray cursor sits outside the panel.
+- **Scrollbar:** it is tight against the rows.
+
+**u_09 Daily: PARTLY**
+- **Gold OPEN button:** the OPEN button is a big gold-rimmed oval. It should be a green pill.
+- **Coin pill:** it is dark.
+- **Cards:** the Daily Gift card is a blue banner with a gold "+25" tag. The day tiles use cream/gold borders.
+- **Fonts:** "TODAY'S QUESTS" and "Hatch 30 eggs" use a flat dark font instead of the chunky outlined one.
+- **Tiny text:** the day labels and coin values (25, 35, 45, 60, 75, 100, 300) are about 6px.
+- **Clipped or overlapping:**
+  - the "TODAY" label overlaps its tile;
+  - the Day 7 coin has a stray dot at its edge;
+  - the quest reward "+100" is cut off;
+  - the "MORE QUESTS" button is cut off at the panel bottom and overlaps the quest row.
+- **Scrollbar:** it is tight against the right edge.
+
+**u_10 Battle: IN STYLE**
+- White dotted panel, outlined title, blue TRAIN and green FIGHT! pills.
+- **Empty state:** it has an egg icon and the message "No pets yet. Hatch a pet in the egg race first. Then it can battle!", but no CTA button.
+- **Disabled state:** FIGHT! looks fully active even though you have no pets.
+- **Layout:** there is a large empty gap above the buttons, and the buttons sit on the bottom edge.
+- **Tiny text:** the rank line "Bronze rank · 0 trophies · win streak 0" is tiny.
+
+**u_11 Tower: PARTLY**
+- It matches u_10 except for "EQUIP BEST", which is dark navy flat. It clashes with the blue TRAIN pill and should be blue.
+- **Panel width:** it is wider than the Battle panel for the same layout.
+- **Empty state:** same as Battle, with no CTA.
+- **Disabled state:** CLIMB! looks active while you have no pets.
+- **Tiny text:** the subtitle "Every floor trains your pets! Best floor 0 · start at 1" is tiny.
+
+**u_12 Shop, Featured: NOT IN STYLE**
+- **Panel:** there is no white dotted panel and no blue frame. The cards sit directly on the world, with a floating dark navy tab bar.
+- **Cards:** large saturated purple, orange and violet gradient cards. The Mythic Egg, Rare Egg and Luck Potion cards each use a different gradient.
+- **Tag colours:** the red BEST ODDS ribbon and the orange/yellow BETTER/15 MIN tags clash with the palette.
+- **Pills:** the green SOON pills are disabled but look clickable.
+- **Redundant content:** Mythic Egg appears twice, once as a hero card and again as a row.
+- **Tiny text:** the card descriptions and the rarity dot labels (Common…Legendary) are about 5px.
+- **Overlap:** the "BEST" tag overlaps the "10 Eggs" row, and the cursor hides the "Potions" label.
+- **Clipped:** the second card and the right column are cut at the bottom. A scrollbar hugs the card edge.
+- **Matches the style:** only the title font, the red X and the green selected tab.
+
+**u_13 Shop, Eggs: NOT IN STYLE**
+- **Panel and tabs:** same as u_12, with no panel. The "Pay with: Robux / Coins" toggle is a small pill pair, with Coins dark.
+- **Mythic Egg card:** a large violet gradient with a row of coloured rarity circles and percentages (11/25/40/23/1.0%). These are about 5px.
+- **Purchase rows:** the 1 / 3 / 10 Eggs rows are white bars with SOON pills, again disabled but green.
+- **Overlap or clipped:**
+  - the "BEST" tag overlaps the "10 Eggs" row;
+  - the Rare Egg card with its POPULAR ribbon is cut off at the bottom;
+  - the cursor hides the "Eggs" label.
+
+**u_14 Shop, Passes: NOT IN STYLE**
+- **Layout:** three narrow pass cards (2x Coins, Pet Storage, Extra Plots) fill roughly the left third. The rest is a large empty plain white rectangle with no dots, no frame and no content.
+- **Card colours:** each card is a different colour (gold, blue, pink).
+- **Headers:** the "Boosts" pill with "0/3 owned" and the header "Gamepasses · Permanent. Pay once, keep forever" are tiny. The right-aligned "More coins, more pets, more spots" is tiny.
+- **Clipped:** the SOON buttons at the bottom of each card are cut off, as are the card descriptions.
+- **Copy:** "Extra Plots +10 spots / 10 more pet display" is inconsistent. It says plots but describes display slots.
+- **Status:** every purchase is "SOON". An all-SOON store has no real content yet.
+
+**u_15 Shop, Potions: NOT IN STYLE**
+- **Card:** one wide purple Luck Potion card with a "15 MIN" tag and a SOON pill.
+- **Empty space:** most of the screen is empty.
+- **Footer text:** "No potion running. Weekends are 2x luck for everyone." is white text straight on the world background with no panel. It is hard to read and tiny.
+- **Cursor:** it hides the "Potions" label.
+- **Tiny text:** the description is tiny.
+
+**u_16 DEV panel: NOT IN STYLE (dev-only)**
+- **Panel:** dark navy and flat, with small square-ish corners and a thin X.
+- **Tabs:** the rarity tabs (Common/Uncommon/Rare/Epic/Legendary ✓) are small rectangles.
+- **List:** rows have coloured circles and 6px text.
+- **Overlap:** it sits over the HUD and the EGG button.
+- **Clipped:** the list is cut at "Clovercrest" and "Cometpup", and the footer text is tiny.
+- **Release risk:** the red DEV button is visible in the HUD. It must be gated to admin/Studio and not ship to players. Restyling is low priority.
+
+## Cross-cutting issues
+1. **Panel size inconsistency:** the Pet Book window changes width between Pets (288px) and the other tabs (389px). Upgrades, Daily, Battle, Tower and Settings are all different widths. Fix one standard width per window class.
+2. **Tiny text:** many subtitles, prices and footers are about 5–7px. Set a minimum of about 10–11px on a 1080p scale, or move them to a larger scale.
+3. **Clipped content:** nearly every tall panel is cut at the bottom. Check the viewport and panel height constraints, and make the content scroll with a padded footer.
+4. **Off-palette buttons:**
+   - dark navy: NO PETS YET, EQUIP BEST;
+   - gold: OPEN, EQUIPPED;
+   - black OFF toggles;
+   - green SOON pills that are disabled.
+   - Standardise on the green primary / blue secondary / grey disabled set.
+5. **Coin pill:** it is dark on the HUD, Upgrades, Daily and Shop. Pick one style.
+6. **Tabs:** Pet Book and Upgrades tabs sit in a white bar. Shop tabs sit in a dark bar. Unify them.
+7. **Empty states:** Pet Book has a CTA. Battle and Tower have no CTA and show active buttons. Pet Book Display is only a disabled bar.
+8. **Stray cursors:** these hide tab labels in the shop and Pet Book. Exclude the cursor from captures, or confirm that no real UI element is a hand-cursor sprite.
+9. **FREE PET! banner:** it sits right above the panel in u_01–u_11. Check that it never overlaps the red X on small screens.
+
+## Restyle priority (highest first)
+1. **Shop, all four tabs (u_12–u_15).** It is the biggest gap. It has no panel or frame, the palette is wild, the text is tiny, and it is the money screen. Rebuild it inside the standard white dotted, blue-frame window with a shared card style. Fix the empty Passes space and the Potions emptiness.
+2. **HUD (u_00).** It is always on screen. Unify the left buttons and the coin pill, and fix the muted colours and tiny subtitles. Make sure the dev panel never opens on its own, and hide DEV in production.
+3. **Daily (u_09).** Replace the gold OPEN with a green pill. Fix the flat fonts, clipped quests, overlapping "MORE QUESTS", and tiny day tiles.
+4. **Upgrades (u_06).** Switch to the white dotted panel. Fix the muddy gold EQUIPPED button and the ambiguous Gear/Robux tabs. Fix the clipped list and detail pane, and the truncated copy.
+5. **Pet Book Display (u_05) and Stats (u_04).** Fix the navy bar and the gold selection. Match the Stats row style to Records, and lift the tiny text. Standardise the window width across the five tabs, which also affects u_01.
+6. **Tower (u_11).** Make EQUIP BEST a blue pill. Match the Battle width and add an empty-state CTA and disabled buttons. Apply the same fixes to Battle (u_10).
+7. **Settings (u_08).** Swap the black OFF toggles and fix the clipped footer.
+8. **Pet Book Book tab (u_02).** Raise the tiny text and make sure the Meadow list is visible.
+9. **DEV panel (u_16).** Gate it behind an admin check. Restyle only if players can ever see it.
+
+Start Hunt (u_07), Pet Book Pets and Records (u_01, u_03), and Battle (u_10) are your reference screens. Copy their frame, title, button and empty-state patterns into the others.

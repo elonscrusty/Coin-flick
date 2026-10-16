@@ -1,0 +1,144 @@
+{
+  "name": "CrackTheRocksMatch",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$path": "src/shared"
+      },
+      "PetModels": {
+        "$path": "assets/PetModels.rbxmx"
+      },
+      "PetMotion": {
+        "$path": "tools/owner/PetMotion.luau"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "$properties": {
+        "CharacterWalkSpeed": 18,
+        "CharacterJumpPower": 42,
+        "CharacterUseJumpPower": true,
+        "CameraMaxZoomDistance": 60,
+        "CameraMinZoomDistance": 8
+      },
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "$properties": {
+        "ResetPlayerGuiOnSpawn": false
+      }
+    },
+    "Players": {
+      "$className": "Players"
+    },
+    "Lighting": {
+      "$className": "Lighting",
+      "$properties": {
+        "Ambient": [
+          0.38,
+          0.37,
+          0.35
+        ],
+        "OutdoorAmbient": [
+          0.44,
+          0.42,
+          0.4
+        ],
+        "ColorShift_Top": [
+          1.0,
+          0.94,
+          0.84
+        ],
+        "ColorShift_Bottom": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "Brightness": 3.13,
+        "ClockTime": 15.4,
+        "GeographicLatitude": 38,
+        "GlobalShadows": true,
+        "ShadowSoftness": 0,
+        "EnvironmentDiffuseScale": 0.25,
+        "EnvironmentSpecularScale": 0.15,
+        "ExposureCompensation": 0
+      },
+      "Sky": {
+        "$className": "Sky",
+        "$properties": {
+          "CelestialBodiesShown": true,
+          "SunAngularSize": 14,
+          "MoonAngularSize": 9,
+          "StarCount": 0
+        }
+      },
+      "Atmosphere": {
+        "$className": "Atmosphere",
+        "$properties": {
+          "Density": 0.12,
+          "Offset": 0.3,
+          "Color": [
+            0.62,
+            0.78,
+            0.98
+          ],
+          "Decay": [
+            0.45,
+            0.62,
+            0.9
+          ],
+          "Glare": 0,
+          "Haze": 0
+        }
+      },
+      "Bloom": {
+        "$className": "BloomEffect",
+        "$properties": {
+          "Intensity": 0.06,
+          "Size": 12,
+          "Threshold": 2.4
+        }
+      },
+      "Grade": {
+        "$className": "ColorCorrectionEffect",
+        "$properties": {
+          "Brightness": 0.01,
+          "Contrast": 0.08,
+          "Saturation": 0.06,
+          "TintColor": [
+            1.0,
+            0.985,
+            0.955
+          ]
+        }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$properties": {
+        "Gravity": 196.2,
+        "StreamingEnabled": false
+      }
+    },
+    "ReplicatedFirst": {
+      "$className": "ReplicatedFirst",
+      "Loading": {
+        "$path": "src/first"
+      }
+    }
+  }
+}

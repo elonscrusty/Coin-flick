@@ -1,0 +1,10 @@
+assembly,blender_x,blender_y,blender_z,rotation_z_degrees,world_width_x,world_depth_y,height_z
+Upgrades_Stall,-37,0,0,90,8,24,13
+Collection_Stall,37,0,0,-90,8,24,13
+Hunt_Bays_Assembly,0,25,0,0,36,12,14
+Leaderboard_Solo,-27,27,0,0,13,2.5,17
+Leaderboard_Wins,27,27,0,0,13,2.5,17
+Rubble_Sell,37,17,0,-90,4,7,10
+Bench_FrontLeft,-23,-24,0,0,12,3,3
+Bench_FrontRight,23,-24,0,0,12,3,3
+Entry_Rug,0,-28,0.025,0,14,8,0.04

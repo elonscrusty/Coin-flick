@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"$CLAUDE_CODE_REMOTE\" = \"true\" ]; then bash \"$CLAUDE_PROJECT_DIR/tools/setup_tools.sh\" >/dev/null 2>&1 || echo 'setup_tools failed; run bash tools/setup_tools.sh'; fi",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}

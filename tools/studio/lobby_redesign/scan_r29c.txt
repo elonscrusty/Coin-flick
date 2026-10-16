@@ -1,0 +1,9 @@
+# glitch_scan.luau on main 3c237ff, restored place (v327 + 39-pet swap), 2026-10-15
+# kind  object  other  amount  position
+GLITCHES 6  (objects 5770, flat parts 2256, z-fight pairs 6)
+ZFIGHT  Workspace.LobbyRedesign.ZoneGrounds.FindMeadowEdge1  Workspace.LobbyRedesign.ZoneGrounds.TrainTealEdge1  0.00  (-100.0, 0.6, -36.0)
+ZFIGHT  Workspace.LobbyRedesign.ZoneGrounds.FindMeadowEdge2  Workspace.LobbyRedesign.ZoneGrounds.TrainTealEdge2  0.00  (-100.0, 0.6, -36.0)
+ZFIGHT  Workspace.LobbyRedesign.ZoneGrounds.FindMeadow  Workspace.LobbyRedesign.ZoneGrounds.TrainTeal  0.00  (-100.0, 0.6, -36.0)
+ZFIGHT  Workspace.LobbyRedesign.ZoneGrounds.FightDirtEdge1  Workspace.LobbyRedesign.ZoneGrounds.TrainTealEdge1  0.00  (100.0, 0.6, -36.0)
+ZFIGHT  Workspace.LobbyRedesign.ZoneGrounds.FightDirtEdge2  Workspace.LobbyRedesign.ZoneGrounds.TrainTealEdge2  0.00  (100.0, 0.6, -36.0)
+ZFIGHT  Workspace.LobbyRedesign.ZoneGrounds.FightDirt  Workspace.LobbyRedesign.ZoneGrounds.TrainTeal  0.00  (100.0, 0.6, -36.0)

@@ -1,50 +1,99 @@
-# COIN FLICK: rules for every helper
+# CRACK THE ROCKS!: notes for Claude
 
-Roblox tap-to-flip-coins game. Rojo + strict Luau. **The server decides everything** (flip result, cash, buys). Clients send intents only ("I tapped coin N"). Read `SNAPSHOT.md` first (code map), then `MASTER-PLAN.md` in the project files (backlog).
+**Now FIND THE PET! (2026-10-10, owner decision).** Same loop, new skin: eggs instead of rocks, hatch nests instead of
+crushing tables, shells instead of rubble, one pet per round instead of the geode. Code names (rock, geode, rubble,
+Specimen, Mineral = pet species) are kept on purpose; see `docs/FIND_THE_PET.md` for the mapping and the owner's picks.
+Where this file or the brief says geode/rock, read pet/egg.
 
-## carter (the owner)
-- Not a programmer. Plays on a phone. Windows PC. GitHub: elonscrusty.
-- Talk to him: caveman MAX (fewest words), like he is 10, exact taps, choices as short options with a pick marked ⭐. Don't ask small stuff; pick a default and say which.
-- Code, commits and docs: normal prose.
+Roblox party geode hunt (Rojo + Luau), chunky low-poly industrial quarry style. 1-4 friends take rocks
+from ONE shared pile to their own crushing tables (nothing is cracked at the pile); exactly one rock hides a
+geode; whoever finishes crushing that rock wins it.
+Full design brief: `docs/BRIEF.txt` (the owner's master prompt, it wins over everything else).
+Reference pictures: `docs/refs/01..06_*.png`. They show the look, not real meshes.
+The owner (kcdrewcarter, Roblox user 20194281) plays on a phone, isn't a programmer, and has no
+Studio access during sessions, so nothing is verified in Studio unless they say so.
 
-## Proof rules
-- Never say "fixed" or "done" without proof.
-- Every change gets a Lune test in `tests/specs/` that passes.
-- Every visual change gets player-view pictures checked by carter's runner (`C:\Users\myson\agent-runner\run.bat`, run by the PC helper). Goal: strict score 8/10 or better, 0 gaps, 0 overlaps. Phone view too.
-- Fix the whole structure, not single spots. One batch = one push = one check.
+## How to work here
+- Chat replies in caveman style (`/caveman full`); code, commits and docs in normal prose.
+- Save straight to `main` and push (`git push origin main`). No PRs unless asked.
+- Commit messages end with the attribution lines the session provides. Never put model names in code or commits.
+- Save tokens: delegate routine work to cheaper subagents, keep prompts short, review only big batches.
+- Rebuild and commit `build/CrackTheRocks.rbxlx` once at the end of a batch, then send it to the owner.
 
-## Hard rules
-- Never publish, buy anything, or change security settings. Publish only when carter says "publish". Game stays PRIVATE.
-- Robux: never make up product ids or prices (all 0 = SOON until carter gives them). Show odds before any random buy. **No gambling** (no betting, no Lucky Spin, no random eggs/boxes, no double-or-nothing).
-- No picking heads or tails. No flags. Nothing scary or gross. Style: chunky low-poly, flat-shaded, bright cartoon, always sunny, animated and flashy.
-- Never print API keys. Saves must never be lost (session-locked DataStore).
-- Find The Pet (repo `elonscrusty/Crack-the-rocks`) is a port source only: adapt, never copy whole files; new DataStore names; never its Robux ids.
-- Max 2 helpers at once, no sub-helpers inside threads. Max Players must be 8 when publishing.
-- Only the cloud helpers edit game code. The PC helper only pulls, runs Studio and the runner.
+## Commands
+- `bash tools/setup_tools.sh` installs rojo, luau-lsp, luau-compile, lune into /tmp/ctr-tools
+  (a SessionStart hook in `.claude/settings.json` runs it automatically in cloud sessions).
+- `bash tools/check.sh` type check (zero diagnostics), compile, rule tests, Rojo build; `--quick` skips the build.
+- `bash tools/test.sh` offline rule tests only (tests/test_*.luau, run by tests/run.luau in Lune).
+- Offline preview (screens/world without Studio): `bash tools/preview/setup.sh` once, then
+  `bash tools/preview/render.sh hunt --device phone-1108` and `python3 tools/preview/check_layout.py <dir>`
+  (docs/PREVIEW.md). Look at the PNGs; check every UI change on phone-1108, phone, phone-portrait.
+- Build: `/tmp/ctr-tools/rojo/rojo build default.project.json -o build/CrackTheRocks.rbxlx`.
 
-## Build, test, run
-```sh
-lune run tests/run.luau                       # all tests (must be 0 failed)
-stylua --check src tests                      # CI uses stylua 2.6.0 BUILT WITH THE LUAU FEATURE:
-                                              #   cargo install stylua --version 2.6.0 --locked --features luau --force
-selene src                                    # lint (shadowing and unused vars warn = CI fails)
-rojo sourcemap default.project.json -o sourcemap.json
-luau-lsp analyze --sourcemap=sourcemap.json --definitions=globalTypes.d.luau --no-strict-dm-types src   # strict types, 0 errors
-rojo build default.project.json -o CoinFlick.rbxlx
-```
-- Cloud container: GitHub releases are blocked; tools are in `/tmp/ctr-tools` (lune, rojo, luau-lsp) or `cargo install`. selene needs the roblox std, so test with a temp `selene.toml` using `std = "luau"`.
-- Live link on carter's PC: `Start COIN FLICK live.bat` (git pull + `rojo serve`, port 34872) in the "crack butt holes" folder. carter connects: Plugins tab, Rojo, Connect. New code reaches Studio after `git pull` in `C:\Users\myson\coin-flick`.
-- Tell carter **not to press Play until you say "ready"**.
-- Studio-only 🧪 test buttons: +1M, FILL, RARE, MEGA (charges, then flips), AWAY (fake 3 h away), WIPE.
+## Layout
+- `src/shared`: Config (all tuning), Pile (deterministic mound + exposure + pickable/restore), RoundRocks (pure V3
+  round rules: pickup, basket, tray, plate, machines, storage reservation; tested), GeodeGen (specimen rolls),
+  GeodeModel (procedural geode/rock parts), Net (remotes). V3 loop: `docs/V3_LOOP.md` (source map, rules, protocol).
+- `src/server`: Profiles (session-locked saves), AwardLedger (durable win records), PartyService,
+  MatchService (arenas + hunt lifecycle), RockService (the one authority for RockAction: pickup, deposit, crush),
+  StationModels (four crushing tables), EconomyService (shop, selling, settings, held tool),
+  GalleryService (lobby alcoves), WorldBuilder (procedural lobby/arena kit).
+- Teleport mode (Phase 2, off by default): `PlaceRole`, `MatchTicket`, `ArrivalGate` (shared, tested),
+  `LobbyLaunch`, `MatchPlace`, `Tickets` (server), `ui/LaunchPanel` (client); `match.project.json`.
+- `src/shared/Vendor`: third-party modules, unmodified. `spr` (spring motion for UI/parts, MIT,
+  github.com/Fraktality/spr; license in `docs/third_party/`). Not wired into any UI yet.
+- Egg gravity on the hunt pile: `shared/EggFall` (pure fall + bounce + hop arc; tested), sampled by PileView.
+- `src/client`: PileView (pile render, targeting, contextual action), StationView (tray / plate / fracture / geode opening),
+  CarryView (basket, pickup arc, tool stowing), GuideArrow, Anim, ToolAnim, MachineView, ui/* panels (docs/V3_LOOP.md section 5).
+- UI juice and kit: `ui/UiJuice` (sweep, claim pulse, badge wiggle, tab slide, number count; wired in UI.luau),
+  `ui/Juice` (coin flight via `Juice.coinSource` + `Juice.payout`), pure numbers in `shared/UiMotion`. Kit pictures
+  (ids + 9-slice) in `shared/UiKit`, drawn by `UI.kitSkin` from the shared helpers; id 0 = drawn fallback;
+  HudArt.skin (owner HUD pictures) wins. Preview scene `_juice` captures mid-animation frames.
+- Hunt zone piece sets: `shared/HuntZoneKit` (naming contract, spots; tested) + `server/HuntLowPoly` swaps in
+  ServerStorage.HuntZoneKit_<Zone> pieces role by role; a missing role keeps the tinted meadow piece.
+- Pet Battle + training (find -> train -> fight, 2026-10-14): `shared/PvpConfig` (tuning), `shared/PvpRules` (fight,
+  bot team, rewards, ranks, THE power number `petPower`; tested), `server/PvpService` (queue, bot after 15 s, fights in
+  TowerBuilder arenas, trophies, tap/idle training on the tower XP book), `client/ui/PvpPanel` (BATTLE/TRAIN cards,
+  fight HUD; 3D via TowerView). Tap to fight (2026-10-16): TAP = extra hit + combo, gold ring = BLOCK in time for
+  PERFECT (PvpRules.tap / block, PvpConfig.Tap / Block, client `ui/TapFight`; balance in tests/test_pvp_tap.luau). Lobby pads: parts with attribute `PvpPad` / `TrainPad`. Preview: scene `battle`.
+  Fight camera director: `client/FightCam` + `shared/FightCamRules` (intro sweep, wide orbit fitted to the screen, crit
+  and SPECIAL cut-ins, K.O. orbit, hero shot; tested). It holds a `CameraMode.cinematic` key for the whole fight.
+  Camera log: Workspace attribute `FightCamLog` = true prints `FCLOG {json}` lines on the client; logs saved in
+  `tests/fixtures/fightcam/` are checked by tests/test_fight_cam_log.luau (preview: `battle --set log=1`). Every fight on its own floating island: `server/SkyIsland` clones ServerStorage `ArenaIsland`
+  (part with `ArenaCenter` + `FightRadius` = fight floor) or builds a stand-in; `shared/IslandRules`. No spectating.
+  `server/FightBoard`: lobby sign (live fight, biggest win) at a part marked `FightBoard`.
+  Also hunt XP (RockService.onCracked), the Training Tower (the pet tower re-pitched as training; TOWER on the train
+  card) and evolve (3 copies, `Evolve` stage on the pet: cap/stat/size bonus in TowerConfig.Evolve). No gym gear.
+- Robux shop: `shared/RobuxConfig` (all tuning, ids 0 + REPLACE), `shared/LuckEvents` (luck stacking, weekend, odds),
+  `server/RobuxService` (receipt route, passes, luck storms, hatch-stand queue), `client/ui/RobuxShopPanel`,
+  `client/HatchStandView`. Owner steps: `docs/OWNER_STEPS.md` "Robux shop".
+- Reasons to want eggs (2026-10-15): `shared/EggPerks` (tested): Lucky Meter (full = next shop egg Epic+, Legendary
+  odds unchanged), Pet Book pages (full zone page = +10% shell coins and pet XP), free eggs (every 3rd battle win, all
+  daily quests) banked in profile `EggPerks` and hatched by `RobuxService.openFreeEggs`. Egg-card UI: Fable thread.
+- Hunt fun (owner picks 2026-10-15): `shared/HuntFun` (tested): surprise eggs (every ordinary egg pops coins, pet XP,
+  a Lucky Meter tick or a rare jackpot; RockService, client `SurprisePop`), pet helper (strongest equipped non-Robux pet
+  follows in the hunt: faster cracking + basket room by POWER; `Profiles.huntHelper`, PetService/PetFollow), prizes for
+  everyone (medal + coins + pet XP by eggs finished, MatchService `payPrizes`, ResultsPanel line).
+- First five minutes + comeback hooks: `shared/Retention` (starter odds, play gifts, away nest, friend/group gifts,
+  levels), `shared/BotRules`, `server/RetentionService`, `server/PracticeBots`, `server/VoidStatue`,
+  `client/StarterEggView`, `client/HatchShow` (demo egg v2 port), `client/RetentionView`. Streak shield: `shared/Quests`.
 
-## Git
-- Work on your own branch, PR into the merge-point branch named in your brief. CI must be green (stylua, selene, luau-lsp, Lune, rojo build).
-- Commit messages end with the attribution lines your session gives you. No model names in code.
-- Don't touch files another helper owns; agree ownership by message first.
+## Rules that must hold
+- Robux (owner decision 2026-10-11, replaces the old cosmetics-only rule): the shop may sell pet eggs with boosts (Basic =
+  race egg odds, Rare / Mythic = better tables, never worse than race odds; full odds shown before buying; respect PolicyService paid-random-item limits), 15-minute luck
+  potions, game passes (2x coins, plot slots, pet slots) and a tower revive. Coins buy upgrades only. Robux never
+  buys hints about which egg hides the pet, never changes who finds it, and product ids/prices come from the owner.
+- Don't publish, deploy, buy assets, create products, invent or change prices, or make purchases.
+- Don't enable Studio API access, HTTP or other security settings; give the owner steps.
+- Don't wipe saves or reset rankings. Studio uses separate `_Studio` DataStores.
+- Server decides everything (target, damage, claims, cash, items, winner). Clients send intents only.
+- The target rock is never sent to clients before it is found; it looks identical to other rocks. One exception
+  (owner pick 2026-10-11): after 3 minutes of searching the pet egg glows gold for everyone (EggConfig.Overtime).
+- One geode, one winner per round; no reward for the leftover pile; no trading.
+- Never present a mock or unconnected feature as working. Report verified vs assumed (PASS/FAIL/BLOCKED).
+- Never invent asset ids. Procedural stand-ins have REPLACE markers where real meshes go.
 
-## When your job ends
-Update all three, short:
-1. `SNAPSHOT.md` (repo root): new/changed modules, remotes, data fields.
-2. `MASTER-PLAN.md` (project files): move items to ✅ / 🟡 and say what is proven.
-3. `HANDOFF.md` (project files): where things stand, next step, open questions for carter.
-Then close your thread.
+## Where things stand
+See `docs/STATUS.md` (phase plan, what is done, PASS/BLOCKED per area), `docs/REPAIR_PHASE1.md`
+(V2 repair: causes and fixes) and `docs/OWNER_STEPS.md`. UI text uses `UI.text` / `UI.button`
+(fitted text, tokens in `UI.T`); never size text with raw TextSize in fixed boxes.

@@ -1,17 +1,17 @@
-# Roblox build output
-*.rbxl
-*.rbxlx
+build/*.rbxlx.lock
 *.rbxl.lock
-*.rbxlx.lock
-
-# Toolchain
-sourcemap.json
-roblox.yml
-globalTypes.d.luau
-Packages/
-ServerPackages/
-DevPackages/
-wally.lock
-
 .DS_Store
-Thumbs.db
+sourcemap.json
+
+# preview renderer (tools/preview): dependencies, font cache, renders
+tools/preview/node_modules/
+tools/preview/.cache/
+tools/preview/out/
+
+# agent worktrees
+.claude/worktrees/
+
+# Blender pipeline
+art/meshes/*.lock
+art/meshes/*.tmp
+__pycache__/

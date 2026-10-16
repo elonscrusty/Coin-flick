@@ -1,0 +1,30 @@
+# UI v2 shots (docs/ui_v2/REPORT.md): bash tools/preview/render_list.sh tools/preview/ui_v2.list docs/ui_v2/renders
+# name scene [key=value ...]
+01-lobby lobby
+02-hunt-collect fp view=aim
+02b-hunt-start hunt
+03-hunt-station fp view=table
+04-upgrades-tools shop tab=Tools
+05-upgrades-machines shop tab=Machines
+06-collection collection
+07-display collection tab=Display
+08-start-hunt party view=none
+09-party party view=party
+10-results results
+10b-results-party results mode=party
+11-settings settings
+12-feedback hunt toast=feedback
+12b-purchase-confirm shop tab=Tools confirm=1
+a1-storage shop tab=Storage
+a2-tiers shop tab=Tiers
+a3-gallery shop tab=Gallery
+a4-records collection tab=Records
+a5-empty-collection collection count=0
+a6-invite-players party view=invitetab
+a7-party-invite party view=invite
+a8b-records-unavailable collection tab=Records records=fail
+a8c-loading loading
+a9-rubble-sale lobby eye=seller prompt=on
+a9b-no-rubble lobby eye=seller rubble=0 prompt=on
+a9c-hunt-sell fp view=sell
+08c-starting party view=starting

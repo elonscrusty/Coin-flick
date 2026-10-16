@@ -1,0 +1,10 @@
+FIND THE GEODE — PROSPECTOR LODGE MODELING PACK
+
+1. Give Claude MASTER_PROMPT_Claude_Blender.md plus all images.
+2. 00_Approved_Lobby.png is the main visual target.
+3. The cutaway is deliberately roof-removed; the actual building must be fully enclosed.
+4. Deliver the structural building as one assembled model. Furnishings are reusable separate assets, also supplied in the fully furnished scene.
+5. Placement_Specification.csv and the dimensioned plan control placement. Generated alternate views can drift.
+6. Image sample player names and scores are not part of the meshes. Boards use live game data.
+7. This pack contains references and a modeling specification, not finished Blender assets.
+8. Exterior scenery is secondary; finish and validate the interior first.

@@ -1,0 +1,9 @@
+{
+  "name": "ctr-preview",
+  "private": true,
+  "type": "module",
+  "description": "Offline preview renderer for Crack the Rocks (docs/PREVIEW.md)",
+  "dependencies": {
+    "three": "0.186.1"
+  }
+}

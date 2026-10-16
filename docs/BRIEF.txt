@@ -1,0 +1,258 @@
+CRACK THE ROCKS! — COMPLETE PARTY EDITION / CLAUDE BUILD BRIEF
+October 9, 2026. This document REPLACES the earlier personal-yard master prompt.
+Use the updated party reference pictures and the new asset boards with this brief.
+Images are aesthetic references, not executable 3D models or animation files. Written gameplay rules override decorative objects/text in images.
+
+REFERENCE FOOTAGE — ACTUALLY OBSERVED
+User-supplied ScreenRecording_10-09-2026 08-51-20_1.mp4, duration 32.83 sec, landscape mobile recording 1108 x 512.
+0-4 sec: snowy industrial yard, central large potato mound, glowing floor arrows, equipment on crates, tutorial 'Training 1/5 — Collect Potatoes 0/5', timer, cash, gems, bag capacity, tool bar, large Use button.
+4-12 sec: shovel and powered collector showroom, bag/container upgrades, then indoor processing space. Labels include Hand Peeler, Auto Peeler, and Peelers. Machines use boxy frames, colored housings and small status displays.
+12-24 sec: player walks past workstations and returns to mound. Main activity visible from building exit; arrow helps navigation.
+24-32 sec: player approaches pile and collects potatoes. Counter moves from 0/10 to 4/10; short cooldown indicator is visible. Recording ends before full tutorial completion.
+The clip does NOT establish endgame, complete pricing/economy, key distribution, purchase fulfillment, party logic, machine operation, or winning sequence. Do not claim those were observed.
+Adapt useful features: dominant pile, physical tool showroom, distinct processing stations, clear navigation, large touch action, concrete capacity and tutorial progress.
+Improve: fewer overlapping labels, avoid tall upgrade badge blocking scene, restrained glow, clean phone-safe spacing. Do not copy its snow map, potatoes, specific models, premium collector or second currency.
+
+PASTE THIS BRIEF INTO CLAUDE
+===========================
+Act as a senior Roblox gameplay programmer, technical artist and UI designer. Build CRACK THE ROCKS! as a polished playable game, with full scripts, assets, animation setup and installation instructions. Inspect available project tools and existing repository first. Make routine decisions autonomously within this brief. Deliver full file replacements when direct edits aren't available. Do not substitute incomplete snippets, empty placeholder menus or a generic clicker.
+If external mesh/animation/audio asset imports or Roblox uploads require user action, produce working procedural substitutes and explicit replacement points. Never invent usable asset IDs or claim images are actual meshes.
+Balance numbers below are initial tuning defaults, not facts about Peel THE Potato.
+
+1 — CORE RULES / IMMUTABLE
+A public SHARED LOBBY contains equipment showroom, party departure terminal, personal collection alcoves and social paths.
+A party plays privately: 1-4 players, one central pile per match, exactly ONE hidden geode in that pile.
+Only the party members participate. No unrelated strangers join a hunt. Everyone cracks the SAME pile and competes to be the first to uncover the geode.
+The geode belongs to the player whose server-authorized action finishes cracking its rock. This includes their machine's action.
+Other players retain rubble/cash earned from their own processing. No consolation geode. Winner gets specimen and multiplayer Win.
+Solo hunts are supported for collection progression; record Solo Finds separately and do not inflate competitive Wins.
+No player plots with private piles, no public shared search server, no combat/theft, account XP, compulsory rebirth, pets or eggs.
+Equipment progression persists: Hammer -> Steel Hammer -> Jackhammer -> Automatic Cracker -> Hydraulic Press -> Industrial Crusher.
+One installed machine per player per match plus one handheld; owned machines do not stack.
+Higher equipment gives an earned competitive advantage. Explain each member's loadout before readying; no paid damage, speed, cash, luck or target hints at launch.
+
+2 — PLACES AND MATCH ENTRY
+Build Lobby Place and Match Place under same Roblox experience/universe, configurable place IDs.
+Lobby default 16 players. Match private reserved server cap 4.
+Party creation via terminal/UI: Create Party, Invite present lobby player, accept/decline, roster, Ready, Leave; party leader selects tier and starts.
+Default party privacy invite-only. Standing on a pad alone never silently enrolls strangers.
+Solo button starts own one-member party. Party size limit enforced by server.
+Party member must load profile, possess selected tier unlock, have available geode inventory capacity, and mark Ready. Display concrete blockers.
+Show each member's equipment, Selected Delivery Tier, difficulty/recommended equipment before Start.
+Leader can only start when every current member ready. Lock roster during launch. Changes cancel readiness.
+No unsolicited friend messages or external invites. In-game present-player invitation only for launch.
+Server creates an expiring match ticket with allowed UserIds, match ID, tier, expected members, leader, server reservation, expiry and consumption state. Client-supplied teleport data is a hint, never authorization.
+Use current official Roblox server teleport/session APIs verified from docs. Server validates roster ticket on Match arrival; reject unknown/expired membership safely.
+Loading: arriving party sees Ready area, no tool activity; wait up to 30 sec for expected members. Missing members: offer remaining leader Start With Arrived / Return; do not begin unfairly while arrivals load.
+Failed teleport: clear launch lock, preserve profile and party, show retry. Handle partial teleport explicitly: arrived players wait and can return; remaining members can retry valid ticket once instead of creating duplicate hunts.
+Profile save/release handoff before teleport, bounded retries if source profile lock remains. Never substitute defaults for locked profile.
+In Studio, provide isolated test arena mode and test party simulations, clearly separate from live teleport verification.
+Match lifecycle: WaitingForParty -> Countdown 3 sec -> Searching -> RewardPending -> Reveal -> Results -> RematchReady or Returning.
+All gameplay frozen before countdown. No late joining active rounds except authorized reconnects to same match.
+Rematch: every remaining member selects Ready; leader starts fresh seed after readiness. No mandatory lobby trip between rounds.
+Return: personal button returns safely to lobby; party can return together via ready-to-return decision. Never force winner to wait indefinitely.
+Leader departure assigns earliest remaining member. If everyone leaves, stop match and release resources.
+Reconnect allowed same ticket while reserved match alive; no new target roll or extra reward.
+
+3 — ARENA GEOMETRY AND COMPETITION
+One approximately 90 x 90 stud quarry court. Central mound footprint roughly 30 x 30; 12 stud work ring, four equally spaced machine bays around ring, one shared sell hopper or identical sell points on four sides.
+Spawn each player at equivalent distance facing pile. Rotate positions between rematches.
+Machines pull only exposed unclaimed rocks from central pile. No private sub-piles or duplicate rock reserves.
+Rock damage is shared. Final valid damaging action owns ordinary rock rubble and target discovery. State this 'Finish cracking a rock to collect it.'
+Target rock is assigned before round; identical shell to ordinary rocks. No visual tells, target attributes or special replicated model names.
+Manual input targets currently exposed rocks within 14 studs and unobstructed line of sight. No mining through the mound.
+A server queue handles actions ordered by eligible timestamp then receipt sequence; clients cannot choose timestamps for arbitration. Atomic HP/consumption means no double award.
+For a machine batch, mark chosen exposed rocks as machine-owned processing reservations for at most 3 sec; reserved rocks get subtle moving-outline cue and cannot also be hit manually. Claimed rocks removed in authoritative processing order. Release expired claim if machine pauses/disconnects. Never reserve whole pile.
+Players can target any other exposed rock. Reservations are visible, no invisible lock frustration.
+When press batch contains target, owner wins when that target reaches processing completion, not on selection. Stop all remaining unprocessed jobs at match end; no reward for cancelled jobs.
+Stop accepting all hits when target completes, even during victory visual delay.
+No player body blocking: party avatars don't collide with one another. Machinery safely placed out of movement ring.
+No PvP interference, shove or rock theft mechanic.
+All rocks eventually reachable through deterministic settling/compaction; no inaccessible target beneath floor.
+
+4 — MATCH SCALE / ECONOMY
+One Cash currency. Rubble is unsold capacity-limited material, tier bucketed.
+Every ordinary fully processed rock gives 1 rubble credited to finishing player. Shared HP partial work doesn't award cash separately.
+Own hopper sale computes tier buckets; server validates and clears exactly sold amounts.
+Tier defaults:
+Gravel: 80 rocks, 1 HP, 2 Cash/rubble, base geode value 40, free.
+Quarry: 220 rocks, 2 HP, 5 Cash/rubble, geode base 150, unlock 500 Cash and 5 Finds.
+Cavern: 500 rocks, 4 HP, 12 Cash/rubble, base 500, unlock 4000 Cash and 15 Finds.
+Volcanic: 900 rocks, 7 HP, 25 Cash/rubble, base 1500, unlock 25000 Cash and 35 Finds.
+Meteor: 1600 rocks, 10 HP, 50 Cash/rubble, base 4000, unlock 100000 Cash and 75 Finds.
+Unlock paid once; no entry cost. Repeat older tiers freely. Every party member must unlock chosen tier.
+Do not enlarge pile automatically with party size: same selected tier count, faster group search. Display party count and exact remaining rock count.
+Uniformly choose target rock ID from batch and keep fixed. No per-hit prize rolling; no hidden target movement.
+After discovery remaining pile is cleared cosmetically with ZERO unprocessed rubble reward.
+No arbitrary timeout. Leader cannot reset mid-search for better odds; leaving forfeits hunt participation but preserves already saved earned items.
+First-time solo practice: separate 12-rock tutorial, target within first six breaks. Not counted as competitive match or Win. Party tutorial hints do not change fair target placement.
+Initial pace targets: first meaningful upgrade 3-6 min, jackhammer 15-25 min, automation 45-75 min. Measure and tune; don't promise.
+Cash earned mainly from rubble, plus optional selling specimens. Avoid forcing players to sell favorites.
+Metrics distinguish solo finds, multiplayer wins, party matches, rocks, cash, collection.
+
+5 — EQUIPMENT AND CAPACITY
+Starter hammer free: 1 damage at 0.9 strike/sec.
+Steel hammer 150 Cash: 2 damage at 1.2 strikes/sec.
+Jackhammer 1800 Cash: 1 damage at 5 pulses/sec, held input.
+Auto Cracker 10000 Cash: full-process 2 rocks/sec; actual conveyor visual, runs while owner can use handheld.
+Hydraulic Press 45000 Cash: full-process up to 8 rocks every 2 sec, dramatic bounded batch.
+Industrial Crusher 180000 Cash: full-process 12 rocks/sec, continuous.
+Machine start/stop accessible; only owner controls own machine. Server scheduler determines cadence.
+Capacity starts 30; 100 costs 200, 300 costs 1500, 1000 costs 10000, 3000 costs 50000.
+Full capacity: pause BEFORE hit/claim consumes any rock; indicate Sell Rubble. Capacity check includes in-flight ordinary reservations conservatively, so batches cannot overflow. Geode reservation does not leak target identity by differing capacity behavior.
+No ammo/fuel costs or durability.
+Machines keep processing only owner online/in hunt. Disconnection stops their handheld, releases queued rocks, removes machine contention; no offline matches.
+Midmatch buy upgrade through compact menu; machine changes occur only after existing reservations resolve; no cooldown-reset exploit.
+Equipment showroom models inspectable; owned/equipped buttons and cost/stat comparison.
+
+6 — GEODE COLLECTION
+Winner gets exactly one permanent opened specimen per completed match. Prize properties server-generated, persisted before confirmation.
+Rarity weights: Common60, Uncommon25, Rare10, Epic4, Legendary1.
+Mineral palette families: Quartz ivory; Amethyst violet; Citrine amber; Rose Quartz pink; Calcite honey/cream; Fluorite teal/purple; Celestite pale blue; fantasy Ember Quartz orange; Starstone cosmic blue; Void Crystal black/violet.
+Use config eligible family pool per tier with valid specimens at each rarity. Legendary can be exceptional formation of common mineral.
+Formation: clustered spikes45%, central spire25%, twin cores20%, hollow bloom10%.
+Mass distribution: 0.5-4kg90%, 4.01-12kg9%, 12.01-30kg1%; two decimal precision. Visual scale cube-root mass, clamped for stands.
+Modifier Natural90%, Glowing7%, Rainbow2.5%, Cosmic0.5%.
+Value = floor(baseTier * rarityMultiplier * modifierMultiplier * (0.75 + 0.25*massKg)); rarity multipliers1/1.5/3/6/12; modifiers1/1.5/2.5/4.
+Persist GUID, discovery match, mineral, rarity, mass, formation, modifier, visual seed, value/config version, discovery time, favorite.
+Do not reroll on reveal skip, rejoin, inspect, sell or pedestal placement.
+Inventory max500; do not start a match with a participant unable to receive prize.
+Collection history survives selling. Favorites protected. Displayed items must be removed before selling.
+Bulk sale confirmation shows exact items/count/value; default excludes favorites and Epic/Legendary.
+Only collectible specimens show crystal interiors; normal pile rocks never contain decorative extra geodes.
+
+7 — SHARED LOBBY COLLECTION GALLERY
+Public lobby assigns each connected player one temporary display alcove (16 total); persistent assignments reconstruct selected owned geodes on join. Alcove releases on leave; owned collection persists.
+Starter display3 slots; expand6 for500 Cash,12 for4000,20 for20000.
+Gallery wall modular bays with player nameplate, adjustable specimen pedestals, warm limited spotlights, concise inspect labels. No rock yard attached.
+Visitors inspect but cannot sell/move/use another player's specimen.
+One GUID cannot be displayed twice; server ownership validation.
+No passive display income in competitive launch; avoids paid decor/display slots influencing equipment economy. Collection is status/showcase.
+Wins board, biggest geode board, collection count board; clearly label Solo Finds separately.
+No trading system unless explicitly requested later. Any 'Trading' sign appearing in concept art is decorative error and must be omitted.
+
+8 — COMPREHENSIVE ASSET KIT / TARGET CATALOG
+Create coherent modular assets; number of unique assets matters less than finished silhouettes, consistent materials and purposeful details. Build all functional assets and reusable dressing needed for these areas.
+Naming prefix CT_Rocks_. Standard grid 2/4 studs; front -Z, up +Y, floor pivot at ground; doors about7x10 studs; stairs safe for block avatars.
+Supply asset manifest with name, role, approximate dimensions, animated parts, collision primitive, materials, UV/texture needs, LOD, assembly dependencies. Use reusable small texture atlas if imported meshes require it.
+Use original faceted rocks and clean bevelled industrial forms, no photoreal dirt/no excessive triangles.
+
+ENVIRONMENT KIT:
+6 modular wall panels,2 corners,2 doorframes,2 window panels,2 roof sections,4 floor plates,2 stair flights,2 railings,4 quarry cliff forms,3 boulders,2 gravel scatter patches,2 support beams, chain fence straight/corner/gate,3 walkway slabs, painted edge strip, drain grate, party pad, departure terminal.
+PROP KIT:
+3 crates,2 pallets,2 barrels,2 storage bins, cart/wheelbarrow, toolbox, workbench, tool rack, spool,3 pipe modules, generator, vent, warning beacon,2 hanging lamps,2 bollard lights,3 signs, bench, locker, hose reel, safety cone, cash hopper, rubble chute, 3 ore sacks, maintenance panel.
+Use props to explain activity, not fill every walkway.
+PILE KIT:
+4 ordinary rock shells at3 sizes,3 fracture states per shell, split halves,5 chip/debris forms, dull rubble texture, mound boundary decal/mesh.
+GEODE KIT:
+3 hollow outer shell forms,5 reusable crystal spike/cluster forms,10 palette families,4 arrangements, modifier material/effect presets. One specimen is shell+crystal assembly not floating diamond.
+TOOLS:
+hammer, steel hammer, jackhammer; matching rack miniatures/icons; hand grip and action attachment.
+MACHINES:
+auto cracker with intake conveyor, rollers, motor, guarded housing, rubble outlet, soft geode tray, state light, on/off panel;
+press with frame, piston, plate, tray, warning beacon, guard rail, recovery chute;
+crusher with conveyor, jaws/rollers, motor, guards, outlet, dust attachments, recovery tray.
+GALLERY:
+small shelf bay, double shelf bay,3 pedestal sizes, owner board, specimen label card, inspection marker, corner cap, warm recessed lights.
+CHARACTER SUPPORT:
+generic hardhat/backpack cosmetic accessory optional; preserve player avatar identity; no proprietary mascot needed.
+UI KIT:
+22 original icons (cash, rubble, hammer, jackhammer, machine, press, crusher, bag, party, invite, ready, leader, lock, geode, collection, display, favorite, sell, replay, lobby, settings, close),3 button styles, cards, rarity chips, modal frame, toast, progress bar, loading state.
+SFX/VFX manifest described below.
+Reuse components elegantly; keep collision simple. Give replaced/imported meshes stable model names and attachments.
+
+9 — STYLE AND WORLD FINISH
+Palette slate #26323C, orange #F28A26, safety yellow #F4C644, cream #F3E9D8, rock grey #78818A, violet #A66AFF, cyan #69DAE8.
+Shared lobby warm daylight; private quarry brighter neutral work lighting; geode reveal subtly dimmed backdrop, no strong bloom.
+Lobby footprints approximately160x140 studs; focal departure terminal centered, equipment on one side, galleries along perimeter, exits visually obvious.
+Match footprint90x90; central pile dominant with unobstructed accessible ring.
+Footpath details, supported buildings, purposeful pipes, cables along edges, crane silhouette in background, quarry rock layers. No fake exploration exits.
+Cap local actual lights; use emissive materials where sufficient. Avoid repeated giant neon badges.
+Reference images may look more elaborate than final runtime; prioritize accurate Roblox silhouettes and mobile performance over photoreal quality.
+
+10 — ANIMATION SPECIFICATIONS
+Supply timeline/spec per animation with rig/object, keys, duration, loops, attachments, replication, triggers, cancellation and fallback. Procedural TweenService/rig motion for machines; actual Animator tracks for humanoid actions where imported tracks available, verified current APIs.
+No arbitrary animation IDs. Missing humanoid uploads use honest simple tool joint fallback and clear instructions.
+Hammer idle: two-handed or one-handed stable grip. Strike0.65sec: anticipation0-.15, downward swing.15-.32, contact marker.32, recovery.32-.65. Server hit timing independent of exploitable marker events.
+Steel hammer heavier strike0.55sec, short torso lean.
+Jackhammer looping0.2sec visual vibration, 0.1stud tool movement max; sound start/loop/stop; never shake full camera continuously.
+Auto cracker belt tiles cycle, rollers rotate, individual cosmetic feed stones move0.6sec intake->rollers, split0.12sec, rubble falls0.25sec. Authoritative completion linked to reserved job.
+Press cycle2sec: load0-.55, lamp pulse.55-.75, piston descend.75-1.05, contact1.05, rise1.1-1.6, unload1.6-2. Geode recovery event replaces dust with padded-tray specimen.
+Crusher rollers perpetual only active, belt loop, short output tumble and pooled dust; stops gracefully after award/pause.
+Pile settling0.3-.5sec at safe milestones; no gameplay moving-body hazards.
+Geode reveal2.5sec: shell lift0-.3; split.3-.9; camera/specimen frame.9-1.4; gentle crystal shimmer1.4-2; labels2-2.5. Free skip after.5; reduced-motion uses static framing and simple fade.
+Winner celebration2sec optional humanoid cheer; other players short clap; do not override movement indefinitely.
+Delivery rock drop1.5sec cosmetic guarded spawn area BEFORE countdown; no damage, no physics explosion.
+Gallery specimen placement0.25sec ease-out; inspect rotation slow manual drag not forced spin.
+UI open0.16sec fade/scale, close0.12, toast3sec, button press0.08. Reduced motion removes scale/overshoot.
+Tool switching0.2sec no server cadence reset. Stop on death, menu, focus loss, return, disconnect, phase change.
+Match event playback idempotent: reconnect doesn't duplicate award animation or processing credit.
+
+11 — MOBILE UI / ALL SCREENS
+Design for landscape mobile footage dimensions, portrait phone, tablet, PC, controller. Responsive safe areas; Roblox topbar and default movement/jump zones remain usable.
+HUD left upper safe region Cash; below Rubble/capacity. Top center concise objective/remaining rocks; upper right time. Bottom middle2-slot handheld/machine strip. Large Hold to Crack button right center above jump, at least56x56 logical pixels; minimum touch targets44x44; accessible text.
+Use tap to select exposed rock and hold button; camera drag doesn't strike. Active target outline and short HP ring only for selected rock.
+Machine toggle shows Running/Paused/Storage Full.
+Do not cover pile with shop badge. Upgrade button small with text and icon.
+Lobby UI: party roster, Invite list, ready indicator, tier picker, equipment comparisons, Start disabled reason, collection alcove selection.
+Match UI: cash/rubble, shared remaining count, your rocks cracked, equipped tool, sell prompt, party roster collapsed.
+Results UI: winning avatar/name, single specimen mineral/rarity/mass, personal rubble/cash, multiplayer win status; Rematch Ready / Return Lobby. Nonwinner cannot display/sell winner specimen.
+Inventory UI: search/sort/filter, thumbnails ViewportFrame, rarity icon+text, mass, favorite, sell confirmation, display placement.
+Collection index: discovered silhouettes/entries and progress, no paid random offers.
+Shop UI: owned/equipped, cost, throughput comparison and capacity, clear close.
+Settings: music/SFX, reduced motion, low effects, hints. Error/loading states readable, retry without stuck overlay.
+Loading/teleport: party members, arrival checkmarks, clear timeout options.
+All panels use scrolling, constraints, singular modal focus, controller navigation, consistent close button.
+Currency only Cash; omit gems seen in reference footage.
+Floor arrow tutorial optional on next required station; pulse once, remove on completion.
+
+12 — AUDIO AND EFFECTS
+Asset event catalog: hammer hit3variants, stone crack3, gravel spill2, jackhammer start/loop/stop, conveyor hum, press descend/impact/retract, crusher loop, geode reveal chime, rarity accent, sale, purchase, button, countdown, match win, lobby ambience, quarry ambience.
+Provide bus mixing, attenuation, nearby sound cap, one ambience track per place, volume controls, no repeated loud machine spam.
+No claim to have generated audio if only specs supplied; replaceable IDs/fallback.
+VFX: rock chips6-10 near local strike, restrained dust, crack decal/material stage, cash fly-up small, crystal shimmer, machine recovery glint, gentle winner confetti2sec.
+Client local pooled debris dies<=1sec; no server replicated fragment physics.
+Legendary notification small party feed only; lobby feed optional no fullscreen interruption.
+No strobing lights or continuous camera shake.
+
+13 — PERSISTENCE / SECURITY / REWARD SAFETY
+Server owns party, ticket, target, damage, claims, money, items, ownership and win adjudication. Clients send intent only.
+Profile schema: Cash,RubbleByTier,EquipmentOwned,EquippedHandheld,InstalledMachine,CapacityTier,UnlockedTiers,InventoryGeodes,DisplayAssignments,DisplayCapacity,DiscoveryIndex,TutorialStep,Settings,Stats(SoloFinds,MultiplayerWins,MatchesPlayed,RocksCracked),RecentAwardIds,PendingAwards.
+Store same universe profile through place changes. Session locks/load errors explicitly handled; never save empty default over unavailable data.
+Reward: single match winner decision persisted in durable match ledger; generated specimen and winner stored before publish. AwardKey MatchId:RoundId. Apply via winner profile idempotently and record key in same profile mutation. Multi-profile write isn't atomic: don't pretend it is. Ledger stores pending/applied; reconciliation retries safe item grant.
+If winner disconnects before confirmation, durable grant applies on next load. Never hand prize to runner-up after win determined.
+Round state centralized server; atomically reserve/consume; reject stale round IDs, forged costs, coordinates, owned machine IDs, out-of-range hits, rapid remote spam.
+Snapshots/checkpoints compact and bounded. On whole Match server crash, preserve confirmed earnings/rewards; unfinished hunt may safely end without prize and explain reconnect limitation rather than invent cross-server recovery.
+Autosave bounded, UpdateAsync/lock lease, release before teleport, BindToClose, retry/backoff and DataStore budget checks; not every hit.
+Save rubble checkpoints; disclose ordinary-progress autosave loss window.
+In-flight claims ephemeral and released on disconnect. Never leak target ID via public profile/round metadata.
+No player can change other collection alcoves.
+Inventory preview uses sanitized specimen data, not target state.
+
+14 — PERFORMANCE AND VALIDATION
+1600 logical records highest tier; render pooled lightweight exposed/nearby shells, LOD buried material while preserving accurate logical count/removal. Never create tens of thousands unanchored Parts.
+Server spatial lookup for exposure/hit validation; one scheduler for tools/machines. No Heartbeat per rock, no CSG fracture per hit, no full state replication each frame.
+Dynamic models use attachments and a few moving subassemblies; collisions primitive, spectators no double physics.
+Measure4player Meteor hunt plus16player full lobby gallery on midrange mobile/device emulation. Report actual frame/script/network/memory findings, not unmeasured promises.
+Check 1-4player party launch, invite privacy, teleport timeout/partial failure, leader departure, solo, rematch, return, disconnect claim release, storage saturation, win race, press-vs-hit race, reconnect reward, malicious remotes, bulk sale safeguards, gallery ownership.
+Verify one geode/one winner, ordinary rewards only actually consumed, no remaining-pile payout, fixed random target, all rocks reachable.
+Use targeted automated tests for state/economy/idempotency and actual Studio playtests for motion/input/teleports.
+Explain technical unknowns honestly and consult official documentation when implementing current APIs.
+
+15 — LAUNCH MONETIZATION
+Cosmetics only: tool skins, machine paint, gallery themes, victory pose. No paid tool power, Cash packs, luck, target hints, faster processing or auto-sell competitive advantage.
+Game works with no product IDs. Hide unavailable purchase actions. Real entitlement/receipt handling verified, no fake success.
+All equipment remains earnable. No tutorial/reveal purchase interruptions.
+Prices optional editable defaults, not needed to implement core.
+
+16 — BUILD DELIVERY AND PHASES
+Phase1 exact shared-pile party rules in Studio test arena: hammer, cash, win, single specimen, simple gallery, saving.
+Phase2 real lobby/party/private Match place flow with robust handoff.
+Phase3 jackhammer/machines and collision-safe animation.
+Phase4 detailed modular art, full UI, gallery and collection.
+Phase5 sound/VFX, performance, persistence fault testing.
+Provide working functionality each phase; don't claim game ready from pretty lobby alone.
+Final: complete project tree and code, generated model/world assets, asset manifest, animation manifest, config tables, setup/readme, real IDs required, validation report distinguishing executed vs pending.
+All instructions self-contained; do not depend on earlier personal-yard prompt.
+Use the user's supplied video only for the stated observed interaction/layout qualities. Everything else in this brief is the selected original design.
+

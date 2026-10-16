@@ -1,0 +1,112 @@
+CRACK THE ROCKS — MERGE ALL REFERENCE SHEETS INTO THE EXISTING GAME
+Paste this into the EXISTING Claude development conversation and attach the 14 reference sheets. This supplements the existing gameplay and bug-fix master prompts.
+
+TASK
+Use the attached reference images to build a coordinated reusable 3D asset kit, replace the current placeholder environments/equipment, redesign the UI, implement the pictured gameplay animations, and integrate everything into the EXISTING functioning Roblox game. Continue current phases 2–4; inspect pending work and avoid conflicting or duplicate implementations. Do the actual project work, not just describe a hypothetical asset plan.
+
+These images are visual modeling guides, not ready-made meshes, textures, animation files or code. Do not paste the reference boards onto billboards and call the game rebuilt. Build actual three-dimensional assets and actual responsive UI controls. Use existing source/models where suitable. Do not pretend you have imported or uploaded a model that doesn't exist.
+
+PRESERVE THIS GAME
+Public shared lobby, private solo/party rounds with up to 4 participants, ONE shared pile, exactly ONE hidden target geode each round. Players collect individual whole rocks into a basket, carry to their assigned processing table, deposit into its queue and crack them there. Finishing the target wins; pickup and deposit do not. Everyone retains their personally credited ordinary rubble. Winner collects one specimen for their lobby gallery. No new pets, eggs, PvP, trading, rebirths, durability, currencies or progression systems.
+
+No cracking at the pile. No auto-harvesting the pile. No separate piles for each player. Machines process their owner's deposited queue while the owner collects. Keep permanent equipment ownership, currency, existing prices, rarity tables, individual specimen records, gallery ownership, party functionality and save compatibility. Do not reset player progress for an art update.
+
+REFERENCE PRIORITY AND CORRECTIONS
+User gameplay decisions and existing authoritative configuration override labels, statistics or incidental details illustrated in these images.
+- MOBILE UI sheet includes example equipment names, bars, specimen names/rarities and figures. Use its layout/style, not those values. In particular, do not introduce a durability mechanic or an Industrial Jackhammer merely because they are pictured. Preserve Starter Hammer -> Steel Hammer -> Jackhammer -> Auto Cracker -> Hydraulic Press -> Industrial Crusher.
+- Results must distinguish rubble earned this hunt, rubble sold during hunt, cash from sales and current bag balance. Never label all earned rubble as still kept after sale. Example from recording: started 9, earned 64, sold 54 -> bag 19; sold for $108 at existing $2 rate. Never grant the earned amount again from results.
+- Illustrated fracture sheet shows a colored crack in a geode intermediate state. Do NOT expose colored crystals, target-specific glow or clues before authoritative winning resolution. Use neutral cracks until final reveal.
+- Geode collection sheet includes fantasy color designs. Treat them as visual options for existing specimen types, not permission to expand economy/rarity tables arbitrarily. Use existing names and real owned specimen records.
+- Some buildings show large decorative crystals. These can be architectural emblems/examples, not collectible reward sources or free owned geodes. Keep central arena pile entirely neutral.
+- Robot/block dummy in animation sheet is a pose reference, not an instruction to replace player avatars. Support the actual avatar rigs already used by the game.
+- Multi-view illustrations may differ slightly. Choose one coherent build per asset with sensible dimensions; front/side/three-quarter pictures are views, not separate assets to spawn.
+- Concept sheen, fine detail and illustrated lighting are targets to approximate efficiently in Roblox. Don't trade mobile performance for exact imitation of every bolt.
+
+THE 14 SHEETS AND WHAT TO BUILD
+1. LOBBY BUILDING KIT: open-front equipment workshop, gallery building, Start Hunt kiosk, leaderboard alcove, courtyard shelter, storage shed. Use as primary architectural style.
+2. COURTYARD & NAVIGATION KIT: modular paving, station pads, stone planters/shrubs, tree, benches, low wall, fence sections/corners, entrance arch, lamp modules, sign frames, subtle path inset, bollard.
+3. START HUNT TERMINAL KIT: detailed kiosk, screen housing, party ready indicators, light bracket, geode emblem, base/step, small owner/station sign. Connect existing solo/party flow to kiosk interaction.
+4. GEODE GALLERY KIT: actual display cabinets, niches, pedestals, empty slots, countertop showcase, shelves, labels, specimen stands, owner plate, index board, bench and lights. Connect placement to actual owned specimens/slots.
+5. QUARRY ENVIRONMENT KIT: cliff variants, cliff corner, retaining walls, fences, gate, storage shelter, supported background crane and lamp fixtures. Small scene vignette is composition guidance for ONE central pile and four surrounding stations.
+6. ROCK PICKUP & FRACTURE KIT: at least 12 readable neutral rock silhouettes, ordinary fracture stages, rubble and noninteractive grit. One collectible model per authoritative opaque RockId.
+7. CARRY & CRUSH STATION KIT: sturdy table frame/top, plate, shield, input tray, output tray, basket dock, small owner nameplate, lamp, carry basket empty/filled, loading chute, pad. Four matching stations may use modest owner accents with label/icon identification, not color alone.
+8. MANUAL TOOL KIT: starter/steel hammers, compact jackhammer, tool rack, hooks, jackhammer stand, spare bits, compressor, hose, case, vise. Correct size/grip and table contact.
+9. AUTO CRACKER MACHINE KIT: feeder, motor, jaws/chamber, hood, controls, output tray; animate load -> crack -> output from real queue.
+10. ADVANCED PROCESSOR KIT: hydraulic press frame/cylinder/piston/platen/feeder/controller; industrial crusher hopper/rollers/conveyor/motor/guards/output. Active station processor only, not a loose decoration masquerading as functional machinery.
+11. UTILITY & WORKSHOP PROP KIT: rubble hopper, generator, compressor, wheelbarrow, cart, crate sizes, chest, pallet, storage bin, bucket, parts/bolts trays, cable, pipe, hose reel, placard, work light and spare plate.
+12. GEODE SPECIMEN COLLECTION: rough shell, thick pale mineral rim, deep hollow crystal cavity, varied-height crystal clusters, display stand and camera-facing specimen composition. Build current specimen variants using the style.
+13. MOBILE UI DESIGN KIT: HUD, Start Hunt/party modal, shop, collection, gallery placement, results. Extend same design system to settings, toasts and warnings. Correct example labels/data per actual config.
+14. GAMEPLAY ANIMATION REFERENCE: pickup, basket transfer, carrying, docking, deposit, hammer wind-up/contact, jackhammer contact, machine feed, press cycle, geode opening and gallery placement.
+
+IMPLEMENTATION WORKFLOW
+First inspect current project, source ownership, latest phase changes, assets, UI controllers, tool rigs and interaction flow. Identify existing implementations that can be upgraded. Create a concise asset manifest: canonical asset name, referenced sheet, reusable subcomponents, intended scene placement, collision/interaction behavior, animation pivots and status. Follow project structure; don't force invented folder paths over working architecture.
+
+Build one coherent set of reusable model factories/templates or stored models using the project's existing workflow. Each should have a stable pivot, readable name, logical submodels and explicit attachment points. Reuse common lamp/bolt/beam/panel designs. Don't regenerate thousands of permanent Parts on every UI open or player join.
+
+Modeling route:
+- Use Roblox Parts, Wedges, Cylinders, supported mesh assets and composed reusable geometry for box frames, tables, kiosks, paving and machinery.
+- Use low-poly meshes where silhouette materially needs them: whole rocks, geode shells, crystal clusters, selected foliage.
+- If mesh creation/import tools are available, produce/import actual assets and configure them. If not, make the best honest procedural build now and identify remaining mesh-dependent assets. Don't invent mesh IDs or imply reference PNGs contain geometry.
+- Never use a huge count of random blocks to imitate a refined geode or cliff. Use coherent broad forms and deliberate negative space.
+
+Treat static scene dressing and functional interaction models separately. Decorative labels/bolts/foliage should not block movement or create unnecessary touch/query work. Use simple collision proxies for complex structures. Idle mound is stable/anchored; only bounded chips use temporary motion. Tool/carry props are properly attached, not unanchored clutter attached by accident. Preserve streaming/replication patterns.
+
+BUILD AND INTEGRATE IN THIS ORDER
+Milestone 1 — Functional kit: separate rocks, basket, crushing table, trays, plate, tool grips, hopper. Complete collect -> carry -> deposit -> crush -> sell -> reveal. Use starting 5-rock basket and 10-rock table queue unless approved current tuning already differs. Carry and rubble capacities are independent. Disable all obsolete at-pile damage paths, including server remotes.
+Milestone 2 — Machines: adapt existing phase work into station queue processors, correctly aligned moving parts and one active processor per station. Machines process deposited rocks only. Keep deterministic server ownership/damage/award rules.
+Milestone 3 — Environments: replace placeholder public lobby and quarry structures with modular buildings/cliffs/paths. Do not simply add crates around bad signs and repeated gray slabs.
+Milestone 4 — UI: implement one consistent responsive design system based on sheet 13. Actual data, actual purchase/equip/place actions, correct loading/error/empty states.
+Milestone 5 — Gallery/geodes/animations: make cavity readable, preserve specimen identity, animate open/display, integrate sound/VFX and cleanup.
+Milestone 6 — Scene dressing/performance/verification: add purposeful secondary props and polish without obstructing gameplay.
+
+PUBLIC LOBBY PLACEMENT
+Clear courtyard, Start Hunt terminal directly visible 12–20 studs ahead of spawn, workshop left, gallery right, leaderboard off main axis. Broad 8–12-stud paths, no signpost blocking kiosk or camera. Buildings have foundations, roofs, supports, interiors and clear entrances. Use planters/benches/crates at building edges. Low walls/fences and background cliffs/trees give depth. Keep old leaderboard huge billboard and intersecting directional signs out of final composition. One readable title per landmark.
+
+Gallery remains shared with owned display alcoves/slots. Distinguish decorative examples from owned collection. Inspect existing capacity and allocation; do not accidentally replace all player displays with one shared writable cabinet. Cabinets/stands serve real placement and persistence.
+
+PRIVATE QUARRY PLACEMENT
+One mound at center, four tables at comparable radii with equal routes/clearance. Solo activates one station; inactive ones are intentionally presented. A shared hopper accessible without walking through opponents' table. Layered cliffs rather than repeated tall wall slabs; supported crane/storage shelter along boundary. Small concrete station pads, warm quarry ground, sparse edge grit. Yellow safety paint only near actual machinery. Central pile collection silhouettes remain readable from gameplay camera.
+
+UI IMPLEMENTATION RULES
+Slate/cream/honey-wood/amber style, consistent icons, restrained borders, readable fonts and spacing. Use actual GUI controls, not a rendered screenshot with invisible click zones. Main screens should feel like one system.
+- Wallet/rubble counters below Roblox safe area.
+- Separate Carry X/5 and Rubble Y/capacity.
+- Compact objective with contextually useful wording.
+- Primary action separate from jump and joystick at real touch-control bounds.
+- PICK UP at pile, DEPOSIT at own table, HOLD TO CRUSH for manual queue, MACHINE RUNNING for automatic processing, SELL RUBBLE near valid hopper.
+- Shop cards use actual equipped/owned/affordable state and supported stat units; no durability or misleading bigger-rock mechanic inferred from illustration.
+- Collection uses real specimen previews/data. Gallery slot picker shows real empty/occupied ownership states.
+- Results uses server final snapshot; no duplicated award animation logic.
+- Shop/collection/settings screen opening ends held tool input safely.
+- Test 1108x512 recorded viewport, narrow phone usable landscape, tablet/desktop. Respect safe areas, no clipped text, readable touch targets, modal scrolling when necessary.
+
+ANIMATION AND REVEAL
+Support actual avatar rig/grip scale; test current nonstandard-looking avatar rather than assuming default R15 tracks. Stow tools during collection, show visible basket fill, dock/deposit animation, queued rock moves to plate, tool contacts plate rock. Jackhammer bit down, press piston/platen aligned, rollers rotate coherently. Don't let effects/animations apply independent extra server damage.
+
+Geode shell opens outward, keeping cavity camera-facing. Interior is main focal point; broad faceted crystal peaks and pale rim distinct from dark shell. No flat badge or gems glued outside closed stone. Default whole-rock exterior remains neutral until resolved. Show actual awarded specimen in reveal, results, inventory and gallery using common model/config so appearances don't disagree.
+
+Keep reveal concise and skippable without bypassing reward commit. Clean up tweens, holds, motors, sounds, particles and connections on unequip/leave/reset/end/rematch. Limit effects; no persistent glow haze or rock-chip physics explosion.
+
+SERVER/PROGRESS PROTECTION
+Maintain one authoritative record per round rock. Pickup, carry, queue, processing and resolution are atomic; other players cannot take a carried/queued rock or process another's station. Target identity remains server-only. Departures return unresolved rocks to reachable mound, including target. Stop all processors at round resolution; exactly one specimen award via existing idempotent save path. Preserve previously earned rubble. Stale requests cannot act on new round.
+
+Full rubble storage handling must consistently reserve capacity before any new processing so it can't leak target or silently discard output. Existing active processing completes safely; sale resumes queued work. Solo find is separate from competitive win. Gallery placement uses existing owned specimen ID and doesn't duplicate it.
+
+QUALITY BAR
+Assets must look deliberate at actual player camera distance. Use depth, layers, appropriate bevels, broad facets and material contrast. Repeated references are library components, not instructions to spawn every prop in every corner. Rich detail belongs around functional landmarks; preserve open routes, readable pile silhouettes and reachable interaction surfaces.
+
+DO NOT call something finished because it has more Parts or a yellow border. Verify placement, animation, gameplay connection, mobile presentation and performance. Decorations that lack model availability remain explicitly unfinished, not silently replaced with misleading IDs.
+
+VERIFY AND REPORT
+Demonstrate:
+1. Player sees kiosk immediately and starts solo/party using existing flow.
+2. Pickup removes exact individual rock into basket, no reward yet; opponent race cannot duplicate it.
+3. Deposit fills own queue; tool works only at assigned table and contact visibly aligns.
+4. Automatic processors continue queue while owner collects, never auto-harvest or touch another queue.
+5. One target award, accurate ordinary rewards/sales/results, persistence across rejoin.
+6. Owning/placing/removing gallery specimen works and respects other players' slots.
+7. UI fits mobile safe/control areas, all major screens and input states work.
+8. Rematch/reset/disconnect restore a winnable clean round without handlers accumulating.
+9. Four participants, active machines and full detail kit have usable performance; inspect Output for tested paths.
+
+Show before/after screenshots at mobile viewport: lobby spawn, workshop, gallery, quarry overview, table processing, machine cycle, shop, collection, reveal/results. Report manifest status, actual models created/imported, changed files, tests actually run, remaining unavailable mesh/import work and known limitations. Continue through all milestones within the authorized scope. Never claim a multiplayer/device test passed from code inspection alone.

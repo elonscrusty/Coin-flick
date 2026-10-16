@@ -1,0 +1,126 @@
+{
+ "ui/lobby_v2/play": [
+  1024,
+  375
+ ],
+ "ui/lobby_v2/train": [
+  1024,
+  556
+ ],
+ "ui/lobby_v2/fight": [
+  1024,
+  506
+ ],
+ "ui/lobby_v2/my-pets": [
+  950,
+  952
+ ],
+ "ui/lobby_v2/pet-book": [
+  1024,
+  969
+ ],
+ "ui/lobby_v2/daily": [
+  1024,
+  992
+ ],
+ "ui/lobby_v2/spin": [
+  975,
+  989
+ ],
+ "ui/lobby_v2/shop": [
+  1006,
+  1024
+ ],
+ "ui/lobby_v2_lowpoly/play": [
+  1024,
+  342
+ ],
+ "ui/lobby_v2_lowpoly/train": [
+  1024,
+  520
+ ],
+ "ui/lobby_v2_lowpoly/fight": [
+  1024,
+  534
+ ],
+ "ui/lobby_v2_lowpoly/my-pets": [
+  1024,
+  963
+ ],
+ "ui/lobby_v2_lowpoly/pet-book": [
+  1003,
+  924
+ ],
+ "ui/lobby_v2_lowpoly/daily": [
+  1024,
+  949
+ ],
+ "ui/lobby_v2_lowpoly/spin": [
+  1012,
+  980
+ ],
+ "ui/lobby_v2_lowpoly/shop": [
+  1024,
+  950
+ ],
+ "ui/my_pets_lowpoly/main-panel-frame": [
+  1024,
+  534
+ ],
+ "ui/my_pets_lowpoly/detail-panel-frame": [
+  659,
+  1024
+ ],
+ "ui/my_pets_lowpoly/card-common": [
+  512,
+  498
+ ],
+ "ui/my_pets_lowpoly/card-uncommon": [
+  512,
+  504
+ ],
+ "ui/my_pets_lowpoly/card-rare": [
+  512,
+  505
+ ],
+ "ui/my_pets_lowpoly/card-epic": [
+  512,
+  489
+ ],
+ "ui/my_pets_lowpoly/card-legendary": [
+  512,
+  508
+ ],
+ "ui/my_pets_lowpoly/card-void": [
+  507,
+  512
+ ],
+ "ui/my_pets_lowpoly/selected-card-overlay": [
+  512,
+  492
+ ],
+ "ui/my_pets_lowpoly/team-slot-frame": [
+  512,
+  493
+ ],
+ "ui/my_pets_lowpoly/action-lime": [
+  1024,
+  317
+ ],
+ "ui/my_pets_lowpoly/action-orange": [
+  1024,
+  283
+ ],
+ "ui/my_pets_lowpoly/action-blue": [
+  1024,
+  293
+ ],
+ "ui/my_pets_lowpoly/close-red": [
+  512,
+  492
+ ],
+ "ui/my_pets_lowpoly/favorite-gold": [
+  512,
+  481
+ ]
+}

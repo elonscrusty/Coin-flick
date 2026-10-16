@@ -1,0 +1,60 @@
+lobby lobby
+lobby lobby-cash cash=250000
+party party-none view=none
+party party-solo view=solo
+party party-party view=party
+party party-invite view=invite
+hunt hunt
+hunt hunt-countdown phase=countdown
+hunt hunt-tutorial tutorial=on
+hunt hunt-cracked cracked=6
+hunt hunt-machine-run machine=AutoCracker mtime=6
+hunt hunt-machine-paused machine=AutoCracker mtime=4 mstate=paused
+hunt hunt-machine-full machine=AutoCracker mtime=8 mstate=full
+results results
+results results-party mode=party
+results results-reveal stage=reveal
+results results-tutorial mode=tutorial
+shop shop-tools tab=Tools
+shop shop-machines tab=Machines
+shop shop-machines-owned tab=Machines owned=AutoCracker
+shop shop-storage tab=Storage
+shop shop-tiers tab=Tiers
+shop shop-gallery tab=Gallery
+collection collection
+collection collection-index tab=Index
+collection collection-stats tab=Stats
+collection collection-empty count=0
+collection collection-detail detail=1
+collection collection-confirm confirm=1
+collection collection-confirm-all confirm=all
+settings settings
+boards boards board=Wins
+launch launch-launching kind=launching
+launch launch-failed kind=failed
+launch launch-partial kind=partial
+launch launch-waiting kind=waiting
+launch launch-timedout kind=timedout
+launch launch-timedout-member kind=timedout leader=off
+launch launch-returnfailed kind=returnfailed
+launch launch-rejected kind=rejected
+inspect inspect
+tutorial tutorial-sell step=sell
+tutorial tutorial-gallery step=gallery
+tutorial tutorial-goal step=goal
+tutorial tutorial-crack step=crack
+rocks-views rocks-pile view=pile
+rocks-views rocks-A-pickup view=A
+rocks-views rocks-B-full view=B
+rocks-views rocks-C-table view=C
+rocks-views rocks-D-collect view=D
+rocks-views rocks-G-machine view=G t=1.2
+rocks-views rocks-H-geode view=H
+rocks-views rocks-L1-pickup view=L step=pickup
+rocks-views rocks-L2-carry view=L step=carry
+rocks-views rocks-L3-deposit view=L step=deposit
+rocks-views rocks-L4-crush view=L step=crush
+rocks-views rocks-L5-rubble view=L step=rubble
+rocks-views rocks-W-four view=W
+collection collection-place place=1
+hunt hunt-bagfull bag=full toast=1

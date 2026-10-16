@@ -1,0 +1,165 @@
+CRACK THE ROCKS! — PHASE 1 REVIEW AND REPAIR PROMPT
+Based on supplied ScreenRecording_10-09-2026 10-43-54_1.mp4.
+43.9 seconds; landscape mobile, 1108 x 512 source.
+This is a repair brief for the existing implementation. Preserve working systems and user data. It is not a request to restart the game.
+
+WHAT THE VIDEO ACTUALLY SHOWS
+0-8s: shared lobby, temporary collection shelves, departure terminal and equipment area; top instruction 'Start your first hunt! Tap PARTY, then SOLO'.
+About 8-12s: solo entry and practice countdown.
+15-16.5s: 12-rock practice; one normal rock collected then geode discovered. Target outline and rubble count update.
+17-18s: a reveal animation exists: dark overlay and separated shell shapes around a flat circular gold/brown central object. Do not claim there is no reveal animation.
+20s: Hunt Results says YOU WIN, Citrine, Legendary, 2.42kg. Text clipping/overflow is visible. Winner row includes '2 cracked · +1...' but the full trailing meaning is not visible; inspect code before declaring it increments a multiplayer Win.
+24-32s: Hunt Again starts 80-rock pile; remaining count visibly decreases from80 to78 to75; personal rubble increases.
+36-40s: rubble8/30, hopper interaction, then Cash16 and Rubble0/30. Normal sale appears to work.
+43s: device Control Center overlays the recording; do not treat it as an in-game UI fault.
+Only one player is shown. Clip does not verify live party isolation, multiplayer reward races, save/rejoin integrity, machine ownership or teleports.
+
+OBSERVED PRIORITIES
+P0 mobile UI overflow and clipping; ambiguous control states/modal blocking.
+P1 actual rock-cracking identity: readable handheld, fracture progression, believable faceted mound, dimensional geode.
+P1 tutorial closes too early to demonstrate sell/display loop in this recording.
+P2 environment art hierarchy and clearer equipment/gallery navigation.
+Audit separate concerns: solo/tutorial win accounting, actual rarity config, duplicate rewards, and multiplayer arbitration. Don't assert these are broken without inspecting/testing.
+
+COPY INTO CLAUDE
+================
+Act as senior Roblox programmer and technical artist. Inspect the existing Phase1 game and correct the problems below. Keep the working entry, cracking, reward, rematch, rubble sale, data protection and server authority. Do not reset progress, regenerate earned specimens, rewrite architecture unnecessarily, or add out-of-scope pets/combat/trading.
+
+First locate HUD construction, constraints, input controller, target selection, Tool visuals/rig handling, pile generator, geode model builder, reveal/result UI, tutorial state, economy/reward service and solo stats. Record actual source causes. For each problem, distinguish confirmed code bug, missing feature and art placeholder.
+Use existing project APIs/workflows. Deliver complete changed files or exact full replacements. Make normal choices autonomously. Do not stop at describing fixes.
+
+1 — MOBILE UI: FIX CONSTRAINTS AT SOURCE
+Visible faults:
+- Left GEODES and SETTINGS captions extend outside their small buttons.
+- Bottom 'Starter Hammer' and '1dmg · 0.9/...' extend beyond the tool slot and compete with Machine caption.
+- HOLD TO CRACK text overhangs circular button.
+- Top second line truncates 'Rocks remaining: ... · You...'.
+- Results lines truncate mineral stats, winner contribution and rubble explanation.
+These persist across lobby/hunt, so inspect shared fixed sizes, TextScaled behavior, padding, constraints, anchors, UIListLayout/UIScale and viewport scaling rather than fixing one label.
+
+Build a responsive layout with a reusable design token module.
+Mobile compact text default16-18px, secondary14-16px; major headings20-24px, constrained by actual viewport.
+Buttons >=44x44 logical pixels, primary action about76-88px. Test viewport scaling, not arbitrary min/max that defeats small layouts.
+Respect Roblox inset/safe zones and device notch. Keep top-left platform controls clear.
+Left menu: icon+short caption cards approximately108x42 at source landscape scale, 8px gaps; if space insufficient use compact icon rail opening labeled menu. Full labels never overflow.
+Tool dock: approximately260x56 total at bottom-center safe zone; each handheld/machine cell enough width for icon, short name and status. Put technical speed/damage in equipment detail, not cramped HUD.
+Primary action: rounded rectangle about104x72 with hammer icon and two lines 'HOLD TO'/'CRACK'; allow enough padding. If circular, fit all glyphs WITHIN circle.
+Place action above default jump button; no overlap with camera drag area or jump. Native movement controls remain usable.
+Top center: title 'Find the hidden geode'; second line only '75 rocks left'. Show personal contribution elsewhere or collapsed. No dangling 'You'.
+Cash/rubble rows get semantic icons and full values. Rubble detail '8 / 30' easily readable.
+Timer remains compact right safe region. Menu positions must not fight timer.
+Result modal width min(viewportAvailable-32,560), height bounded by safe area with scrolling when needed; footer reserved so text cannot cover buttons.
+Separate lines: mineral; rarity chip; mass; winner; your rocks cracked; your rubble retained; next action. No single long concatenated data line.
+Fit names with safe ellipsis only where appropriate; never truncate necessary action/instructions.
+Close X >=44px accessible hit region.
+Parent ClipsDescendants can contain decoration but not mask essential labels. Diagnose content measurement/layout, don't solve by shrinking everything until unreadable.
+Provide portrait fallback, landscape phone, tablet and desktop layouts. No single fixed pixel canvas.
+
+2 — INPUT / STATE AND MODAL BEHAVIOR
+When a modal/reveal is active, disable held cracking, clear target lock, hide gameplay action and irrelevant tool HUD. If native jump remains drawn through a modal, investigate layering/input capture; modal owns touches, not gameplay.
+Existing reveal has bottom tool information bleeding into overlay. Remove it using explicit screen state, not by a giant opaque frame hiding bugs.
+Press/hold works: pointer down starts intention, release/drag-off/menu/focus loss/respawn/match completion stop. Server cadence remains authoritative.
+Camera drag never triggers accidental crack. Tap exposed rock selects; selected outline nonobstructive. Reject out-of-range/hidden targets.
+Primary button states: 'Crack' with valid target, 'Move closer', 'Choose a rock', 'Storage full — sell', disabled during countdown/reward save. Avoid always-looking-usable button when it cannot act.
+Proximity prompt at terminal/hopper must be clearly tappable and not obscure task instructions. Prefer small prompt anchored near object plus action affordance; preserve supported Roblox touch activation.
+Terminal should take player to clear Solo / Create Party flow. Tutorial text matches actual controls; no mention of absent button.
+
+3 — THE HAMMER MUST BE VISIBLE AND FEEL PHYSICAL
+No clear hammer/contact movement is visible in the sampled breaking sequence. Inspect live equipped Tool model, grip, rig support and animation playback before concluding it doesn't exist.
+Make hammer silhouette unmistakable at ordinary gameplay camera: chunky metal head, clear handle, appropriate hand attachment and grip.
+Support the actual user's nonstandard avatar without replacing identity. Verify rig/hand availability; choose compatible animation or stable Tool joint fallback.
+No arm assumptions restricted to standard R6 if users arrive with other rigs.
+On held input: repeat readable raise -> strike -> recover at actual tool cadence. Impact aligns with selected rock direction/range. Don't slash air behind character.
+Contact gives short fracture visual, stone sound, chips; server determines damage, animation marker not trusted for award.
+No full-camera vibration loop. Optional tiny camera impulse, reduced motion setting.
+If animation asset unavailable, implement honest procedural tool motion immediately and document optional proper upload replacement. No fake animation ID.
+Player can rotate/move without hammer disconnecting. Unequip/death/menu stops loops and sounds.
+
+4 — CHANGE THE STACK OF BLOCKS INTO A ROCK MOUND
+Video's80-rock pile reads like rectangular stone bricks stacked into a small tower. Keep logical state and exact count; replace visual generator.
+4-6 original faceted low-poly shell meshes with irregular convex silhouette, softened/chamfered corners; reuse templates, vary rotation/size subtly.
+Natural wide-base mound, tapered peak, scattered edge stones. Approx80-rock beginner mound footprint16-20studs, height5-7studs; feel substantial near avatar without giant hard walls.
+Use anchored gameplay representation; do not create an uncontrolled physics heap.
+Deterministic layout with bounded overlap; don't bury target below ground or leave floating slabs after depletion.
+Move newly exposed upper shells gently down after supporting rock removal; server canonical positions must match rendered positions for hit checks.
+Rock identity unchanged; target fixed and hidden; all shells same material/variation policy. Random placement isn't a guarantee target takes long.
+Per hit crack marks/shading; on final break 4-8 pooled fragments, dull rubble burst, short0.4-.7sec fade. Geode breaks show distinct reveal only AFTER win.
+No extra decorative exposed crystals on active pile; exactly one geode.
+Selected outline thin warm yellow; don't permanently highlight all rocks.
+Avoid heavy CSG at runtime, Heartbeat per shell or high-poly unique models.
+
+5 — REBUILD THE GEODE, PRESERVE ITS DATA
+The Citrine in the video looks like a flat circular badge/coin with gold shapes rather than a hollow stone with crystals. The existing opening sequence works structurally; replace its model.
+Create an irregular 3D outer grey shell, distinct cavity, crystal bed lining cavity and faceted golden/orange Citrine spikes pointing inward/outward.
+Use reusable spike templates with varied height, radius and tilt. The object must look dimensional from front, side and three-quarter view; no single flat texture or emblem.
+Split outer shell into two halves revealing the interior. Keep the collectible stone+crystal assembly intact in inventory/gallery.
+Citrine amber, amethyst violet, quartz white, etc. Palette data derives from earned specimen's mineral; not every geode purple.
+Formation, modifier and mass influence appearance deterministically from stored seed; no reroll on preview/reconnect.
+Scale mass conservatively with cube-root relationship; stay within pedestal bounds.
+Reveal2-2.5sec: frame object, split shell, subtle sparkle, clear mineral/rarity/mass. Free skip works; no purchases.
+ViewportFrame model camera centered using bounding box; no cropping or flat-facing geometry. Use modest WorldModel lighting and readable materials; not blinding bloom.
+After reveal show results with proper thumbnail of SAME specimen, not a different approximation.
+Gallery placement displays actual specimen and readable owner/name/rarity/mass label.
+
+6 — TUTORIAL MUST TEACH SELL AND DISPLAY BEFORE NORMAL LOOP
+The recording enters practice, finds a geode quickly, then immediately permits80-rock rematch without visibly guiding sale/display.
+Don't make prize artificially late or reroll rarity to fix teaching.
+Track onboarding independently of prize discovery:
+A start solo practice.
+B crack at least one ordinary rock; explain rubble.
+C recover first geode.
+D guide sell positive rubble using existing hopper (one rubble sufficient).
+E return to lobby and place earned specimen on assigned collection stand.
+F show earned cash and first equipment objective.
+If player sells before geode, count that step; flexible order not repeated.
+Result buttons during tutorial: 'Sell rubble'/'Display first geode' as relevant, plus explicitly accessible skip. Normal Hunt Again after completed tutorial or user skip.
+One concise active hint, optional restrained floor arrow at needed station; vanish when complete.
+No repeated tutorial after save/rejoin, no forced40sec walkthrough. User can dismiss and continue.
+First geode remains actual saved prize. Don't give extra geodes for completing tutorial.
+
+7 — SOLO RESULTS / RARITY AUDIT, NOT ASSUMED BUG
+Practice shows YOU WIN and a row with '+1...' whose full meaning is hidden. Inspect whether it means specimen, Find or competitive Win.
+Practice/solo award: one geode, Solo Find increment. MultiplayerWins stays unchanged.
+UI solo: 'GEODE FOUND!' or 'PRACTICE COMPLETE'; multiplayer: '<name> wins!'.
+Result line explicitly '1 geode added to your collection' rather than ambiguous '+1'.
+Do not silently alter existing player wins without a separately documented migration policy.
+One Legendary result doesn't prove rarity bug. Inspect configured weights, tutorial forcing/test flags, random seed and rarity serializer.
+If intended odds60/25/10/4/1, verify deterministic test seeds/distribution over large offline samples, no live datastore item grants. Remove unintended force-Legendary debug mode if found. Preserve already earned Legendary specimen.
+Saving prize message in clip is useful state; only replace with friendlier 'Securing your geode...' after real durable commit flow remains correct.
+Never show success before reward commit; retry/duplicate protection preserved.
+Practice geode found after two breaks is allowed by tutorial guarantee; don't label it a bug.
+
+8 — PRESERVE THE SALE AND ECONOMY
+Clip demonstrates8rubble ->16Cash, storage clears. Keep exact server bucket math and idempotency.
+Improve feedback: '+$16 • Sold8 rubble' toast, small hopper grate/collection effect, cash counter tween display only.
+Rubble stays between rematches as observed; don't delete unspent material on hunt reset.
+Full30capacity blocks consuming additional rocks before credit; guide hopper with same HUD.
+No automatic sell introduced without design approval. No cash for unbroken remaining pile on discovery.
+Display price/upgrade benefits clearly once enough money earned.
+Selling geodes separate from rubble; favorites/display protections retained.
+
+9 — PHASE1 ENVIRONMENT: POLISH ONLY THE NECESSARY SLICE
+Current lobby reads as flat platforms, plain tall walls, empty shelves and generic booths. Phase1 assets may be placeholders; still make the tested path coherent without expanding all later features.
+Focus one complete departure terminal, equipment rack with visible hammer/steel hammer/jackhammer silhouettes, gallery alcove, attractive hopper and arena.
+Match: layered faceted quarry cliffs, simple wall supports, safe floor boundary, purposeful machinery bays, restrained light/dust, no dead fake exits.
+Lobby: clear hierarchy and signage Start Hunt / Equipment / Collection. Walkways and lighting guide movement; giant yellow ring not substitute for purposeful layout.
+Empty gallery tells 'Your first geode goes here' with ghost pedestal, not unrelated colored blocks as collection.
+No machines that appear usable while unimplemented. Locked cosmetic placeholder says 'Unlock later' and doesn't fake interaction.
+Preserve player identity, improve camera composition, don't force cinematic angle during normal movement.
+No new monetization/class/pet system in this repair.
+
+10 — INVESTIGATION AND VERIFICATION
+Before edits inspect real UI constraint values, screen inset behavior and small viewport repro. Diagnose one shared source at a time.
+Capture UI before/after in1108x512 and smaller landscape e.g.844x390; portrait390x844, tablet and desktop too.
+Record hammer visibility with actual avatar and standard avatars, held/release input, menu cancel, range and full storage.
+Test tutorial order: sale before/after discovery, display step, skip and rejoin.
+Test practice and solo stats distinct from multiplayer Wins.
+Test2-4players in available Studio environment: same pile, fixed one target, exactly one specimen/winner, simultaneous last hits, party ready/rematch behavior. Don't pretend recording proved these.
+Test reward disconnect/retry idempotency; preserve existing durable protections.
+Validate same specimen properties/visual seed in reveal/results/inventory/gallery.
+Measure full pile/mobile performance; no FPS assertion without actual measurement.
+Do not replace proper server authority with cosmetic client award.
+Code access is necessary to confirm source causes; video only supplies symptoms. Report any concern disproven by inspection.
+Deliver changed-file list, actual tests/screenshots, remaining blockers and no invented completion claims.
+Fix Phase1 core quality before starting Phase2. Existing functionality and progress stay intact.
+

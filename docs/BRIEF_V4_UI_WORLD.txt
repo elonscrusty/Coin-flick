@@ -1,0 +1,275 @@
+CRACK THE ROCKS! — MASTER PROMPT 3
+CURRENT-BUILD BUG REVIEW, COMPLETE UI REDESIGN, LOBBY/ARENA ART PASS
+Reference: ScreenRecording_10-09-2026 12-37-23_1.mp4 (~46 seconds, landscape mobile 1108 x 512).
+
+READ FIRST
+You are currently implementing this game and may still have phases 2–4 in progress. This is an integration brief, not permission to discard working systems or restart the project. Inspect the latest source and current work before acting. Do not duplicate systems that already exist. Reconcile this brief with pending edits, fix confirmed defects at their source, and continue the existing implementation.
+
+The user dislikes the entire current UI and finds both the public lobby and rock arena unfinished. They want much more authored detail, coherent 3D assets, readable mobile interaction, believable equipment animations, and a polished play experience. Preserve player progress, owned tools, currency and geode specimens. Rebuild presentation extensively where needed.
+
+MOST IMPORTANT GAMEPLAY DECISION
+One public shared lobby -> solo or private party match of up to 4 -> ONE shared pile of individual whole rocks -> collect rocks into a visible basket -> carry to your assigned processing table -> deposit -> crack rocks on the table -> exactly one hidden geode wins the round -> display your collected specimen in the shared lobby.
+
+Never crack at the central pile. Never create one private rock pile per player. Players compete over the shared source and process at their own assigned stations. Picking up the target does not win; completing its processing wins. Automatic machines process deposited queues; they do not vacuum rocks from the central pile.
+
+The latest recording still shows at-pile cracking. If the carry/table revision is already underway, complete and integrate it instead of implementing a second version. If it isn't started, make it the first gameplay milestone before finishing machine polish.
+
+A. VIDEO EVIDENCE AND LIMITS
+Observed:
+1. Opening lobby: multiple black signboards on thin posts interrupt the central view and overlap other objects/text. EQUIPMENT/SELL/GALLERY/COLLECTION information competes with a large objective banner, start structure, shop signs and a very large empty leaderboard.
+2. Departure terminal around 4s: 'PARTY 1 · 2 · 3 · 4' wraps with 4 stranded on its own line. The terminal prompt occupies a large rectangle over the avatar and terminal.
+3. Arena around 8–37s: gray/brown floor, very tall repeated gray wall slabs, orange diagonal braces, yellow floor outlines, empty machine bays, sell hopper, central rock mound. It reads as a prototype enclosure rather than a finished quarry/workshop.
+4. Rocks are more rounded than the previous build, but clustered geometry, gray faceting and scattered debris still create a lumpy, visually noisy mound. The video does not establish whether each visible silhouette corresponds to one authoritative rock record.
+5. Player still uses HOLD TO CRACK next to the mound. No carry basket, deposit interaction or crushing table is demonstrated.
+6. Jackhammer model is oversized relative to this avatar and often reads as an orange block with a long bit/handle pointing away from the working surface. Contact between tool and rock is hard to read. Inspect actual grip/animation; the video alone cannot prove the rig cause.
+7. Storage-full state uses red text, a red warning bar and a red action button saying STORAGE FULL / SELL RUBBLE. The action sits over the same lower-right area as the jump control. Warning remains understandable but visually heavy and context is unclear.
+8. Reward reveal at ~38–39s EXISTS: rock shell pieces separate inside a dark panel. The opening does not present a clearly lit, readable crystal cavity in sampled frames; large gray shell geometry dominates the shot. Do not claim there is no animation. Fix composition and specimen construction.
+9. Results around 40s: Rose Quartz, Uncommon, Mass 1.15kg, Value $62, 1 geode added, +1 solo find, 65 rocks cracked, 'Rubble you keep: 64 (sells for $128)'. HUD behind it shows 19/30 rubble. This wording is inconsistent with what the player currently holds.
+10. Phone Control Center at the end is outside the game, not an in-game defect.
+
+Not established: actual party behavior, queue recovery, persistence correctness, machine functionality, input latency, causes of source-level bugs, or geode placement in the gallery. Do not claim those systems are broken or tested from this recording. Inspect source and reproduce them.
+
+B. INVESTIGATE THE RUBBLE/RESULTS MISMATCH FIRST
+Reconcile these visible figures:
+- Started with $207 and 9 rubble.
+- First sale: 24 rubble for $48.
+- Second sale: 30 rubble for $60.
+- Finished with $315 and 19 rubble.
+- Results: 65 rocks cracked and 64 ordinary rubble earned are plausible if one of those rocks is the geode.
+- 9 starting + 64 earned - 24 sold - 30 sold = 19 remaining.
+- $207 + $48 + $60 = $315.
+This suggests sales/storage arithmetic may already be correct while 'Rubble you keep' incorrectly labels total round earnings. Verify the ledger and result data flow before changing rewards. Do not grant another 64 rubble to make the screen agree; that would risk duplicating already sold material.
+
+Use precise results fields:
+'Rocks processed: 65'
+'Rubble earned this hunt: 64'
+'Rubble sold this hunt: 54 • +$108'
+'Rubble currently in bag: 19 / 30'
+'Bag sale value: $38' if the rate remains $2 each.
+If accounting tracks starting rubble separately, these quantities still mean what their labels say. Don't claim all 54 sold units were earned this hunt; a sale during this hunt can include carried-over material.
+
+Geode '$62' is specimen sale value, not automatically cash earned, unless a real sale occurred. Label 'Specimen value' so it cannot be mistaken for a currency grant. Preserve existing selling/display choices and never auto-sell the winning geode.
+
+Trace round counters, ordinary reward grants, persistent bag balance, sales and results snapshot. Handle repeated button taps, storage full, round completion during a sale, delayed persistence and stale results. Server supplies one consistent final snapshot; client doesn't reconstruct an award from animation counts. Reproduce any arithmetic defect before modifying it.
+
+C. ONE VISUAL DIRECTION FOR THE ENTIRE GAME
+Build a polished stylized quarry workshop: chunky low-poly models, softened/beveled silhouettes, restrained textures, warm workshop materials, cool slate rocks, amber industrial accents and vibrant jewel interiors. It should feel inviting, purposeful and tactile. Avoid both realistic dirt/grunge everywhere and a collection of generic black/yellow placeholder rectangles.
+
+Suggested palette:
+Deep charcoal #202833; slate #4D5B66; warm concrete #C1B6A2; wood #A87548; amber #F4BE43; warm off-white #F4EFE5; success mint #72CCA0. Use jewel colors for collection/rarity accents. Crimson is reserved for errors/destructive states. Limit purple to actual amethyst/rarity accents rather than unrelated navigation.
+
+Material rules:
+Main floor: warm matte concrete with restrained variation.
+Buildings: slate frames, wood accents, lighter wall panels and amber trim.
+Rocks: matte stone with broad readable facets, not shimmering/mottled texture noise.
+Equipment: believable painted metal plus grips/bolts/pads.
+Geodes: dark shell, lighter thick rim, colored crystal cavity with varied faceted peaks and controlled sparkle.
+
+Lighting: choose a bright soft daytime environment, readable shadowing and gentle warm interior lights. Keep bloom low so lamps/crystals maintain edges. Small particles should enhance contact, not coat every surface in glowing noise. Test actual supported quality settings; don't depend on maximum graphics for readability.
+
+D. REBUILD THE PUBLIC LOBBY AS A READABLE PLACE
+Keep it shared. Make the first camera view communicate where to start within 3 seconds. Use an authored spatial hierarchy instead of adding more signboards.
+
+Suggested spatial plan (tune to avatar/camera, not blindly to coordinates):
+- Spawn at the front edge of a central courtyard approximately 80–100 studs wide and 65–85 deep.
+- Directly ahead, 12–20 studs from spawn: Start Hunt terminal, the primary landmark.
+- Left: open-front equipment workshop with visible tools/machines.
+- Right: collection gallery entrance with clearly visible specimen cabinets.
+- Far rear/side: compact leaderboard alcove, off the main action axis.
+- Personal gallery alcoves around the sides/back, sufficiently separated from paths. Preserve the established shared-lobby ownership system.
+- Optional sell point near workshop with physical chute; use only if already part of lobby loop.
+- Maintain clear 8–12-stud main paths. No railings/posts directly in front of spawn or terminal.
+
+START TERMINAL
+Model as a compact kiosk with stone/metal base, wood/painted frame, a recessed readable screen, a rock/geode emblem and one warm overhead lamp. Large sign: START HUNT. Secondary hint: Solo or party · up to 4. Do not make capacity numbers the headline. Show a subtle illuminated floor approach, not a giant hazard rectangle.
+
+Keep signs unobstructed from approach angles. Use one title per structure, not multiple floating signs saying the same thing. Surface text must fit; move/correct posts that cross words. Size/wrap it deliberately and test from gameplay camera. A coherent physical terminal replaces freestanding 'PARTY 1 · 2 · 3 · 4' signage.
+
+EQUIPMENT WORKSHOP
+Add a roof/canopy, shallow interior, visible beam supports, tool racks, a workbench, orderly display stands and enough machinery to communicate future upgrades. Show locked equipment with deliberate locked visuals and clear shop cards, not unfinished wireframe bays. Props: hammer rack, jackhammer stand, spare bits, vise, steel plates, bolt bin, tool case, compact compressor, coiled hose. Keep these behind/along walls so paths remain navigable.
+
+GALLERY
+Give it a genuine identity: wide framed entrance, lit display niches, stone/wood counters, clean glass cases, amber spotlights and jewel-colored specimens. Empty owned slots should look intentionally ready for a specimen: pedestal, faint slot outline and small 'Place geode' prompt. Avoid rows of bare gray shelves in a void. Show owner attribution legibly; prevent strangers modifying displays. Only display player-owned specimens; decorative educational examples must be clearly separate.
+
+LEADERBOARD
+Reduce current billboard dominance. Place a framed board in a secondary alcove with smaller scale and curated margins. Empty state: 'No records yet — start a hunt!' in readable text, not tiny lines floating across an empty billboard. Preserve actual existing leaderboard meanings; do not invent competitive wins for solo.
+
+GROUND AND BOUNDARY
+Replace constant yellow rectangles with purposeful paving: broad warm concrete walkway, darker workshop pads, occasional inset stone patches and subtle route accents. Use a low perimeter wall/fence with cliff/trees beyond for depth. Add containers, stacked crates, planters with hardy shrubs, small rock samples and benches near buildings. Don't clutter playable paths with random debris.
+
+Remove or relocate the two central direction boards that visually block spawn. Building identity plus a restrained world marker can provide navigation. Replace oversized disconnected signs with architectural elements.
+
+E. REBUILD THE PRIVATE ROCK ARENA
+This is a functional quarry worksite, not another public lobby. One central mound and up to four assigned processing stations.
+
+Suggested layout:
+Playable footprint approximately 70–90 studs across. Shared mound roughly 12–18 studs wide, near center. Four stations on equal-radius arcs, about 14–20 studs from mound edge with consistent route distances. Shared sell hopper reachable without crossing someone's table. Keep all stations visible and their assigned identities readable.
+
+Replace the tall repeated flat wall slabs with a layered quarry boundary:
+1. Main broad rock forms with varied height/width and silhouette.
+2. Small secondary ledges/boulders at base.
+3. Limited metal supports/retaining-wall sections only where structurally plausible.
+4. Fence/railing where there is an actual drop.
+5. One small workshop shelter or equipment storage nook.
+6. Background crane/conveyor silhouette for depth, anchored to believable supports.
+Keep cliffs cohesive and simplify texture scale. Avoid identical rectangles forming a gray prison wall. Provide sky views and a recognizable entrance gate.
+
+Floor: hard-packed quarry surface in warm neutral tone, concrete station pads, believable wheel marks and sparse edge grit. Central pile pad can be an irregular stone/dirt patch; giant circular hazard track is unnecessary. Use yellow paint only to mark machine clearance and hopper edge. Remove excess empty outlined rectangles once station models are installed.
+
+Asset/detail package for arena:
+- modular cliff forms, 6–8 broad variants;
+- retaining wall and fence modules;
+- station table kit plus 4 owner variations;
+- carry basket/crate;
+- input trays and output trays;
+- hopper with lip, chute, support frame and receipt light;
+- compressor, generator housing, cable/pipe modules;
+- 3 crate sizes, pallet, rock bin, cart;
+- spare tool rack, warning placard, cone/barrier used sparingly;
+- lamp fixtures with visible supports;
+- stone/grit clusters only at boundaries;
+- controlled contact dust/chip VFX.
+Each has a placement purpose. A large asset count is not a reason to cover the entire floor.
+
+F. INDIVIDUAL ROCK PILE: READABILITY BEFORE POLYGON COUNT
+Build 10–12 reusable whole-rock silhouettes with variation in orientation, size and neutral stone tone. Rounded asymmetric boulder, wedge, flat oval, tall lump, squat stone, oblong stone, angular chunk, etc. Use broad facets and softened edges. Do not assemble one collectible from obvious floating cubes, or use one enormous visual mound over invisible records.
+
+One collectible Model per authoritative opaque RockId. It must have its own clear silhouette, pivot, bounds and state. Do not communicate the target through names/attributes/exterior size/color/light. Replicate opaque identity only.
+
+Arrange the mound as stable layers with partial gaps and readable outer rocks. No majority buried forever inside an inaccessible mesh. Make collectable surfaces available from perimeter; reveal successive accessible rocks as upper/outer layers leave. Keep grounded contact and limited natural overlap, not interpenetrating slabs everywhere.
+
+Selection: one subtle amber outline on the rock actually eligible for pickup. Avoid outline on a tiny barely visible fragment buried behind another rock. Pickup removes that exact object and animates it toward the basket. Decorative grit is smaller, duller and never outlined. No fake collectible debris left behind after removal.
+
+Avoid uncontrolled loose-physics avalanches. Idle rocks can be anchored with scripted settling; use collision groups so avatars aren't wedged or launched. Use interaction geometry appropriate to perimeter pickup. Target rock remains recoverable through all disconnect/reset paths.
+
+G. CARRY AND TABLE LOOP — FINISH THIS BEFORE AUTOMATION
+Starting basket: 5 whole rocks; station queue: 10. Centralize tuning. Carry capacity is independent from current 30-unit rubble storage.
+
+Server states: InPile -> Carried -> Queued -> Processing -> Resolved. Server validates participant, distance, capacity, ownership and current round, and transitions atomically. Exactly one server-only predetermined target rock. No old at-pile damage remote may continue granting rewards after the UI change.
+
+At pile: PICK UP ROCK. Tap one; optional hold-repeat with controlled cadence. Fill visible basket with mini rock props. When full: 'Basket full — take rocks to your table' plus restrained arrow to assigned table.
+
+At own table: DEPOSIT ROCKS. Transfer eligible records, show physical input tray and queue count. Keep overflow in basket if queue full. Then HOLD TO CRUSH for manual equipment. Support keyboard/gamepad equivalents. Opponents can see station progress but cannot deposit or process there.
+
+Table kit: sturdy leg frame, cross braces, textured restrained tabletop, central steel cracking plate, basket dock, input tray, output tray, tool hooks, small shield and nameplate. Rough starting dimensions 7 x 4 x 3 studs, tuned to actual avatar. Make it look usable rather than a blank cube. Same distance/clearance for all participants.
+
+Equipment progression:
+Starter/steel hammer physically swings into rock on table.
+Jackhammer bit operates vertically into rock on table, with believable grip and vibration.
+Auto cracker feeds the deposited queue while owner collects.
+Press cycles one deposited rock: load, platen down, compression, split, platen up.
+Crusher feeds one deposited rock through a station-attached machine/conveyor.
+One active processor per station. Prevent manual/machine double resolution. Geode winner is owner of station that finishes target, even if owner currently collecting. Stop all active processors when round is won.
+
+Rubble storage: reserve capacity before starting any rock without exposing whether it is target. If capacity unavailable, pause all new starts consistently and show sell guidance. An already active rock finishes using reserved ordinary capacity; geode frees reservation. Don't silently drop output or give only target a visible bypass. Sale frees storage safely. Disconnect returns unresolved held/queued target to accessible pile; no duplicated rewards.
+
+H. COMPLETE UI REDESIGN, NOT A COLOR SWAP
+Create one coherent design system and rebuild every current screen under it. The current repeated dark outlined boxes and plain text stacks feel generic. Keep mobile clarity, but add hierarchy, spacing, curated iconography and coherent composition.
+
+Visual rules:
+- Main panels warm off-white/slate or dark slate with deliberately contrasted inset sections; choose one dominant treatment across all screens.
+- Amber for primary action, neutral for secondary, red only for meaningful warnings/destructive actions.
+- Consistent corner radii, 1–2px subtle borders, restrained shadow; avoid bright thick outline on every button.
+- One readable friendly display font for titles and one clean font for body/stats, with supported Roblox fonts. Don't mix many weights/styles arbitrarily.
+- One icon family with consistent stroke/fill and optical size. Purple orb for Geodes and tiny improvised symbols don't form a coherent set.
+- Standard spacing scale 4/8/12/16/24. Typical phone text: 13–15px auxiliary, 16–18px body, 22–28px section titles, adapted to usable viewport. Don't indiscriminately TextScaled every line.
+- Test at recorded 1108x512 and narrow phone usable landscape (~844x390), tablet and desktop. Respect safe insets and actual touch controls. Touch targets around 44px or larger when practical; fit via adaptive layout, not overlapping controls.
+- World/UI text can never be clipped, stranded in unexpected wraps, hidden by posts, or illegible against texture.
+
+HUD
+Top-left: compact wallet and clearly labeled rubble capacity, placed beneath Roblox safe area.
+During hunt: separate whole-rock carry counter. Basket and rubble icons must differ.
+Top-center: compact current objective with one subline; replace always-on huge banner with context-relevant information. Lobby: 'Start a hunt' hint can dismiss after onboarding. Arena: unopened rocks / current task. Don't cover start terminal.
+Timer: secondary compact chip integrated with round information; no arbitrary competing anchor.
+Navigation: compact consistent stack or adaptive rail. Lobby Party, Shop, Collection, Settings. Arena fewer context-relevant buttons. One label choice for Collection, rather than GEODES/GALLERY/COLLECTION ambiguously meaning different things.
+Bottom: compact equipped tool chip and station status. Don't give 'No machine' equal visual prominence to equipped tool during first sessions. It can be a smaller secondary state or shop progression hint.
+Primary touch action: separate from jump; both remain tappable/visible. The current action visibly overlaps jump area in the recording. Place it based on actual control bounds and safe inset, not one fixed coordinate for every device.
+
+STORAGE WARNING
+Use one concise task notice: 'Rubble bag full' + 'Sell at the hopper to keep crushing'. Highlight route/hopper. Action near station should explain pause; near hopper becomes SELL RUBBLE. Don't make a red button appear to remotely sell if server requires hopper proximity. If existing selling legitimately supports another mechanic, inspect/document it; footage alone doesn't prove a distance bug.
+
+TOASTS
+Sale confirmation: '+$48 • Sold 24 rubble', a compact transient toast placed away from objective/control area. Dismiss after a short readable duration; newer events replace/stack within a bounded system. Never allow an old sale toast to keep competing with reveal/results. All counts are server acknowledgments.
+
+PARTY PANEL
+Title 'Start a hunt'. Clear Solo Hunt primary option and Create Party secondary/parallel option with distinct explanation. Party lobby has up to 4 member slots, ready states, invite flow and one start action. Only display real existing capabilities. Explain shared pile/table race in one short sentence. Don't put implementation details in player copy.
+
+SHOP
+Tabs for supported categories only. Equipment cards use actual 3D previews, name, price, performance facts with units, owned/equipped/buy state. Highlight progression; show affordable/unaffordable clearly. Don't cram unreadable paragraphs into tiny cards. Machine cards reflect processing deposited queue, never auto harvesting. Preserve current prices unless balance testing justifies a change.
+
+COLLECTION/GALLERY
+Grid with readable specimen thumbnails, name and rarity. Selected specimen detail: larger 3D preview, mass, specimen value, favorite, and Place in Gallery. Clear slot chooser with real empty/occupied state and move/replace behavior. Index and owned inventory are distinct concepts. No fake ownership unlocks. Empty state explains how to get first geode. Selling a specimen is intentional and clearly communicates removal; do not confuse it with rubble sale.
+
+SETTINGS
+Only working settings. Consistent toggles/sliders, readable labels, restore state on reopen and preserve appropriate preferences. Avoid decorative nonfunctional rows.
+
+RESULTS
+Larger specimen hero area with visible cavity; discovery headline, name/rarity, clear collection-added state, then concise honest round stats. Use the corrected rubble accounting from section B. Main buttons: Hunt Again and Return to Lobby. Close behavior must be defined and not strand the player in finished arena. Solo Find and multiplayer Win labels are distinct without verbose '(not a multiplayer win)' parenthetical. Keep internal accounting rules in code, not product prose.
+
+I. EQUIPMENT RIGGING, ANIMATIONS AND GEODE PRESENTATION
+Inspect actual avatar rig used in footage. It is not a standard-looking humanoid presentation; don't assume default animation asset/grip settings work. Make Tool handles and attachments support the actual model and provide rig-compatible animation/fallback. Scale tools to useful reach. Don't change user's avatar to conceal grip issues.
+
+Jackhammer must show body, two grips, flexible cable/air hose where appropriate, silver bit and contact point. Idle carry is stowed/neutral. Processing pose stabilizes it over plate with bit aligned toward stone. Short vibration is localized, not a giant rotating block across torso. Stop animations on movement away/unequip/end/reveal and restore joints cleanly.
+
+Animation list:
+Pickup reach/scoop; rock-to-basket arc; carry idle/walk; basket dock/deposit; table rock feed; hammer wind-up/contact/recoil; jackhammer start/loop/stop; machine feeder; press down/hold/up; crusher feed/split; ordinary fracture; geode opening; specimen display placement; subtle victory reaction. Use authored/keyframed or procedural rig-compatible animation with appropriate priorities. Don't fight locomotion or leave joints locked.
+
+Current geode reveal separates shell pieces but they obscure the reward. Rebuild hero specimen as a believable geode: rough outer stone, thick pale mineral rim, hollow cavity, dense varied-height faceted pink crystals for Rose Quartz. Current results preview shows pink protrusions on a largely closed-looking gray stone; orient cavity to camera and make interior the focal point. Do not hide the main jewel behind shell or show a plain gray broken rock for most of reveal.
+
+Reveal sequence target ~2.5–3 seconds:
+0–0.4s: isolate working rock on table/hero ViewportFrame.
+0.4–1.0s: visible fractures, controlled tremor.
+1.0–1.7s: shell halves open outward exposing lit crystal cavity.
+1.7–2.5s: gentle camera ease to specimen, small sparkle and name/rarity reveal.
+Then results using same specimen model/camera framing.
+Adjust after testing; don't make an unskippable long cutscene. Make skip work safely without skipping server reward persistence. Don't blanket claim nothing existed—improve existing sequence.
+
+Audio where assets are available: pickup clink, basket deposit, hammer/bit contact, ordinary break, machine cycle, sale receipt, distinct crystal discovery. Use licensed/available assets and real IDs only; never fabricate asset IDs. Keep loops cleaned up and respect settings.
+
+J. BUILD DETAIL THROUGH A REUSABLE ASSET KIT
+Make an asset manifest and reusable modules/models instead of scattered ad hoc Parts. Prioritize assets that improve action legibility:
+1. Rocks, basket, table, queue trays, tool grips, hopper, geode shell/cavity.
+2. Lobby start terminal, workshop facade, gallery cabinets, leaderboard alcove.
+3. Arena cliffs, retaining wall/fence, floor/station pad kit.
+4. Machinery functional parts, bolts, rails, compressor, cables, crates, bins, cart.
+5. Sign frames/fixtures, lamps, foliage/planters and edge props.
+Use several silhouette variants, not dozens of identical objects randomly scaled. Match bevels, material roughness and palette. Mesh complexity is not polish; clean silhouette, coherent material and correct animation matter more. Use LOD/reuse where appropriate. Don't rely on remote assets that fail to load or placeholder IDs.
+
+K. TECHNICAL INVESTIGATION AND INTEGRATION
+Before fixing, inspect recent changes, Output errors and source ownership. Reproduce each confirmed issue in the current build. Trace UI data from server snapshots through events and render; trace rewards from rock resolution through bag/sale/persistence/results. Label hypotheses until tested.
+
+Keep one authoritative round/rock state model and one UI controller per concern. Don't add extra copies of event connections on every respawn/modal reopen. Cancel hold actions on release, focus loss, moving out of range, unequip, panel opening, end-round or death. Validate server action cadence independently from visual pulses.
+
+Check fast jackhammer cadence against intended configuration; video shows rapid processing, but speed alone is not proof of an exploit. Verify held-action startup cannot multiply loops, hits apply only once per valid pulse, and tool ownership/range are server validated.
+
+Check modal/input focus: only appropriate controls active, overlay has correct ZIndex, close/back returns to right state, errors/loading don't permanently disable actions. Save/reveal pending state needs bounded retries and a truthful failure/recovery path; never leave 'Securing geode...' forever or award duplicate specimens on retry.
+
+Round end snapshots must be consistent. Existing persistent progress survives all visual rebuilding. Ephemeral baskets/queues don't persist into rematches. Machine actions from old round IDs cannot affect new rounds. Exactly one geode is awarded; ordinary rubble credits only the responsible station owner.
+
+Performance: stable anchored rock pile, bounded VFX, pooled chips, no loose-physics explosion, no per-frame recreation of UI or specimen models. Profile a 4-player round with active machines. Optimize repeated assets without removing all visible detail.
+
+L. PRIORITY ORDER AND ACCEPTANCE
+Milestone 1: Source investigation, reward/results reconciliation, at-pile cracking disabled, carry/deposit/table loop functional.
+Milestone 2: Entire UI design system applied to HUD + party + shop + collection + settings + reveal/results; safe mobile layout.
+Milestone 3: Public lobby reconstructed with clear start view, real workshop/gallery landmarks and tidy circulation.
+Milestone 4: Arena reconstructed with layered quarry boundary, separate readable rocks and four equal processing bays; machine phases integrated.
+Milestone 5: Equipment grips, processing animations, crystal reveal, sound/detail/performance pass.
+Do not keep adding unrelated pets, trading, rebirths, combat or extra currencies to make the game feel finished.
+
+Required verification:
+- Opening camera immediately communicates Start Hunt; no intersecting signs or wrapped terminal capacity line.
+- Each collectible rock is recognizable, selected correctly and removed on pickup. Pickup never grants rubble.
+- Basket capacity/queue transfer/ownership work on touch and other supported inputs.
+- All cracking happens on assigned table; old pile damage calls are rejected.
+- Table/machine contact is visible with actual avatar, no oversized sideways tool pose.
+- Four players race over one shared pile; no duplicate pickup, duplicate geode or unwinnable disconnected target.
+- Storage full doesn't destroy records, output or disclose target; sale resumes processing consistently.
+- Replay the recorded arithmetic: starting 9 rubble, earning 64, selling 54 yields 19 bag and +$108. Results describe each figure correctly.
+- No UI action overlaps jump/joystick/Roblox controls; labels fit at recorded and narrow-phone usable viewport.
+- Gallery instruction only appears in relevant context; owned geode can actually be placed/displayed.
+- Reveal visibly exposes crystal cavity; results uses same actual specimen, collection persists across rejoin.
+- Solo finds and multiplayer wins are separated; other participants keep only their own earned rubble.
+- Repeated respawn, rematch, modal opening and held input don't accumulate handlers or duplicate processing.
+- No errors in Output for tested paths; performance remains usable with full asset set and active party machines.
+
+Report: observed root causes, changed systems/files, visual changes, actual tests performed, remaining in-progress phase items, and known limits. Include screenshots of new spawn view, arena overview, table processing, main HUD, shop, collection and results at a mobile viewport. Do not call the build polished because a single screen was reskinned. Do not claim multiplayer/device tests passed if not run.

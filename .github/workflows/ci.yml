@@ -10,45 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install toolchain
-        uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Check formatting
-        run: stylua --check src tests
-
-      - name: Lint
-        run: selene src
-
-      - name: Install luau-lsp (latest release, with matching Roblox types)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          TAG=$(gh release view -R JohnnyMorganz/luau-lsp --json tagName -q .tagName)
-          echo "luau-lsp $TAG"
-          mkdir -p "$RUNNER_TEMP/luau-lsp"
-          gh release download "$TAG" -R JohnnyMorganz/luau-lsp -p 'luau-lsp-linux*.zip' -D "$RUNNER_TEMP/luau-lsp"
-          ZIP=$(ls "$RUNNER_TEMP"/luau-lsp/*.zip | grep -v -i arm | head -n 1)
-          unzip -o "$ZIP" -d "$RUNNER_TEMP/luau-lsp/bin"
-          chmod +x "$RUNNER_TEMP/luau-lsp/bin/luau-lsp"
-          echo "$RUNNER_TEMP/luau-lsp/bin" >> "$GITHUB_PATH"
-          curl -sSfL -o globalTypes.d.luau "https://raw.githubusercontent.com/JohnnyMorganz/luau-lsp/$TAG/scripts/globalTypes.d.luau"
-
-      - name: Type check (strict Luau)
-        run: |
-          rojo sourcemap default.project.json -o sourcemap.json
-          luau-lsp analyze --sourcemap=sourcemap.json --definitions=globalTypes.d.luau --no-strict-dm-types src
-
-      - name: Automated tests
-        run: lune run tests/run.luau
-
-      - name: Build place file
-        run: rojo build default.project.json -o CoinFlick.rbxlx
-
-      - name: Upload place file
-        uses: actions/upload-artifact@v4
-        with:
-          name: CoinFlick-place
-          path: CoinFlick.rbxlx
+      - name: Install tools
+        run: bash tools/setup_tools.sh
+      - name: Type check, compile, rule tests, Rojo build
+        run: bash tools/check.sh
