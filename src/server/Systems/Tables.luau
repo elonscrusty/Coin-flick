@@ -11,7 +11,6 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
-local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
@@ -288,20 +287,13 @@ end
 
 local flipRemote: RemoteEvent
 
--- Super rare coins get shouted to the whole server when they land.
+-- Super rare coins get shouted to the whole server the moment they are flipped,
+-- while everyone can still see the big coin in the air.
 local function shoutIfRare(player: Player, outcome: GameLogic.FlipOutcome)
-	local def = Economy.rarityDef(outcome.rarity)
-	if not def or not def.shout then
-		return
+	local notice = GameLogic.shoutNotice(player.DisplayName, player.UserId, outcome)
+	if notice then
+		Net.event("Notice"):FireAllClients(notice)
 	end
-	local prize = if outcome.cash > 0 then `+${Format.short(outcome.cash)}` else `+{outcome.hats} 🎩`
-	local notice: Types.Notice = {
-		kind = "shout",
-		text = `{player.DisplayName} flipped a {def.name} coin! {prize}`,
-		rarity = outcome.rarity,
-		ownerId = player.UserId,
-	}
-	Net.event("Notice"):FireAllClients(notice)
 end
 
 local function flip(
@@ -348,6 +340,7 @@ local function flip(
 			flipRemote:FireClient(other, event)
 		end
 	end
+	shoutIfRare(player, outcome)
 
 	task.delay(duration, function()
 		if states[player] ~= state then
@@ -361,7 +354,6 @@ local function flip(
 			current:SetAttribute("Face", outcome.result)
 		end
 		PlayerData.changed(player)
-		shoutIfRare(player, outcome)
 	end)
 end
 

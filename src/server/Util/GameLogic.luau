@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local Format = require(ReplicatedStorage.Shared.Util.Format)
 local ProfileSchema = require(ReplicatedStorage.Shared.Util.ProfileSchema)
 
 type Profile = Types.Profile
@@ -288,6 +289,21 @@ end
 -- Studio QA only (Cheats system): fill the table so reset can be tested fast.
 function GameLogic.fillTable(profile: Profile)
 	profile.upgrades.moreCoins = Config.MAX_COINS - Config.START_COINS
+end
+
+-- The server-wide shout for a super rare flip (RAINBOW, GIANT), or nil.
+function GameLogic.shoutNotice(displayName: string, userId: number, outcome: FlipOutcome): Types.Notice?
+	local def = Economy.rarityDef(outcome.rarity)
+	if not def or not def.shout then
+		return nil
+	end
+	local prize = if outcome.cash > 0 then `+${Format.short(outcome.cash)}` else `+{outcome.hats} 🎩`
+	return {
+		kind = "shout",
+		text = `{displayName} flipped a {def.name} coin! {prize}`,
+		rarity = outcome.rarity,
+		ownerId = userId,
+	}
 end
 
 return GameLogic
