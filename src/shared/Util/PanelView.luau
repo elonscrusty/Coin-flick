@@ -61,11 +61,13 @@ function PanelView.tabSize(count: number, gap: number): (number, number)
 	return 1 / n, -(gap * (n - 1)) / n
 end
 
-PanelView.TAB_ORDER = { "upgrades", "helpers", "hats", "robux" }
+PanelView.TAB_ORDER = { "upgrades", "helpers", "hats", "daily", "pets", "robux" }
 PanelView.TAB_LABEL = {
 	upgrades = "COINS",
 	helpers = "CREW",
 	hats = "HATS",
+	daily = "GIFTS",
+	pets = "PETS",
 	robux = "MORE",
 }
 

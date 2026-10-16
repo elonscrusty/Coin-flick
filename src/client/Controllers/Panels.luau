@@ -20,6 +20,7 @@ local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local Types = require(ReplicatedStorage.Shared.Types)
 local ClientNet = require(script.Parent.Parent.ClientNet)
+local GiftPets = require(script.Parent.GiftPets)
 local Kit = require(script.Parent.Parent.Ui.Kit)
 local Icons = require(script.Parent.Parent.Ui.Icons)
 local CameraView = require(script.Parent.CameraView)
@@ -46,6 +47,8 @@ local TAB_COLORS: { [string]: Color3 } = {
 	upgrades = Kit.GOLD,
 	helpers = Kit.BLUE,
 	hats = Kit.PURPLE,
+	daily = Kit.ORANGE,
+	pets = Kit.TEAL,
 	robux = Color3.fromRGB(255, 110, 190),
 	flips = Kit.ORANGE,
 	biggestFlip = Kit.GREEN,
@@ -92,6 +95,7 @@ local openListeners: { (boolean) -> () } = {}
 local cards: { [string]: { [string]: CardUi } } = { upgrades = {}, helpers = {}, hats = {}, robux = {} }
 local icons: { [string]: { ViewportFrame } } = { upgrades = {}, helpers = {}, hats = {}, robux = {} }
 local shopTabs: { [string]: TextButton } = {}
+local giftDot: Frame -- red dot on the GIFTS tab: something to claim
 local shopLists: { [string]: ScrollingFrame } = {}
 local shopTab = "upgrades"
 local helperHeader: TextLabel
@@ -849,6 +853,17 @@ local function buildShop()
 		table.insert(tabs, { key, PanelView.TAB_LABEL[key] })
 	end
 	shopTabs = tabRow(body, tabs, pickShopTab)
+	giftDot = Instance.new("Frame")
+	giftDot.Name = "Dot"
+	giftDot.AnchorPoint = Vector2.new(1, 0)
+	giftDot.Position = UDim2.new(1, 8, 0, -6)
+	giftDot.Size = UDim2.fromOffset(16, 16)
+	giftDot.BackgroundColor3 = Kit.RED
+	giftDot.Visible = false
+	giftDot.ZIndex = 12
+	Kit.corner(giftDot, 0.5)
+	Kit.stroke(giftDot, 2, Kit.WHITE)
+	giftDot.Parent = shopTabs.daily
 
 	-- COINS
 	local list = scrollList(body, 44)
@@ -960,6 +975,10 @@ local function buildShop()
 		end)
 		robuxPrice(item.key, item.id, item.kind)
 	end
+	-- GIFTS and PETS (daily gift + jobs, coin pets).
+	shopLists.daily, shopLists.pets = GiftPets.build(function()
+		return scrollList(body, 44)
+	end)
 	shopTabs.robux.Visible = PanelView.showRobuxTab(nil)
 
 	pickShopTab("upgrades")
@@ -1484,6 +1503,9 @@ end
 
 function Panels.start()
 	State.onChange(Panels.render)
+	GiftPets.start(function(show: boolean)
+		giftDot.Visible = show
+	end)
 	ClientNet.event("Leaderboards").OnClientEvent:Connect(function(data: Types.Leaderboards)
 		boards = data
 		renderBoard()
