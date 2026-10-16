@@ -62,6 +62,46 @@ function PanelView.tabSize(count: number, gap: number): (number, number)
 	return 1 / n, -(gap * (n - 1)) / n
 end
 
+-- Big icon tabs. Every tab has a picture; the picked tab (and any tab with room) also
+-- shows its word, so a phone row of 7 tabs stays readable.
+PanelView.TAB_ICON = {
+	upgrades = "💰",
+	helpers = "👥",
+	hats = "🎩",
+	daily = "🎁",
+	pets = "🐾",
+	goals = "🏆",
+	robux = "⭐",
+	flips = "🔁",
+	weekFlips = "📅",
+	biggestFlip = "💥",
+	resets = "🔄",
+}
+PanelView.TAB_WORD_MIN = 92 -- px a tab needs before its word fits next to the picture
+PanelView.PICKED_WEIGHT = 2.6 -- the picked tab is this many times wider than the others
+PanelView.PANEL_MIN_TEXT = 16 -- smallest text inside shop panels (names and buttons use 18)
+PanelView.NAME_MIN_TEXT = 18
+
+-- Widths of `count` tabs sharing a row, the picked one wider: list of (scale, offset) per tab.
+function PanelView.tabWeights(count: number, pickedIndex: number, gap: number): { { number } }
+	local n = math.max(1, count)
+	local total = (n - 1) + PanelView.PICKED_WEIGHT
+	local sizes: { { number } } = {}
+	for i = 1, n do
+		local w = if i == pickedIndex then PanelView.PICKED_WEIGHT else 1
+		table.insert(sizes, { w / total, -(gap * (n - 1)) * w / total })
+	end
+	return sizes
+end
+
+-- What a tab says: picture only when narrow, picture + word when it has room (or is picked).
+function PanelView.tabText(icon: string, word: string, widthPx: number, picked: boolean): string
+	if picked or widthPx >= PanelView.TAB_WORD_MIN then
+		return `{icon} {word}`
+	end
+	return icon
+end
+
 PanelView.TAB_ORDER = { "upgrades", "helpers", "hats", "daily", "pets", "goals", "robux" }
 PanelView.TAB_LABEL = {
 	upgrades = "COINS",

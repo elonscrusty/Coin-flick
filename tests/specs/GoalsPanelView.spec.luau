@@ -308,3 +308,49 @@ describe("Round 10 polish", function()
 		expect(lines[2].text).toBe("KEEP: crew + 🎩 hats")
 	end)
 end)
+
+describe("Menu art pass", function()
+	it("every tab has a picture", function()
+		for _, key in PanelView.TAB_ORDER do
+			expect(PanelView.TAB_ICON[key] ~= nil).toBe(true)
+		end
+		for _, tab in PanelView.BOARD_TABS do
+			expect(PanelView.TAB_ICON[tab[1]] ~= nil).toBe(true)
+		end
+	end)
+
+	it("tab widths fill the whole row, the picked tab is widest", function()
+		for count = 1, 7 do
+			for picked = 1, count do
+				local sizes = PanelView.tabWeights(count, picked, 6)
+				local scale, offset = 0, 0
+				for i, s in sizes do
+					scale += s[1]
+					offset += s[2]
+					if i ~= picked and count > 1 then
+						expect(s[1] < sizes[picked][1]).toBe(true)
+					end
+				end
+				expect(math.abs(scale - 1)).toBeAtMost(1e-9)
+				expect(math.abs(offset + 6 * (count - 1))).toBeAtMost(1e-9)
+			end
+		end
+	end)
+
+	it("on a 7 tab phone row the picked tab says its word, the others show a picture", function()
+		local row = 440 -- px
+		local sizes = PanelView.tabWeights(7, 3, 6)
+		for i, s in sizes do
+			local px = row * s[1] + s[2]
+			local text = PanelView.tabText("X", "WORD", px, i == 3)
+			if i == 3 then
+				expect(text).toBe("X WORD")
+				expect(px >= 100).toBe(true)
+			else
+				expect(text).toBe("X")
+				expect(px >= 40).toBe(true) -- a thumb-sized tab
+			end
+		end
+		expect(PanelView.tabText("X", "WORD", 140, false)).toBe("X WORD")
+	end)
+end)

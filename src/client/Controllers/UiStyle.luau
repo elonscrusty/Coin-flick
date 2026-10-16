@@ -77,11 +77,35 @@ function UiStyle.showText(l: TextLabel)
 	end
 end
 
-function UiStyle.textLimit(l: TextLabel | TextButton, max: number)
+function UiStyle.textLimit(l: TextLabel | TextButton, max: number, min: number?)
 	local c = Instance.new("UITextSizeConstraint")
 	c.MaxTextSize = max
-	c.MinTextSize = UiStyle.MIN_TEXT
+	c.MinTextSize = math.min(max, min or UiStyle.MIN_TEXT)
 	c.Parent = l
+end
+
+-- Chunky cartoon shading for a card or panel: a soft light-to-shade gradient and a thin
+-- glossy highlight strip along the top. (The gradient only paints this frame, not its children.)
+function UiStyle.chunky(frame: GuiObject, shade: number?)
+	local gradient = Instance.new("UIGradient")
+	gradient.Name = "Shade"
+	local low = math.floor(255 * (shade or 0.9))
+	gradient.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(low, low, low))
+	gradient.Rotation = 90
+	gradient.Parent = frame
+	local gloss = Instance.new("Frame")
+	gloss.Name = "Gloss"
+	gloss.AnchorPoint = Vector2.new(0.5, 0)
+	gloss.Position = UDim2.new(0.5, 0, 0, 3)
+	gloss.Size = UDim2.new(0.9, 0, 0, 4)
+	gloss.BackgroundColor3 = UiStyle.WHITE
+	gloss.BackgroundTransparency = 0.45
+	gloss.BorderSizePixel = 0
+	gloss.ZIndex = 1
+	local round = Instance.new("UICorner")
+	round.CornerRadius = UDim.new(0.5, 0)
+	round.Parent = gloss
+	gloss.Parent = frame
 end
 
 -- White text with a thick outline. Dark text (TextColor3 = INK) gets no
@@ -119,8 +143,9 @@ function UiStyle.button(text: string, color: Color3, onPress: () -> ()): TextBut
 	b.TextColor3 = UiStyle.WHITE
 	b.TextStrokeColor3 = UiStyle.INK
 	UiStyle.corner(b)
-	UiStyle.stroke(b)
-	UiStyle.textOutline(b, 2)
+	UiStyle.stroke(b, 3.5)
+	UiStyle.textOutline(b, 2.5)
+	UiStyle.chunky(b, 0.84)
 	local scale = Instance.new("UIScale")
 	scale.Parent = b
 	local pad = Instance.new("UIPadding")

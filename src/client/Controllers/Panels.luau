@@ -385,7 +385,7 @@ local function makePanel(name: string, title: string, color: Color3, maxSize: Ve
 	panel.Visible = false
 	panel.ZIndex = 5
 	Kit.corner(panel, 0.06)
-	Kit.stroke(panel, 4)
+	Kit.stroke(panel, 5)
 	local size = Instance.new("UISizeConstraint")
 	size.MaxSize = maxSize
 	size.MinSize = Vector2.new(260, 170)
@@ -522,10 +522,15 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 	return list
 end
 
--- A row of tabs, each in its own color: bright when picked, pale when not.
+-- A row of big picture tabs, each in its own color: bright when picked, pale when not.
+-- The picked tab is wider and also says its word; the others show just the picture
+-- (unless the row is wide enough for every word).
+local TAB_H = 40 -- lists start at y = 44
+local tabRelayout: { [{ [string]: TextButton }]: (string) -> () } = {}
+
 local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> ()): { [string]: TextButton }
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, -SCROLLBAR, 0, 38) -- same width as the rows below (they reserve the scrollbar)
+	row.Size = UDim2.new(1, -SCROLLBAR, 0, TAB_H) -- same width as the rows below (they reserve the scrollbar)
 	row.BackgroundTransparency = 1
 	row.ZIndex = 6
 	local listLayout = Instance.new("UIListLayout")
@@ -535,8 +540,12 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	listLayout.Parent = row
 	local buttons: { [string]: TextButton } = {}
+	local words: { [string]: string } = {}
+	local order: { string } = {}
 	for i, tab in tabs do
 		local key = tab[1]
+		words[key] = tab[2]
+		table.insert(order, key)
 		local b = Kit.button(tab[2], TAB_COLORS[key] or Kit.ORANGE, function()
 			Sounds.play("Tap", 0.4)
 			onPick(key)
@@ -544,27 +553,40 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 		b.Name = `Tab_{key}`
 		b.LayoutOrder = i
 		b.ZIndex = 7
-		Kit.textLimit(b, 22)
+		Kit.textLimit(b, 26, PanelView.NAME_MIN_TEXT)
 		b.Parent = row
 		buttons[key] = b
 	end
+	local picked = order[1]
 	-- Shown tabs share the whole row (a hidden tab leaves no empty strip).
-	local function resize()
-		local shown = 0
-		for _, b in buttons do
-			if b.Visible then
-				shown += 1
+	local function relayout(newPicked: string?)
+		picked = newPicked or picked
+		local shownKeys: { string } = {}
+		for _, key in order do
+			if buttons[key].Visible then
+				table.insert(shownKeys, key)
 			end
 		end
-		local scale, offset = PanelView.tabSize(shown, TAB_GAP)
-		for _, b in buttons do
-			b.Size = UDim2.new(scale, offset, 1, 0)
+		local pickedIndex = table.find(shownKeys, picked) or 1
+		local sizes = PanelView.tabWeights(#shownKeys, pickedIndex, TAB_GAP)
+		local rowWidth = row.AbsoluteSize.X
+		for i, key in shownKeys do
+			local size = sizes[i]
+			buttons[key].Size = UDim2.new(size[1], size[2], 1, 0)
+			local px = rowWidth * size[1] + size[2]
+			buttons[key].Text = PanelView.tabText(PanelView.TAB_ICON[key] or "", words[key], px, key == picked)
 		end
 	end
 	for _, b in buttons do
-		b:GetPropertyChangedSignal("Visible"):Connect(resize)
+		b:GetPropertyChangedSignal("Visible"):Connect(function()
+			relayout(nil)
+		end)
 	end
-	resize()
+	row:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		relayout(nil)
+	end)
+	tabRelayout[buttons] = relayout
+	relayout(nil)
 	row.Parent = parent
 	return buttons
 end
@@ -577,10 +599,14 @@ local function paintTabs(buttons: { [string]: TextButton }, picked: string)
 		for _, child in b:GetChildren() do
 			if child:IsA("UIStroke") then
 				if child.ApplyStrokeMode == Enum.ApplyStrokeMode.Border then
-					child.Thickness = if on then 4 else 2
+					child.Thickness = if on then 5 else 2.5
 				end
 			end
 		end
+	end
+	local relayout = tabRelayout[buttons]
+	if relayout then
+		relayout(picked)
 	end
 end
 
@@ -603,11 +629,11 @@ local function layoutCard(ui: CardUi, h: number)
 	ui.badge.Size = UDim2.fromOffset(66, math.max(20, math.round(h * 0.3)))
 	local titleLimit = ui.title:FindFirstChildOfClass("UITextSizeConstraint")
 	if titleLimit then
-		titleLimit.MaxTextSize = math.max(16, math.round(h * 0.46))
+		titleLimit.MaxTextSize = math.max(PanelView.NAME_MIN_TEXT, math.round(h * 0.46))
 	end
 	local lineLimit = ui.line:FindFirstChildOfClass("UITextSizeConstraint")
 	if lineLimit then
-		lineLimit.MaxTextSize = math.max(14, math.round(h * 0.34))
+		lineLimit.MaxTextSize = math.max(PanelView.PANEL_MIN_TEXT, math.round(h * 0.34))
 	end
 end
 
@@ -625,7 +651,8 @@ local function newCard(
 	frame.BackgroundColor3 = Kit.CARD
 	frame.ZIndex = 6
 	Kit.corner(frame, 0.18)
-	local outline = Kit.stroke(frame, 2)
+	local outline = Kit.stroke(frame, 3)
+	Kit.chunky(frame, 0.93)
 	local scale = Instance.new("UIScale")
 	scale.Parent = frame
 
@@ -658,7 +685,7 @@ local function newCard(
 		TextStrokeTransparency = 1,
 		ZIndex = 7,
 	})
-	Kit.textLimit(title, 24)
+	Kit.textLimit(title, 24, PanelView.NAME_MIN_TEXT)
 	title.TextWrapped = false
 	title:SetAttribute("BaseWidth", -textLeft - 8)
 	title:SetAttribute("BaseScale", 1 - textRight)
@@ -689,7 +716,7 @@ local function newCard(
 		TextStrokeTransparency = 1,
 		ZIndex = 7,
 	})
-	Kit.textLimit(line, 18, 12)
+	Kit.textLimit(line, 18)
 	line.TextWrapped = false
 	line.Parent = frame
 
@@ -733,7 +760,7 @@ local function newCard(
 	buy.Position = UDim2.new(1, -8, 0.5, 0)
 	buy.Size = UDim2.new(buyWidth, -10, 1, -16)
 	buy.ZIndex = 8
-	Kit.textLimit(buy, 24)
+	Kit.textLimit(buy, 24, PanelView.NAME_MIN_TEXT)
 	buy.Parent = frame
 
 	local team: TextButton? = nil
@@ -1060,7 +1087,8 @@ local function buildTop()
 		frame.BackgroundColor3 = Kit.CARD
 		frame.ZIndex = 7
 		Kit.corner(frame, 0.3)
-		Kit.stroke(frame, 2)
+		Kit.stroke(frame, 3)
+		Kit.chunky(frame, 0.93)
 		local medal = Kit.label({
 			Name = "Rank",
 			Position = UDim2.fromOffset(4, 3),
