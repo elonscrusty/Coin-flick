@@ -16,6 +16,8 @@ local ORDER = {
 	"Hats",
 	"Robux",
 	"Leaderboards",
+	"Daily",
+	"Friends",
 	"Cheats",
 }
 

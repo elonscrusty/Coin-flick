@@ -321,7 +321,7 @@ return table.freeze({
 	HELPER_LEVEL_SPEED = 0.93, -- each level flips 7% faster
 	HELPER_LEVEL_CASH = 0.2, -- and +20% cash
 	OFFLINE_RATE = 0.5, -- helpers earn half speed while you're away
-	OFFLINE_CAP_SECONDS = 2 * 60 * 60, -- and at most 2 hours of it
+	OFFLINE_CAP_SECONDS = 8 * 60 * 60, -- and at most 8 hours of it
 
 	-- Chain flips: tap again within the window to grow the combo.
 	COMBO_WINDOW = 1.5,
@@ -351,6 +351,56 @@ return table.freeze({
 	AUTO_FLIP_INTERVAL = 0.6, -- auto-flip pass flips one coin this often
 	MAX_EXTRA_HELPER_SLOTS = 3,
 	MAX_SAVED_RECEIPTS = 50,
+
+	-- Friend in the same server: both get this cash multiplier
+	FRIEND_CASH_MULT = 2,
+
+	-- Daily gift + daily jobs. Rewards are "flips" = that many heads worth of cash at
+	-- the player's current cash per heads (so a gift is never tiny or huge), plus hat points.
+	Daily = table.freeze({
+		JOBS_PER_DAY = 3,
+		-- 7-day gift. Missing a day does NOT reset it: the next claim just pays the next day.
+		Gift = table.freeze({
+			table.freeze({ flips = 20, hats = 0 }),
+			table.freeze({ flips = 30, hats = 0 }),
+			table.freeze({ flips = 40, hats = 2 }),
+			table.freeze({ flips = 60, hats = 0 }),
+			table.freeze({ flips = 80, hats = 4 }),
+			table.freeze({ flips = 100, hats = 0 }),
+			table.freeze({ flips = 250, hats = 10 }), -- day 7 chest
+		}),
+		-- Job kinds. Three of these four are picked per player per day; goals[i] pays rewards[i].
+		JobKinds = table.freeze({
+			table.freeze({
+				kind = "flip",
+				text = "Flip %d coins",
+				goals = table.freeze({ 50, 100, 200 }),
+				flips = table.freeze({ 10, 20, 40 }),
+				hats = table.freeze({ 0, 1, 2 }),
+			}),
+			table.freeze({
+				kind = "heads",
+				text = "Get %d heads",
+				goals = table.freeze({ 25, 50, 100 }),
+				flips = table.freeze({ 10, 20, 40 }),
+				hats = table.freeze({ 0, 1, 2 }),
+			}),
+			table.freeze({
+				kind = "mega",
+				text = "Help flip the mega coin %d time(s)",
+				goals = table.freeze({ 1, 2, 3 }),
+				flips = table.freeze({ 15, 30, 50 }),
+				hats = table.freeze({ 1, 2, 3 }),
+			}),
+			table.freeze({
+				kind = "buy",
+				text = "Buy %d upgrades",
+				goals = table.freeze({ 3, 6, 10 }),
+				flips = table.freeze({ 10, 20, 40 }),
+				hats = table.freeze({ 0, 1, 2 }),
+			}),
+		}),
+	}),
 
 	-- Reset (prestige)
 	RESET_CASH_BONUS = 0.5, -- each reset = +50% cash forever

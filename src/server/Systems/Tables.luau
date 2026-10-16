@@ -15,6 +15,7 @@ local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
 local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
+local Daily = require(script.Parent.Daily)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
@@ -375,6 +376,10 @@ local function flip(
 		Boosts.cashMult(player, now) * (helperMult or 1),
 		combo
 	)
+	Daily.bump(player, "flip", 1)
+	if outcome.result == HEADS then
+		Daily.bump(player, "heads", 1)
+	end
 
 	-- Only a real tap (combo >= 1) plays the streak game.
 	local streak: GameLogic.StreakOutcome = { streak = 0, nextStreak = state.streak, won = false, cash = 0, hats = 0 }
