@@ -62,7 +62,7 @@ local function load(name: string, id: number)
 end
 
 function Meshes.has(name: string): boolean
-	return templates[name] ~= nil
+	return (templates :: { [string]: Model? })[name] ~= nil
 end
 
 -- A painted copy placed at `cf`. `tints` recolours pieces by slot (e.g. { Top = tableColor }).
