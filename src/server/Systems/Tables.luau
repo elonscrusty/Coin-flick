@@ -285,8 +285,8 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 			Shape = Enum.PartType.Cylinder,
 			Size = Vector3.new(0.06, d, d),
 			CFrame = CFrame.new(state.center + Vector3.new(x, 0.03, z)) * CFrame.Angles(0, 0, math.pi / 2),
-			Color = look.rim,
-			Transparency = 0.45,
+			Color = Color3.fromRGB(60, 50, 95), -- dark, so the white + shows on any table color
+			Transparency = 0.2,
 			CanCollide = false,
 			CanQuery = false,
 			CanTouch = false,

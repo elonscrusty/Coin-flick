@@ -27,6 +27,10 @@ CameraMath.SAFE = table.freeze({ left = -0.5, right = 0.5, bottom = -0.86, top =
 -- Normal (WALK) camera when you leave ZOOM: this far behind and above your avatar.
 CameraMath.WALK = table.freeze({ back = 12, up = 5 })
 
+-- Spawn camera: behind your avatar, high over the yard's gate, looking at the table. Far enough back
+-- and up that your avatar (and its hat) is below the picture and the gate pillars are behind the lens.
+CameraMath.SPAWN = table.freeze({ back = 1, up = 14 })
+
 export type View = { back: number, up: number, aim: number }
 
 local function coinRadius(): number

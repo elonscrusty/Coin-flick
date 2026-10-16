@@ -58,3 +58,30 @@ describe("ZOOM camera size", function()
 		expect(math.abs(CameraMath.SAFE.bottom - (1 - (zone.y + zone.h) / 500))).toBeAtMost(0.01)
 	end)
 end)
+
+describe("Spawn camera", function()
+	-- The avatar stands TABLE_RADIUS + 6 in front of the table middle, root 3 above the floor (floor is TABLE_HEIGHT under the coins).
+	local standU = -(Config.TABLE_RADIUS + 6)
+	local rootY = 3 - Config.TABLE_HEIGHT
+	local view = { back = -standU + CameraMath.SPAWN.back, up = rootY + CameraMath.SPAWN.up, aim = 0 }
+
+	it("looks at the table: the middle coin is near the centre of the picture", function()
+		local sx, sy = CameraMath.project(view, { 0, 0, 0 }, 1.78, 70)
+		expect(math.abs(sx :: number)).toBeAtMost(0.01)
+		expect(math.abs(sy :: number)).toBeAtMost(0.2)
+	end)
+
+	it("your avatar (even with a tall hat) is below the picture", function()
+		local _, sy = CameraMath.project(view, { standU, rootY + 4.5, 0 }, 1.78, 70)
+		expect(sy == nil or sy < -1).toBeTruthy()
+	end)
+
+	it("the gate pillars are off to the sides and the name sign is above the lens", function()
+		for _, y in { 2, 8, 15 } do
+			local sx, sy = CameraMath.project(view, { -Config.PLOT_SIZE / 2, y, 6 }, 1.78, 70)
+			expect(sx == nil or sy == nil or math.abs(sx) > 0.9 or sy < -0.9).toBeTruthy()
+		end
+		local sign = CameraMath.project(view, { -Config.PLOT_SIZE / 2, 14.4, 0 }, 1.78, 70)
+		expect(sign).toBeNil()
+	end)
+end)

@@ -12,6 +12,7 @@ local CameraView = {}
 
 local player = Players.LocalPlayer
 local enabled = false
+local spawnHold = false -- the spawn view is showing; ends when you move
 local shakeUntil = 0
 local shakePower = 0
 local rng = Random.new()
@@ -56,6 +57,13 @@ local function update()
 			camera.CFrame = CFrame.lookAt(eye, center + outward * view.aim)
 		end
 	end
+	if spawnHold and not enabled then
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if not humanoid or humanoid.MoveDirection.Magnitude > 0.1 then
+			CameraView.releaseSpawn()
+		end
+	end
 	if os.clock() < shakeUntil then
 		local left = (shakeUntil - os.clock())
 		local p = shakePower * math.min(1, left * 4)
@@ -88,8 +96,26 @@ local function behindAvatar(camera: Camera)
 	end
 end
 
+-- Hand the camera back to Roblox (behind your avatar). Called when you start walking.
+function CameraView.releaseSpawn()
+	if not spawnHold then
+		return
+	end
+	spawnHold = false
+	local camera = workspace.CurrentCamera
+	if camera and not enabled then
+		camera.CameraType = Enum.CameraType.Custom
+		camera.FieldOfView = WALK_FOV
+		behindAvatar(camera)
+		task.defer(behindAvatar, camera)
+	end
+end
+
 function CameraView.toggle(): boolean
 	enabled = not enabled
+	if enabled then
+		spawnHold = false
+	end
 	if not enabled then
 		local camera = workspace.CurrentCamera
 		camera.CameraType = Enum.CameraType.Custom
@@ -122,16 +148,14 @@ local function faceTable()
 	if typeof(center) ~= "Vector3" or typeof(outward) ~= "Vector3" then
 		return
 	end
-	-- Just inside the entrance arch, looking down at the table, so the arch and name
-	-- sign are behind the camera and not under the top bar.
-	local eye = root.Position - outward * 0.5 + Vector3.new(0, 9, 0)
+	-- High over the gate, looking down at the table: your avatar is below the picture and the
+	-- arch behind the lens. It lasts until you move (or press ZOOM).
+	local spawnView = CameraMath.SPAWN
+	local eye = root.Position - outward * spawnView.back + Vector3.new(0, spawnView.up, 0)
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.FieldOfView = WALK_FOV
 	camera.CFrame = CFrame.lookAt(eye, center)
-	-- The Roblox camera script takes over on its next frame; set it again then.
-	task.defer(function()
-		if not enabled then
-			camera.CFrame = CFrame.lookAt(eye, center)
-		end
-	end)
+	spawnHold = true
 end
 
 function CameraView.init()
