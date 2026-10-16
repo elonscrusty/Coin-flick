@@ -142,6 +142,12 @@ local TableLooks: { TableLook } = {
 		rim = Color3.fromRGB(100, 50, 180),
 		legs = Color3.fromRGB(255, 210, 60),
 	},
+	{
+		name = "Star Station",
+		top = Color3.fromRGB(70, 60, 170),
+		rim = Color3.fromRGB(90, 255, 230),
+		legs = Color3.fromRGB(255, 120, 230),
+	},
 }
 
 -- Rarest first. Anything that isn't one of these is a normal coin.

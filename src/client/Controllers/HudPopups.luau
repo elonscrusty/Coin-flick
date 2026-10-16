@@ -35,7 +35,7 @@ local streakScale: UIScale
 local streakHint: TextLabel
 local alertChip: TextLabel
 local alertTap: TextButton
-local onAlertTap: (string) -> () = function() end
+local alertHook: { fn: (string) -> () } = { fn = function() end }
 local shownAlert = ""
 local eventView: Types.EventView? = nil
 local giftView: Types.PlayGiftView? = nil
@@ -295,7 +295,7 @@ end
 
 -- fn(kind) runs when a tappable alert (a ready gift) is pressed.
 function HudPopups.onAlertTap(fn: (string) -> ())
-	onAlertTap = fn
+	alertHook.fn = fn
 end
 
 -- Call about once a second: keeps countdowns and the turn-taking moving.
@@ -444,7 +444,7 @@ function HudPopups.init()
 	alertTap.ZIndex = 6
 	alertTap.Visible = false
 	alertTap.Activated:Connect(function()
-		onAlertTap(shownAlert)
+		alertHook.fn(shownAlert)
 	end)
 	alertTap.Parent = alertChip
 	gui.Parent = player:WaitForChild("PlayerGui")
