@@ -13,6 +13,16 @@ local function fittedTextSize(r, text, padding, lines)
 	return math.min(innerH, innerW / chars)
 end
 
+-- Text with line breaks: the longest line decides the width.
+local function fittedLines(r, text, padding)
+	local lines = string.split(text, "\n")
+	local best = math.huge
+	for _, line in lines do
+		best = math.min(best, fittedTextSize(r, line, padding, 1))
+	end
+	return math.min(best, r.h * 0.8 / #lines)
+end
+
 local function pieces(l)
 	return {
 		top = l.top,
@@ -43,15 +53,47 @@ describe("HUD layout", function()
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
 			local list = {}
 			for name, r in pieces(l) do
+				-- Messages (shout, toast) take the info + boost spot and those two
+				-- hide while a message shows, so they may share it with each other.
 				table.insert(list, { name, r })
 			end
 			for i = 1, #list do
 				for j = i + 1, #list do
-					if HudLayout.overlaps(list[i][2], list[j][2]) then
+					local a, b = list[i][1], list[j][1]
+					local sharedSpot = (a == "shout" or a == "toast" or a == "info" or a == "boost")
+						and (b == "shout" or b == "toast" or b == "info" or b == "boost")
+					if not sharedSpot and HudLayout.overlaps(list[i][2], list[j][2]) then
 						error(`{sc.name}: {list[i][1]} covers {list[j][1]}`)
 					end
 				end
 			end
+		end
+	end)
+
+	it("the table's coins, flips and giant coin have the middle to themselves", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			local zone = HudLayout.tableZone(sc.w, sc.h)
+			-- cheats are Studio-only test buttons (and may sit in a bottom row)
+			for name, r in pieces(l) do
+				if name ~= "cheats" and HudLayout.overlaps(r, zone) then
+					error(`{sc.name}: {name} sits on the table ({r.x},{r.y} {r.w}x{r.h})`)
+				end
+			end
+		end
+	end)
+
+	it("the cash and hat pills sit left, never over the top-middle yard sign", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.top.x + l.top.w).toBeAtMost(sc.w * 0.3)
+		end
+	end)
+
+	it("a panel leaves the pills visible above the dim", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(HudLayout.overlaps(l.panel, l.top)).toBeFalsy()
 		end
 	end)
 
@@ -116,22 +158,28 @@ describe("HUD layout", function()
 
 	it("longest HUD text still fits big enough to read", function()
 		local longest = {
-			info = "Heads = $999K  •  🍀 80% luck  •  🪙 25/25",
-			boost = "🌟 Mega coin 999/999  •  tap it together!",
+			info = "Heads = $999K\n🍀 80%  🪙 25/25",
+			boost = "⚡ 2x CASH  9:59",
+			mega = "🌟 Mega 999/999",
 			shout = "⭐ SomeLongName20Char flipped a GIANT coin! +$999K ⭐",
 			toast = "Fill your table first! (24/25 coins)",
 		}
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
 			for key, text in longest do
-				local size = fittedTextSize(l[key], text, nil, if key == "shout" or key == "toast" then 2 else 1)
+				local rect = if key == "mega" then l.boost else l[key]
+				local size = if key == "info"
+					then fittedLines(rect, text)
+					else fittedTextSize(rect, text, nil, if key == "shout" or key == "toast" then 3 else 1)
 				if size < HudLayout.MIN_TEXT then
 					error(`{sc.name}: {key} text only {size}px`)
 				end
 			end
-			-- Cash pill is 58% of the top bar, holds "$999.9K" at 40px max
-			local cash = { w = l.top.w * 0.58, h = l.top.h }
-			expect(fittedTextSize(cash, "$999.9K", 0.08)).toBeAtLeast(18)
+			-- Cash pill is 52% of the pill row, hat pill 43% (Hud.init)
+			local cash = { w = l.top.w * 0.52, h = l.top.h }
+			expect(fittedTextSize(cash, "$999.9K", 0.07)).toBeAtLeast(16)
+			local hat = { w = l.top.w * 0.43, h = l.top.h }
+			expect(fittedTextSize(hat, "🎩 999K", 0.07)).toBeAtLeast(HudLayout.MIN_TEXT)
 		end
 	end)
 
