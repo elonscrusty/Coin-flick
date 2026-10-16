@@ -37,6 +37,16 @@ local function forget(self: MegaCoin, userId: number)
 	self.contributors[userId] = nil
 end
 
+-- Studio test button: the first press fills the coin to `leftover` taps short
+-- of the goal (so the charge bar and "tap it!" look can be checked), the next
+-- press flips it.
+function MegaCoin.debugStep(taps: number, goal: number, leftover: number): "charge" | "flip"
+	if taps < goal - leftover then
+		return "charge"
+	end
+	return "flip"
+end
+
 function MegaCoin.new(): MegaCoin
 	return {
 		taps = 0,

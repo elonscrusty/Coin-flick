@@ -243,6 +243,27 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 		state.busyUntil[i] = state.busyUntil[i] or 0 -- coins in the air stay in the air
 		state.coins[i] = makeCoin(state, i, profile, skin)
 	end
+	-- Empty spots for the coins you can still buy, so a fresh table after a
+	-- reset looks like a goal ("fill me!") instead of a big empty circle.
+	for i = 1, Economy.emptySlots(profile) do
+		local index = count + i
+		local x, z = TableLayout.coinOffset(index, Config.MAX_COINS)
+		local d = Config.COIN_BASE_DIAMETER
+		local slot = World.makePart({
+			Name = `Slot_{index}`,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.06, d, d),
+			CFrame = CFrame.new(state.center + Vector3.new(x, 0.03, z)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = look.rim,
+			Transparency = 0.45,
+			CanCollide = false,
+			CanQuery = false,
+			CanTouch = false,
+			CastShadow = false,
+		})
+		faceLabel(slot, Enum.NormalId.Right, "+", Color3.fromRGB(255, 255, 255))
+		slot.Parent = model
+	end
 	for i = count + 1, #state.busyUntil do
 		state.busyUntil[i] = nil
 		state.faces[i] = nil
@@ -411,15 +432,18 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 	placeCharacter(player)
 
 	if offlineCash > 0 then
-		Net.event("Notice"):FireClient(
-			player,
-			{
-				kind = "offline",
-				text = `Your helper earned ${offlineCash} while you were away!`,
-			} :: Types.Notice
-		)
+		Tables.offlineNotice(player, offlineCash)
 	end
 	PlayerData.changed(player)
+end
+
+-- "Welcome back" money from helpers who worked while you were away.
+function Tables.offlineNotice(player: Player, cash: number)
+	local notice: Types.Notice = {
+		kind = "offline",
+		text = `Your helpers earned ${Format.short(cash)} while you were away!`,
+	}
+	Net.event("Notice"):FireClient(player, notice)
 end
 
 -- Studio QA: make this player's next flip a given rare coin.

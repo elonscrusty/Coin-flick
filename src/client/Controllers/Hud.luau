@@ -693,11 +693,11 @@ local function buildCheats(parent: ScreenGui)
 	frame.BackgroundTransparency = 1
 	-- Top-left, under the Roblox menu, clear of the combo counter and thumbstick.
 	frame.Position = UDim2.fromOffset(8, 56)
-	frame.Size = UDim2.fromOffset(72, 190)
+	frame.Size = UDim2.fromOffset(72, 230)
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 6)
 	layout.Parent = frame
-	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "MEGA", "mega" }, { "WIPE", "wipe" } } do
+	for _, item in { { "+1M", "cash" }, { "FILL", "fill" }, { "RARE", "rare" }, { "MEGA", "mega" }, { "AWAY", "away" }, { "WIPE", "wipe" } } do
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)

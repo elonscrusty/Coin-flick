@@ -2,6 +2,11 @@
 -- Builds each silly hat from chunky parts. y = 0 is the top of the head,
 -- -Z is the front of the face. Sized for a normal Roblox head (~1.2 wide).
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HatSizes = require(ReplicatedStorage.Shared.Util.HatSizes)
+
+local W = HatSizes.WIDTH
+
 type Make = (props: { [string]: any }) -> Part
 
 local HatBuilder = {}
@@ -62,7 +67,7 @@ local BUILDERS: { [string]: (Model, Make) -> () } = {
 		cyl(m, make, 0.4, 0.5, 0.77, ORANGE)
 	end,
 	cowboy = function(m, make)
-		cyl(m, make, 0.12, 2.1, 0, BROWN)
+		cyl(m, make, 0.12, W.cowboy, 0, BROWN)
 		cyl(m, make, 0.6, 1.1, 0.12, BROWN)
 		cyl(m, make, 0.14, 1.13, 0.14, RED)
 	end,
@@ -85,7 +90,7 @@ local BUILDERS: { [string]: (Model, Make) -> () } = {
 		ball(m, make, 0.14, Vector3.new(0.18, 1.15, -0.55), DARK)
 	end,
 	tophat = function(m, make)
-		cyl(m, make, 0.1, 1.6, 0, DARK)
+		cyl(m, make, 0.1, W.tophat, 0, DARK)
 		cyl(m, make, 1.0, 1.0, 0.1, DARK)
 		cyl(m, make, 0.16, 1.03, 0.14, RED)
 	end,

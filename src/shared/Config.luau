@@ -296,6 +296,7 @@ return table.freeze({
 	BASE_FLIP_TIME = 1.2,
 	FLIP_TIME_PER_LEVEL = 0.075,
 	MIN_FLIP_TIME = 0.45,
+	FLIP_HEIGHT = 6, -- studs a coin jumps at the top of its flip (ZOOM camera fits this)
 	CASH_PER_BIG_LEVEL = 0.5,
 
 	-- Helpers
@@ -384,6 +385,15 @@ return table.freeze({
 		JobDone = { id = 0, fallback = "rbxasset://sounds/electronicpingshort.wav" }, -- to try: QuestDone
 		Denied = { id = 0, fallback = "rbxasset://sounds/button.wav" }, -- to try: Denied
 	} :: { [string]: SoundDef }),
+
+	-- Cartoon sky (World): a thick, bright-blue haze over the default skybox.
+	Sky = table.freeze({
+		density = 0.36,
+		offset = 0.1,
+		haze = 2.4,
+		color = Color3.fromRGB(150, 210, 255),
+		decay = Color3.fromRGB(95, 175, 255),
+	}),
 
 	-- Robux shop. Ids come from carter; 0 means "not set yet" (shows SOON).
 	-- Prices are set on the Roblox website and read live, never written in code.
