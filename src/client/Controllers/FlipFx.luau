@@ -135,8 +135,8 @@ end
 local function popText(coin: BasePart, text: string, color: Color3)
 	local gui = Instance.new("BillboardGui")
 	gui.Adornee = coin
-	gui.Size = UDim2.fromScale(math.max(5, #text * 0.6), 1.8)
-	gui.StudsOffsetWorldSpace = Vector3.new(0, 1, 0)
+	gui.Size = UDim2.fromScale(math.max(8, #text * 0.95), 3)
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 1.5, 0)
 	gui.AlwaysOnTop = true
 	gui.LightInfluence = 0
 	gui.MaxDistance = 120
@@ -147,12 +147,20 @@ local function popText(coin: BasePart, text: string, color: Color3)
 	label.TextScaled = true
 	label.Text = text
 	label.TextColor3 = color
-	label.TextStrokeColor3 = Color3.fromRGB(40, 30, 20)
-	label.TextStrokeTransparency = 0
+	label.TextStrokeTransparency = 1
+	local outline = Instance.new("UIStroke") -- bold dark outline so the number reads on any table
+	outline.Thickness = 4
+	outline.Color = Color3.fromRGB(40, 25, 10)
+	outline.Parent = label
+	local pulse = Instance.new("UIScale") -- pops big, then settles
+	pulse.Scale = 0.4
+	pulse.Parent = label
+	TweenService:Create(pulse, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1.15 }):Play()
 	label.Parent = gui
 	gui.Parent = player:WaitForChild("PlayerGui")
 	TweenService:Create(gui, POP_INFO, { StudsOffsetWorldSpace = Vector3.new(0, 4.5, 0) }):Play()
-	TweenService:Create(label, POP_INFO, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+	TweenService:Create(label, POP_INFO, { TextTransparency = 1 }):Play()
+	TweenService:Create(outline, POP_INFO, { Transparency = 1 }):Play()
 	task.delay(POP_INFO.Time, function()
 		gui:Destroy()
 	end)
@@ -496,6 +504,12 @@ local function step()
 		if not pcall(dressRare, anim, now, t) then
 			warn("CoinFlick: rare coin look failed (the coin still lands normally)")
 		end
+		-- Landing squash: squish on impact, spring back, settle (the rare size is the base while it is dressed).
+		local squishT, squishW = CoinLook.squash(t, MAIN)
+		if squishT ~= 1 then
+			local base = if anim.rare then CoinLook.size(anim.restSize, CoinLook.scale(anim.grow, t, MAIN)) else anim.restSize
+			coin.Size = Vector3.new(base.X * squishT, base.Y * squishW, base.Z * squishW)
+		end
 		-- Never let the spinning (or grown) coin cut into the table top.
 		height = CoinLook.flightHeight(height, roll, coin.Size.X, coin.Size.Y, anim.restSize.X, anim.restSize.Y)
 		coin.CFrame = CFrame.new(anim.base + Vector3.new(0, height, 0))
@@ -507,6 +521,7 @@ local function step()
 		end
 		if t >= 1 then
 			undressRare(anim)
+			coin.Size = anim.restSize
 			-- Landing: always the slot's rest pose for this result, whatever happened in the air.
 			coin.CFrame = CFrame.new(anim.base)
 				* CFrame.Angles(0, restOf(coin, "RestYaw", anim.yaw), 0)

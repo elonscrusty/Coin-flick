@@ -38,7 +38,7 @@ CoinLook.NORMAL = table.freeze({
 	rim = Color3.fromRGB(110, 60, 8),
 	sparkle = { Color3.fromRGB(255, 240, 120), Color3.fromRGB(255, 255, 255) },
 	sparkleSize = 0.6,
-	landBurst = 14,
+	landBurst = 20,
 	trail = 0,
 	rainbow = false,
 	stars = false,
@@ -53,7 +53,7 @@ local RARE: { [string]: Look } = {
 		rim = Color3.fromRGB(55, 85, 130), -- dark steel ridge
 		sparkle = { Color3.fromRGB(190, 225, 255), Color3.fromRGB(120, 175, 235) },
 		sparkleSize = 0.7,
-		landBurst = 30,
+		landBurst = 45,
 		trail = 10,
 		outline = Color3.fromRGB(20, 45, 110), -- thin dark blue outline
 		rainbow = false,
@@ -67,7 +67,7 @@ local RARE: { [string]: Look } = {
 		rim = Color3.fromRGB(160, 90, 0), -- warm ridge
 		sparkle = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 255, 200) },
 		sparkleSize = 0.9,
-		landBurst = 45,
+		landBurst = 70,
 		trail = 25,
 		outline = Color3.fromRGB(120, 70, 0),
 		rainbow = false,
@@ -81,7 +81,7 @@ local RARE: { [string]: Look } = {
 		rim = Color3.fromRGB(110, 50, 190), -- violet ridge: seen edge-on it is a colored band, never a thin white line
 		sparkle = { Color3.fromRGB(255, 120, 220), Color3.fromRGB(120, 220, 255) },
 		sparkleSize = 1.0,
-		landBurst = 80,
+		landBurst = 120,
 		trail = 45,
 		outline = Color3.fromRGB(70, 25, 130),
 		rainbow = true,
@@ -100,7 +100,7 @@ local RARE: { [string]: Look } = {
 			Color3.fromRGB(110, 225, 255),
 		},
 		sparkleSize = 1.2,
-		landBurst = 120,
+		landBurst = 180,
 		trail = 60,
 		outline = Color3.fromRGB(90, 40, 0),
 		rainbow = false,
@@ -248,6 +248,17 @@ function CoinLook.flightHeight(
 	local need = CoinLook.lift(roll, thickness, diameter, restThickness, restDiameter)
 		+ CoinLook.hover(diameter / restDiameter)
 	return math.max(h, need)
+end
+
+-- Landing squash and bounce: after the main spin the coin lands with a squish (thinner, wider), then
+-- springs back and settles. Returns (thickness scale, width scale); exactly (1, 1) before and after.
+function CoinLook.squash(t: number, main: number): (number, number)
+	local u = (t - main) / (1 - main)
+	if u <= 0 or u >= 1 then
+		return 1, 1
+	end
+	local s = math.sin(u * math.pi * 3) * (1 - u) ^ 1.5
+	return 1 - 0.35 * s, 1 + 0.12 * s
 end
 
 -- A grown coin also hovers a bit higher, so it flies over the helpers and the coins behind it.
