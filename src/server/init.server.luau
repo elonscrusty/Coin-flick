@@ -13,6 +13,7 @@ local ORDER = {
 	"Tables",
 	"Shop",
 	"Mega",
+	"Pets",
 	"Hats",
 	"Robux",
 	"Leaderboards",

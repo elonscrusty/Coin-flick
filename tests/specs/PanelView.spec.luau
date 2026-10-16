@@ -9,7 +9,7 @@ local function snap(over)
 	local s = {
 		cash = 0,
 		hatPoints = 0,
-		upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0 },
+		upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0, multiFlip = 0 },
 		crew = {},
 		team = {},
 		resets = 0,
@@ -48,7 +48,7 @@ end
 
 -- A spread of players: brand new, mid game, everything maxed and owned.
 local function players()
-	local maxed = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0 }
+	local maxed = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0, multiFlip = 0 }
 	for id, def in Config.Upgrades do
 		maxed[id] = def.maxLevel
 	end

@@ -88,7 +88,8 @@ local function send(player: Player, profile: Profile)
 	local today = DailyRules.day(os.time())
 	lastDay[player] = today
 	DailyRules.rollover(profile.daily, today)
-	Net.event("DailyState"):FireClient(player, DailyRules.view(profile.daily, player.UserId, today, Economy.cashPerHeads(profile)))
+	Net.event("DailyState")
+		:FireClient(player, DailyRules.view(profile.daily, player.UserId, today, Economy.cashPerHeads(profile)))
 end
 
 function Daily.init()

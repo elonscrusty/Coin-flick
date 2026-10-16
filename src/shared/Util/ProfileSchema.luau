@@ -3,6 +3,7 @@
 -- Rule: a broken save is an ERROR (so it is never overwritten), never "start fresh".
 
 local Config = require(script.Parent.Parent.Config)
+local PetConfig = require(script.Parent.Parent.PetConfig)
 local Types = require(script.Parent.Parent.Types)
 local Daily = require(script.Parent.Daily)
 local Economy = require(script.Parent.Economy)
@@ -22,7 +23,16 @@ local DEFAULT: Profile = {
 	crew = {},
 	team = {},
 	resets = 0,
-	stats = { flips = 0, heads = 0, skulls = 0, biggestFlip = 0, bestCombo = 0, rares = 0, bestStreak = 0, streakWins = 0 },
+	stats = {
+		flips = 0,
+		heads = 0,
+		skulls = 0,
+		biggestFlip = 0,
+		bestCombo = 0,
+		rares = 0,
+		bestStreak = 0,
+		streakWins = 0,
+	},
 	lastSeen = 0,
 	hats = {},
 	hat = "",
@@ -30,6 +40,9 @@ local DEFAULT: Profile = {
 	helperSlots = 0,
 	receipts = {},
 	daily = Daily.empty(),
+	pets = { puppy = { level = 1, xp = 0 } },
+	petActive = "puppy",
+	petProgress = { megaBeats = 0 },
 }
 
 function ProfileSchema.default(): Profile
@@ -144,6 +157,32 @@ local function cleanReceipts(value: unknown): { string }
 	return list
 end
 
+local function isPetId(id: unknown): boolean
+	for _, def in PetConfig.Pets do
+		if def.id == id then
+			return true
+		end
+	end
+	return false
+end
+
+-- Known pets only, levels clamped. The free pet is always there (older saves get it too).
+local function cleanPets(value: unknown): { [string]: Types.PetOwned }
+	local pets: { [string]: Types.PetOwned } = {}
+	if typeof(value) == "table" then
+		for id, entry in value :: { [any]: any } do
+			if isPetId(id) and typeof(entry) == "table" then
+				local level = math.clamp(cleanInt(entry.level, 1), 1, PetConfig.MAX_LEVEL)
+				pets[id] = { level = level, xp = if level >= PetConfig.MAX_LEVEL then 0 else cleanInt(entry.xp, 0) }
+			end
+		end
+	end
+	if not pets[PetConfig.FREE_PET] then
+		pets[PetConfig.FREE_PET] = { level = 1, xp = 0 }
+	end
+	return pets
+end
+
 -- Fill any missing or bad field from the defaults (new fields appear this way too).
 local function reconcile(data: { [string]: any }): Profile
 	local d = DEFAULT
@@ -151,6 +190,8 @@ local function reconcile(data: { [string]: any }): Profile
 	local st = if typeof(data.stats) == "table" then data.stats else {}
 	local hats = cleanHats(data.hats)
 	local crew = cleanCrew(data.crew)
+	local pets = cleanPets(data.pets)
+	local pp = if typeof(data.petProgress) == "table" then data.petProgress else {}
 	local profile: Profile = {
 		version = ProfileSchema.CURRENT_VERSION,
 		cash = cleanNumber(data.cash, d.cash),
@@ -182,6 +223,13 @@ local function reconcile(data: { [string]: any }): Profile
 		helperSlots = math.min(Config.MAX_EXTRA_HELPER_SLOTS, cleanInt(data.helperSlots, 0)),
 		receipts = cleanReceipts(data.receipts),
 		daily = Daily.sanitize(data.daily),
+		pets = pets,
+		petActive = if typeof(data.petActive) == "string" and (pets[data.petActive] or data.petActive == "")
+			then data.petActive
+			else PetConfig.FREE_PET,
+		petProgress = {
+			megaBeats = cleanInt(pp.megaBeats, 0),
+		},
 	}
 	profile.team = cleanTeam(data.team, crew, Economy.maxHelpers(profile))
 	return profile
@@ -218,5 +266,6 @@ end
 ProfileSchema.isHatId = isHatId
 ProfileSchema.isSkinId = isSkinId
 ProfileSchema.isHelperId = isHelperId
+ProfileSchema.isPetId = isPetId
 
 return ProfileSchema

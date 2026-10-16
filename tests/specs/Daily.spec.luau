@@ -141,7 +141,13 @@ describe("Daily view + save cleanup", function()
 	end)
 
 	it("sanitize repairs junk without inventing progress", function()
-		local d = Daily.sanitize({ day = "x", progress = { -4, 0 / 0, 1e9 }, claimed = { "yes" }, giftClaims = -2, giftDay = 1.9 })
+		local d = Daily.sanitize({
+			day = "x",
+			progress = { -4, 0 / 0, 1e9 },
+			claimed = { "yes" },
+			giftClaims = -2,
+			giftDay = 1.9,
+		})
 		expect(d.day).toBe(0)
 		expect(d.progress[1]).toBe(0)
 		expect(d.progress[2]).toBe(0)

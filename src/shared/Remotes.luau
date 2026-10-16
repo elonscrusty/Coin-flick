@@ -24,6 +24,9 @@ return table.freeze({
 		"DailyState", -- server -> client: (DailyView)
 		"ClaimGift", -- client -> server: ()
 		"ClaimJob", -- client -> server: (slot: number)
+		"PetEquip", -- client -> server: (petId: string, "" = put pets away)
+		"PetState", -- server -> client: (views: { PetRules.PetView }, activeId: string)
+		"PetFlipped", -- server -> client: (petId, cash, level, leveledUp)
 	}),
 	-- Only created when running in Roblox Studio. Never exists in a live game.
 	StudioOnly = table.freeze({

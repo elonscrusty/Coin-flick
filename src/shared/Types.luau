@@ -31,6 +31,17 @@ export type DailyState = {
 	giftClaims: number, -- total gifts claimed; picks which of the 7 gift days is next
 }
 
+-- One coin pet you own.
+export type PetOwned = {
+	level: number, -- 1 to PetConfig.MAX_LEVEL
+	xp: number, -- toward the next level
+}
+
+-- Goal counters for unlocking pets (flips, streak and resets already live elsewhere).
+export type PetProgress = {
+	megaBeats: number, -- times you helped flip the MEGA coin
+}
+
 -- Saved player data. Plain JSON-friendly values only.
 export type Profile = {
 	version: number,
@@ -48,6 +59,9 @@ export type Profile = {
 	helperSlots: number, -- extra helper slots bought with Robux
 	receipts: { string }, -- recent Robux purchase ids, so one is never granted twice
 	daily: DailyState,
+	pets: { [string]: PetOwned }, -- coin pets you own (the free puppy is always there)
+	petActive: string, -- the pet out flipping for you, "" = none
+	petProgress: PetProgress,
 }
 
 export type FlipResult = "heads" | "skull"
@@ -118,7 +132,18 @@ export type DailyView = {
 		hats: number,
 		cycle: { { flips: number, hats: number } }, -- all 7 days, for the calendar
 	},
-	jobs: { { text: string, kind: string, goal: number, progress: number, cash: number, hats: number, done: boolean, claimed: boolean } },
+	jobs: {
+		{
+			text: string,
+			kind: string,
+			goal: number,
+			progress: number,
+			cash: number,
+			hats: number,
+			done: boolean,
+			claimed: boolean,
+		}
+	},
 	claimable: number, -- done jobs not claimed + 1 if the gift is ready (red dot)
 }
 
