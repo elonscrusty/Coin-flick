@@ -88,11 +88,11 @@ local function onClaimChallenge(player: Player, rawSlot: unknown)
 	end
 end
 
-local lookChanged: (Player) -> () = function() end
+local lookHook: { fn: (Player) -> () } = { fn = function() end }
 
 -- Tables.init gives us its rebuild, so a new coin look shows at once (Tables needs Goals, not the reverse).
 function Goals.setLookChanged(fn: (Player) -> ())
-	lookChanged = fn
+	lookHook.fn = fn
 end
 
 local function onWearLadder(player: Player, rawId: unknown)
@@ -101,7 +101,7 @@ local function onWearLadder(player: Player, rawId: unknown)
 	end
 	local profile = PlayerData.get(player)
 	if profile and GoalRules.wearRung(profile, rawId) then
-		lookChanged(player)
+		lookHook.fn(player)
 		PlayerData.changed(player)
 		dirty[player] = true
 	end
