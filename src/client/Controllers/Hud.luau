@@ -101,6 +101,7 @@ local comboToken = 0
 local prices: { [string]: string } = {} -- live Robux prices from Roblox
 local layout: HudLayout.Layout = HudLayout.compute(844, 390, true) -- redone in applyLayout
 local cheatFrame: Frame? = nil
+local layoutListeners: { (HudLayout.Layout) -> () } = {}
 
 local shownCash = Instance.new("NumberValue")
 local render: (Snapshot) -> ()
@@ -333,11 +334,11 @@ local function scrollList(parent: Frame, top: number): ScrollingFrame
 	list.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	list.CanvasSize = UDim2.new()
 	list.ZIndex = 6
-	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 8)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	layout.Parent = list
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.Padding = UDim.new(0, 8)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	listLayout.Parent = list
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(0, 4)
 	pad.PaddingBottom = UDim.new(0, 4)
@@ -352,11 +353,11 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 	row.Size = UDim2.new(1, 0, 0, 44)
 	row.BackgroundTransparency = 1
 	row.ZIndex = 6
-	local layout = Instance.new("UIListLayout")
-	layout.FillDirection = Enum.FillDirection.Horizontal
-	layout.Padding = UDim.new(0.02, 0)
-	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Parent = row
+	local listLayout = Instance.new("UIListLayout")
+	listLayout.FillDirection = Enum.FillDirection.Horizontal
+	listLayout.Padding = UDim.new(0.02, 0)
+	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	listLayout.Parent = row
 	local buttons: { [string]: TextButton } = {}
 	for i, tab in tabs do
 		local key = tab[1]
@@ -646,16 +647,16 @@ local function buildCheats(parent: ScreenGui)
 	layoutList.Padding = UDim.new(0, HudLayout.GAP)
 	layoutList.SortOrder = Enum.SortOrder.LayoutOrder
 	layoutList.Parent = frame
-	for i, item in
-		{
-			{ "+1M", "cash" },
-			{ "FILL", "fill" },
-			{ "RARE", "rare" },
-			{ "MEGA", "mega" },
-			{ "AWAY", "away" },
-			{ "WIPE", "wipe" },
-		}
-	do
+	local items = {
+		{ "+1M", "cash" },
+		{ "FILL", "fill" },
+		{ "RARE", "rare" },
+		{ "MEGA", "mega" },
+		{ "AWAY", "away" },
+		{ "WIPE", "wipe" },
+	}
+	assert(#items == HudLayout.CHEATS, "HudLayout.CHEATS must match the test buttons")
+	for i, item in items do
 		local b = button(`🧪{item[1]}`, GREY, function()
 			cheat:FireServer(item[2])
 		end)
@@ -868,7 +869,7 @@ local function applyLayout()
 			list.FillDirection = if row then Enum.FillDirection.Horizontal else Enum.FillDirection.Vertical
 			list.Padding = UDim.new(0, HudLayout.GAP * s)
 		end
-		local count = 5
+		local count = HudLayout.CHEATS
 		for _, b in cheatFrame:GetChildren() do
 			if b:IsA("TextButton") then
 				b.Size = if row
@@ -876,6 +877,10 @@ local function applyLayout()
 					else UDim2.new(1, 0, 1 / count, -HudLayout.GAP * s)
 			end
 		end
+	end
+
+	for _, fn in layoutListeners do
+		task.spawn(fn, layout)
 	end
 
 	-- Panels: centered in the free panel box, never bigger than it.
@@ -889,6 +894,17 @@ local function applyLayout()
 			cap.MinSize = Vector2.new(math.min(300, box.w), math.min(210, box.h))
 		end
 	end
+end
+
+-- Current HUD slots (toast, shout, panel box...) for other screen code.
+function Hud.getLayout(): HudLayout.Layout
+	return layout
+end
+
+-- Called with the new slots whenever the screen size changes.
+function Hud.onLayout(fn: (HudLayout.Layout) -> ())
+	table.insert(layoutListeners, fn)
+	fn(layout)
 end
 
 function Hud.init()

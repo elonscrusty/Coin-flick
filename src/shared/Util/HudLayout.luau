@@ -30,7 +30,7 @@ local HudLayout = {}
 HudLayout.MIN_TEXT = 14 -- px, smallest readable text
 HudLayout.MIN_TOUCH = 44 -- px, smallest thumb-friendly button
 HudLayout.GAP = 6
-HudLayout.CHEAT_BUTTONS = 6 -- Studio test buttons: +1M, FILL, RARE, MEGA, AWAY, WIPE
+HudLayout.CHEATS = 6 -- Studio test buttons (Hud.buildCheats)
 
 -- Roblox top bar: menu/chat on the left, more buttons on the right.
 local TOPBAR_H = 58
@@ -132,9 +132,9 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	-- Studio test buttons: a column on the left under the combo counter;
 	-- if that runs into the thumbstick, a row along the bottom middle.
 	local cheatH = 30
-	local n = HudLayout.CHEAT_BUTTONS
 	local colTop = combo.y + combo.h + gap
 	local cheats: Rect
+	local n = HudLayout.CHEATS
 	if colTop + n * cheatH + (n - 1) * gap <= stickTop - 8 then
 		cheats = rect(12, colTop, 72, n * cheatH + (n - 1) * gap)
 	else
