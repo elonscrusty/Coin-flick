@@ -310,7 +310,7 @@ local function makePanel(name: string, title: string, color: Color3, maxSize: Ve
 	Kit.stroke(panel, 4)
 	local size = Instance.new("UISizeConstraint")
 	size.MaxSize = maxSize
-	size.MinSize = Vector2.new(300, 220)
+	size.MinSize = Vector2.new(260, 160)
 	size.Parent = panel
 	Instance.new("UIScale").Parent = panel
 
