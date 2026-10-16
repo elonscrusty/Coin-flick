@@ -13,6 +13,8 @@ local World = {}
 
 local plotOwners: { [number]: Player } = {}
 local tablesFolder: Folder
+local freeMarkers: { [number]: Model } = {}
+local parkFolder: Folder? = nil
 
 local function makePart(props: { [string]: any }): Part
 	local part = Instance.new("Part")
@@ -89,6 +91,80 @@ function World.init()
 	Players.PlayerRemoving:Connect(World.releasePlot)
 end
 
+-- An empty yard's marker, so every path ends somewhere: a pale pad, four corner posts and a
+-- "FREE PLOT" sign beside the gate. It disappears while a player owns the yard (see claimPlot).
+local function buildFreeMarker(slot: number, parent: Instance): Model
+	local center, outward = World.plotCenter(slot)
+	local base = CFrame.lookAt(center, center - outward)
+	local half = Config.PLOT_SIZE / 2
+	local model = Instance.new("Model")
+	model.Name = `FreePlot{slot}`
+	local function part(name: string, size: Vector3, offset: CFrame, color: Color3, collide: boolean?): Part
+		local p = makePart({
+			Name = name,
+			Size = size,
+			CFrame = base * offset,
+			Color = color,
+			CanCollide = collide == true,
+			CanQuery = collide == true,
+		})
+		p.Parent = model
+		return p
+	end
+	part(
+		"Pad",
+		Vector3.new(Config.PLOT_SIZE, 0.2, Config.PLOT_SIZE),
+		CFrame.new(0, 0.1, 0),
+		Color3.fromRGB(205, 240, 190)
+	)
+	part(
+		"Trim",
+		Vector3.new(Config.PLOT_SIZE + 1.6, 0.14, Config.PLOT_SIZE + 1.6),
+		CFrame.new(0, 0.07, 0),
+		Color3.fromRGB(255, 220, 90)
+	)
+	for _, sx in { -1, 1 } do
+		for _, sz in { -1, 1 } do
+			part(
+				"Post",
+				Vector3.new(1, 2.4, 1),
+				CFrame.new(sx * (half - 1), 1.2, sz * (half - 1)),
+				Color3.fromRGB(255, 250, 240)
+			)
+			part(
+				"PostCap",
+				Vector3.new(1.2, 0.5, 1.2),
+				CFrame.new(sx * (half - 1), 2.6, sz * (half - 1)),
+				Color3.fromRGB(255, 200, 40)
+			)
+		end
+	end
+	part("SignPole", Vector3.new(0.6, 4.2, 0.6), CFrame.new(-11.5, 2.1, -half - 3), Color3.fromRGB(150, 100, 60), true)
+	local board =
+		part("Sign", Vector3.new(7, 2.4, 0.5), CFrame.new(-11.5, 4.6, -half - 3), Color3.fromRGB(255, 200, 40))
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = face
+		gui.LightInfluence = 0
+		gui.PixelsPerStud = 40
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.Parent = board
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(0.9, 0.85)
+		label.Position = UDim2.fromScale(0.05, 0.08)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.FredokaOne
+		label.TextScaled = true
+		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.TextStrokeTransparency = 0
+		label.TextStrokeColor3 = Color3.fromRGB(120, 70, 20)
+		label.Text = "FREE PLOT"
+		label.Parent = gui
+	end
+	model.Parent = parent
+	return model
+end
+
 -- The park around the yards: a sandy plaza with paths to every yard, trees
 -- between the yards, and a forest + flowers further out. Same every server.
 function World.decorate()
@@ -117,6 +193,7 @@ function World.decorate()
 			Color = SAND,
 		})
 		path.Parent = folder
+		freeMarkers[slot] = buildFreeMarker(slot, folder)
 		-- Two trees in the gap between this yard and the next.
 		local gapAngle = math.atan2(z, x) + math.pi / Config.MAX_PLOTS
 		for _, radius in { Config.PLOT_RING_RADIUS - 6, Config.PLOT_RING_RADIUS + 10 } do
@@ -144,6 +221,7 @@ function World.decorate()
 		hill.Parent = folder
 	end
 	folder.Parent = workspace
+	parkFolder = folder
 end
 
 -- The spawn spot: a round mat (blue ring, white ring, gold middle) instead of a plain yellow slab.
@@ -215,6 +293,10 @@ function World.claimPlot(player: Player): number?
 	for slot = 1, Config.MAX_PLOTS do
 		if not plotOwners[slot] then
 			plotOwners[slot] = player
+			local marker = freeMarkers[slot]
+			if marker then
+				marker.Parent = nil -- the yard is taken, no "free" sign
+			end
 			return slot
 		end
 	end
@@ -225,6 +307,10 @@ function World.releasePlot(player: Player)
 	for slot = 1, Config.MAX_PLOTS do
 		if plotOwners[slot] == player then
 			plotOwners[slot] = nil
+			local marker = freeMarkers[slot]
+			if marker and parkFolder then
+				marker.Parent = parkFolder
+			end
 		end
 	end
 end

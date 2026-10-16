@@ -15,6 +15,16 @@ export type Spot = {
 	kind: string,
 	zone: string,
 	radius: number, -- footprint, studs (already scaled)
+	tall: boolean?,
+}
+
+export type Def = {
+	kind: string,
+	radius: number,
+	weight: number,
+	min: number,
+	max: number,
+	tall: boolean?, -- tall pieces keep out of the view corridor in front of every gate
 }
 
 export type Params = {
@@ -35,15 +45,15 @@ local DecorLayout = {}
 DecorLayout.Clear = 3 -- studs of free space around every yard and path
 
 -- footprint radius (at scale 1) and share of the outer zone
-local OUTER: { { kind: string, radius: number, weight: number, min: number, max: number } } = {
-	{ kind = "tree", radius = 3.2, weight = 5, min = 1.2, max = 2.0 },
-	{ kind = "boulder", radius = 3.0, weight = 3, min = 1.0, max = 2.2 },
+local OUTER: { Def } = {
+	{ kind = "tree", radius = 3.2, weight = 5, min = 1.2, max = 2.0, tall = true },
+	{ kind = "boulder", radius = 3.0, weight = 3, min = 1.0, max = 2.2, tall = true },
 	{ kind = "bush", radius = 1.8, weight = 3, min = 1.0, max = 1.6 },
 	{ kind = "log", radius = 2.4, weight = 1, min = 1.0, max = 1.5 },
 	{ kind = "mushroom", radius = 1.4, weight = 1, min = 1.0, max = 1.8 },
 	{ kind = "flowerbed", radius = 2.6, weight = 2, min = 1.0, max = 1.4 },
 }
-local INNER: { { kind: string, radius: number, weight: number, min: number, max: number } } = {
+local INNER: { Def } = {
 	{ kind = "lamp", radius = 1.0, weight = 3, min = 1.0, max = 1.0 },
 	{ kind = "bench", radius = 2.4, weight = 2, min = 1.0, max = 1.0 },
 	{ kind = "bush", radius = 1.6, weight = 2, min = 1.0, max = 1.3 },
@@ -61,7 +71,7 @@ DecorLayout.defaults = table.freeze({
 	pathWidth = 6,
 	extent = 200,
 	seed = 11,
-	outerCount = 110,
+	outerCount = 170,
 	innerCount = 16,
 } :: Params)
 
@@ -74,7 +84,7 @@ local function lcg(seed: number): () -> number
 	end
 end
 
-local function pick(list: { { kind: string, radius: number, weight: number, min: number, max: number } }, r: number)
+local function pick(list: { Def }, r: number): Def
 	local total = 0
 	for _, e in list do
 		total += e.weight
@@ -104,6 +114,11 @@ function DecorLayout.pathDistance(p: Params, x: number, z: number): number
 	return best
 end
 
+-- Tall pieces keep this far from the centre line of every path (half the yard width), as far out as
+-- the gate, so a player walking up to a yard always sees the table.
+DecorLayout.ViewHalfWidth = 18
+DecorLayout.TallExtra = 6
+
 -- Smallest gap between a circle (x, z, radius) and every yard (treated as its circumscribed circle).
 function DecorLayout.yardGap(p: Params, x: number, z: number, radius: number): number
 	local yardR = p.plotSize / 2 * math.sqrt(2)
@@ -117,7 +132,8 @@ function DecorLayout.yardGap(p: Params, x: number, z: number, radius: number): n
 end
 
 -- Is a circle (x, z, radius) free of the yards, paths, plaza, spawn and the world edge?
-function DecorLayout.isFree(p: Params, x: number, z: number, radius: number): boolean
+-- `tall` pieces also keep out of the wide view corridor in front of every gate.
+function DecorLayout.isFree(p: Params, x: number, z: number, radius: number, tall: boolean?): boolean
 	local d = math.sqrt(x * x + z * z)
 	if d + radius > p.extent then
 		return false
@@ -133,6 +149,20 @@ function DecorLayout.isFree(p: Params, x: number, z: number, radius: number): bo
 	end
 	if DecorLayout.pathDistance(p, x, z) - radius < p.pathWidth / 2 + DecorLayout.Clear then
 		return false
+	end
+	if tall == true then
+		local reach = p.ringRadius + p.plotSize / 2 + DecorLayout.TallExtra
+		for slot = 1, p.maxPlots do
+			local a = (slot - 1) / p.maxPlots * math.pi * 2
+			local dx, dz = math.cos(a), math.sin(a)
+			local along = x * dx + z * dz
+			if along > 0 and along < reach then
+				local perp = math.abs(-x * dz + z * dx)
+				if perp - radius < DecorLayout.ViewHalfWidth then
+					return false
+				end
+			end
+		end
 	end
 	return true
 end
@@ -163,7 +193,7 @@ function DecorLayout.spots(params: Params?): { Spot }
 			local d = math.sqrt(rMin * rMin + (rMax * rMax - rMin * rMin) * rand())
 			local a = rand() * math.pi * 2
 			local x, z = math.cos(a) * d, math.sin(a) * d
-			if DecorLayout.isFree(p, x, z, radius) and room(x, z, radius) then
+			if DecorLayout.isFree(p, x, z, radius, def.tall) and room(x, z, radius) then
 				table.insert(out, {
 					x = x,
 					z = z,
@@ -172,6 +202,7 @@ function DecorLayout.spots(params: Params?): { Spot }
 					kind = def.kind,
 					zone = zone,
 					radius = radius,
+					tall = def.tall,
 				})
 				added += 1
 			end
@@ -180,6 +211,33 @@ function DecorLayout.spots(params: Params?): { Spot }
 
 	fill("inner", p.innerCount, INNER, p.plazaRadius, p.ringRadius)
 	fill("outer", p.outerCount, OUTER, p.ringRadius, p.extent)
+	return out
+end
+
+-- A dense two-row wall of tall trees right round the edge, so the end of the map is never seen.
+-- Evenly spaced round the circle (no gaps), with a little wobble in radius, size and angle.
+DecorLayout.EdgeRadius = 204
+DecorLayout.EdgeCount = 110
+
+export type EdgeTree = { x: number, z: number, yaw: number, scale: number, radius: number }
+
+function DecorLayout.edgeTrees(params: Params?): { EdgeTree }
+	local p = params or DecorLayout.defaults
+	local rand = lcg(p.seed + 77)
+	local out: { EdgeTree } = {}
+	for i = 1, DecorLayout.EdgeCount do
+		local row = i % 2 -- two staggered rows
+		local a = (i / DecorLayout.EdgeCount) * math.pi * 2 + (rand() - 0.5) * 0.02
+		local d = DecorLayout.EdgeRadius + row * 14 + (rand() - 0.5) * 6
+		local scale = 2.0 + rand() * 0.8
+		table.insert(out, {
+			x = math.cos(a) * d,
+			z = math.sin(a) * d,
+			yaw = rand() * math.pi * 2,
+			scale = scale,
+			radius = 3.2 * scale,
+		})
+	end
 	return out
 end
 

@@ -149,7 +149,8 @@ function Plot.build(
 			Color = PILLAR,
 		})
 		pillar.Parent = folder
-		for i = 1, 5 do
+		-- Trim bands stay below the name sign (it hangs from ARCH_TOP - 2.9 up), never across its letters.
+		for i = 1, 4 do
 			local band = make({
 				Name = "Band",
 				Size = Vector3.new(1.1, 0.6, 1.1),
@@ -184,7 +185,9 @@ function Plot.build(
 		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 		gui.Parent = beam
 		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromScale(1, 1)
+		-- Letters stay between the pillars, clear of the posts and anything at the sign ends.
+		label.Size = UDim2.fromScale(0.84, 0.9)
+		label.Position = UDim2.fromScale(0.08, 0.05)
 		label.BackgroundTransparency = 1
 		label.Font = Enum.Font.FredokaOne
 		label.TextScaled = true

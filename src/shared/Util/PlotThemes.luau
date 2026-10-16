@@ -19,6 +19,7 @@ export type Theme = {
 	trunk: Color3,
 	stone: { Color3 }, -- rocks
 	props: { string }, -- which small pieces fill the corners, in order
+	tableLook: string, -- name of the Config.TableLooks entry the table wears in this yard
 	tree: string, -- big corner piece: "oak" | "palm" | "lolly" | "tower" | "crystal"
 }
 
@@ -43,6 +44,7 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(120, 80, 45),
 		stone = { Color3.fromRGB(170, 176, 184), Color3.fromRGB(196, 190, 176) },
 		props = { "bench", "boulder", "crate", "bush" },
+		tableLook = "Picnic Wood",
 		tree = "oak",
 	},
 	{
@@ -65,6 +67,7 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(190, 140, 80),
 		stone = { Color3.fromRGB(226, 208, 170), Color3.fromRGB(240, 220, 190) },
 		props = { "umbrella", "shell", "bucket", "boulder" },
+		tableLook = "Ocean Splash",
 		tree = "palm",
 	},
 	{
@@ -87,6 +90,7 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(255, 255, 255),
 		stone = { Color3.fromRGB(255, 170, 210), Color3.fromRGB(190, 160, 255) },
 		props = { "cupcake", "gumdrop", "candycane", "boulder" },
+		tableLook = "Bubblegum",
 		tree = "lolly",
 	},
 	{
@@ -109,6 +113,7 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(190, 192, 210),
 		stone = { Color3.fromRGB(190, 194, 212), Color3.fromRGB(214, 216, 232) },
 		props = { "barrel", "crate", "torch", "boulder" },
+		tableLook = "Royal Purple",
 		tree = "tower",
 	},
 	{
@@ -131,6 +136,7 @@ local THEMES: { Theme } = {
 		trunk = Color3.fromRGB(220, 224, 245),
 		stone = { Color3.fromRGB(180, 160, 240), Color3.fromRGB(210, 190, 255) },
 		props = { "orb", "boulder", "antenna", "crate" },
+		tableLook = "Star Station",
 		tree = "crystal",
 	},
 }
