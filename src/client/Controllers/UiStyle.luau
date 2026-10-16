@@ -161,15 +161,9 @@ function UiStyle.button(text: string, color: Color3, onPress: () -> ()): TextBut
 	b.TextColor3 = UiStyle.WHITE
 	b.TextStrokeColor3 = UiStyle.INK
 	UiStyle.corner(b)
-<<<<<<< HEAD
 	UiStyle.stroke(b, 3.5)
 	UiStyle.textOutline(b, 2.5)
 	UiStyle.chunky(b, 0.84)
-=======
-	UiStyle.stroke(b)
-	UiStyle.textOutline(b, 2)
-	UiStyle.gloss(b, 0.9)
->>>>>>> origin/claude/project-thread-fjf6yi
 	local scale = Instance.new("UIScale")
 	scale.Parent = b
 	local pad = Instance.new("UIPadding")
