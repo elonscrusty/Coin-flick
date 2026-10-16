@@ -393,7 +393,7 @@ return table.freeze({
 			}),
 			table.freeze({
 				kind = "mega",
-				text = "Help flip the mega coin %d time(s)",
+				text = "Help flip the mega coin %d time",
 				goals = table.freeze({ 1, 2, 3 }),
 				flips = table.freeze({ 15, 30, 50 }),
 				hats = table.freeze({ 1, 2, 3 }),

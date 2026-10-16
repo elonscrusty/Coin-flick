@@ -23,7 +23,14 @@ local NOTE_H = 24
 local PAGE_H = 54
 local BADGE_H = 54
 
-type LadderUi = { frame: Frame, outline: UIStroke, name: TextLabel, line: TextLabel, button: TextButton }
+type LadderUi = {
+	frame: Frame,
+	outline: UIStroke,
+	name: TextLabel,
+	line: TextLabel,
+	button: TextButton,
+	bar: Widgets.Bar,
+}
 type ChallengeUi = { frame: Frame, title: TextLabel, bar: Widgets.Bar, button: TextButton, reward: TextLabel }
 type PageUi = { frame: Frame, title: TextLabel, line: TextLabel, prize: TextLabel }
 
@@ -95,6 +102,10 @@ local function build(list: ScrollingFrame)
 		button.ZIndex = 8
 		Kit.textLimit(button, 20)
 		button.Parent = frame
+		-- A locked look shows progress on a bright bar ("1/3"), not a dead button.
+		local bar = makeBar(frame, UDim2.new(1, -8, 0.5, 0), UDim2.new(0.3, -8, 0.5, 0), Kit.GOLD)
+		bar.track.AnchorPoint = Vector2.new(1, 0.5)
+		bar.track.Visible = false
 		local id = rung.id
 		guard(list, button, function()
 			local v = view
@@ -107,7 +118,7 @@ local function build(list: ScrollingFrame)
 				end
 			end
 		end)
-		ladderUis[id] = { frame = frame, outline = outline, name = name, line = line, button = button }
+		ladderUis[id] = { frame = frame, outline = outline, name = name, line = line, button = button, bar = bar }
 	end
 
 	-- Weekly challenges (three, then the bonus as slot 0).
@@ -258,6 +269,9 @@ local function render()
 		if ui then
 			ui.name.Text = row.name
 			ui.line.Text = row.line
+			ui.button.Visible = row.action ~= "none"
+			ui.bar.track.Visible = row.action == "none"
+			setBar(ui.bar, row.frac, row.count)
 			ui.button.Text = row.button.text
 			Kit.applyLook(ui.button, row.button.look)
 			ui.outline.Color = if row.worn then Kit.TEAL else Kit.INK

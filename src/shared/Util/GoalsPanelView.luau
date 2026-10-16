@@ -23,6 +23,8 @@ export type LadderRow = {
 	action: "wear" | "off" | "none",
 	owned: boolean,
 	worn: boolean,
+	frac: number, -- progress to this look (1 once reached)
+	count: string, -- "1/3" shown on a bar while locked
 }
 export type ChallengeRow = {
 	slot: number, -- 1..3, 0 = the all-three bonus
@@ -90,6 +92,8 @@ function GoalsPanelView.ladderRows(view: GoalsView): { LadderRow }
 			action = action,
 			owned = rung.owned,
 			worn = rung.worn,
+			frac = math.clamp(view.ladder.best / math.max(1, rung.need), 0, 1),
+			count = `{math.min(view.ladder.best, rung.need)}/{rung.need}`,
 		})
 	end
 	return rows

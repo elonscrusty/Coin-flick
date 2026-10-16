@@ -9,6 +9,7 @@
 
 local Config = require(script.Parent.Parent.Config)
 local Types = require(script.Parent.Parent.Types)
+local Plural = require(script.Parent.Plural)
 
 type DailyState = Types.DailyState
 type DailyView = Types.DailyView
@@ -66,7 +67,7 @@ function Daily.jobsFor(userId: number, day: number): { Job }
 				goal = goal,
 				flips = def.flips[tier],
 				hats = def.hats[tier],
-				text = string.format(def.text, goal),
+				text = Plural.fix(string.format(def.text, goal)),
 			})
 		end
 		if #jobs >= JOBS then
