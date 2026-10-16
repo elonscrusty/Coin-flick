@@ -13,13 +13,13 @@ Built on a side branch off `picture-fixes`. Nothing here touches World, Plot, Ta
   ported from Find The Pet's `KitParts` (pieces only) and recoloured bright. Beach, candy, castle and star pieces are new.
   `PlotDecor.yard(make, parent, plotCFrame, theme, resets)` and `PlotDecor.world(make, parent)`.
 
-## Hooks for build 2 (after phase 0 passes)
-1. `Systems/Tables.buildTable`: `local theme = PlotThemes.resolve(profile.resets, profile.plotTheme)`; use
-   `theme.pad / border / fence / post / sign / signText` in `Plot.build` instead of the table look; call
-   `PlotDecor.yard(...)` in place of the tree and flower loops. The table keeps its own `Config.TableLooks` colours.
-2. `Systems/World.decorate`: replace the forest ring and flower patches with `PlotDecor.world(World.makePart, folder)`.
-3. Picking (later): save `plotTheme: string` in the profile (`ProfileSchema` clean-up: keep only ids from
-   `PlotThemes.ids()`), a `PickPlotTheme` remote that checks `PlotThemes.isUnlocked`, then rebuild the table.
+## Wired in (2026-10-16, carter: "build the map now")
+- `Plot.build` takes a theme: pad, border, fence, posts, name sign colours, then `PlotDecor.yard` (floor tiles, corner pieces, side props; grows each reset).
+- `Tables.buildTable`: `PlotThemes.resolve(profile.resets, nil)`; sets model attribute `PlotTheme`. Table colours still follow `Config.TableLooks`.
+- `World.decorate`: old forest ring and flower patches replaced by `PlotDecor.world`. Plaza, paths and gap trees stay.
+
+## Still open
+- Picking a look after reset 4: needs a saved `plotTheme` in the profile, a remote that checks `PlotThemes.isUnlocked`, a rebuild, and a UI button. `resolve(resets, picked)` already handles it. Not built.
 
 ## Proof
-Offline tests pass. No Studio pictures yet: the visual check on the runner (phone view) is still to do after the hooks go in.
+Lune 109 pass, luau-lsp 0 diagnostics, stylua clean, rojo build ok. No Studio pictures yet: runner pictures (desktop + phone) are the next step.

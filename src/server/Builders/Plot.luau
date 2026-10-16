@@ -6,11 +6,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local PlotThemes = require(ReplicatedStorage.Shared.Util.PlotThemes)
+local PlotDecor = require(script.Parent.PlotDecor)
 
 local Plot = {}
 
-local WOOD = Color3.fromRGB(150, 100, 60)
-local FENCE = Color3.fromRGB(255, 250, 240)
 local TRUNK = Color3.fromRGB(120, 80, 45)
 local LEAVES = {
 	Color3.fromRGB(80, 200, 80),
@@ -77,7 +77,7 @@ function Plot.build(
 	make: PartMaker,
 	parent: Instance,
 	plotCFrame: CFrame,
-	look: Config.TableLook,
+	theme: PlotThemes.Theme,
 	ownerName: string,
 	resets: number
 )
@@ -89,14 +89,14 @@ function Plot.build(
 		Name = "Pad",
 		Size = Vector3.new(Config.PLOT_SIZE, 0.4, Config.PLOT_SIZE),
 		CFrame = plotCFrame * CFrame.new(0, 0.2, 0),
-		Color = look.top:Lerp(Color3.new(1, 1, 1), 0.55),
+		Color = theme.pad,
 	})
 	pad.Parent = folder
 	local border = make({
 		Name = "Border",
 		Size = Vector3.new(Config.PLOT_SIZE + 1.6, 0.3, Config.PLOT_SIZE + 1.6),
 		CFrame = plotCFrame * CFrame.new(0, 0.15, 0),
-		Color = look.rim,
+		Color = theme.border,
 	})
 	border.Parent = folder
 
@@ -111,7 +111,7 @@ function Plot.build(
 				Name = "Rail",
 				Size = Vector3.new(0.4, 0.4, length),
 				CFrame = plotCFrame * (along + Vector3.new(0, y, 0)),
-				Color = FENCE,
+				Color = theme.fence,
 			})
 			rail.Parent = folder
 		end
@@ -122,7 +122,7 @@ function Plot.build(
 				Name = "Post",
 				Size = Vector3.new(0.8, 3.2, 0.8),
 				CFrame = plotCFrame * CFrame.new(p + Vector3.new(0, 1.6, 0)),
-				Color = FENCE,
+				Color = theme.fence,
 			})
 			post.Parent = folder
 		end
@@ -139,7 +139,7 @@ function Plot.build(
 			Name = "Pillar",
 			Size = Vector3.new(1.6, 9, 1.6),
 			CFrame = plotCFrame * CFrame.new(x, 4.5, -half),
-			Color = WOOD,
+			Color = theme.post,
 		})
 		pillar.Parent = folder
 	end
@@ -147,7 +147,7 @@ function Plot.build(
 		Name = "NameSign",
 		Size = Vector3.new(gap * 2 + 3, 2.6, 1),
 		CFrame = plotCFrame * CFrame.new(0, 9.6, -half),
-		Color = look.rim,
+		Color = theme.sign,
 	})
 	beam.Parent = folder
 	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
@@ -162,34 +162,15 @@ function Plot.build(
 		label.BackgroundTransparency = 1
 		label.Font = Enum.Font.FredokaOne
 		label.TextScaled = true
-		label.TextColor3 = Color3.fromRGB(255, 255, 255)
+		label.TextColor3 = theme.signText
 		label.TextStrokeTransparency = 0
 		label.TextStrokeColor3 = Color3.fromRGB(50, 35, 20)
 		label.Text = `{ownerName}'s Coins`
 		label.Parent = gui
 	end
 
-	-- Two trees always; one more per reset (up to 4 extra), plus flowers.
-	local treeSpots = {
-		Vector3.new(-half + 3.5, 0, half - 3.5),
-		Vector3.new(half - 3.5, 0, half - 3.5),
-		Vector3.new(-half + 3.5, 0, -half + 5),
-		Vector3.new(half - 3.5, 0, -half + 5),
-		Vector3.new(-half + 3.5, 0, 0),
-		Vector3.new(half - 3.5, 0, 0),
-	}
-	local treeCount = math.min(#treeSpots, 2 + resets)
-	for i = 1, treeCount do
-		local spot = treeSpots[i]
-		tree(make, folder, plotCFrame * CFrame.new(spot), 1 + (i % 3) * 0.12, LEAVES[(i % #LEAVES) + 1])
-	end
-	local flowerCount = math.min(16, 4 + resets * 3)
-	for i = 1, flowerCount do
-		local side = if i % 2 == 0 then 1 else -1
-		local z = -half + 2 + ((i - 1) // 2) * 4
-		local spot = Vector3.new(side * (half - 1.4), 0.4, z)
-		flower(make, folder, plotCFrame * CFrame.new(spot), FLOWERS[(i % #FLOWERS) + 1])
-	end
+	-- Theme dressing: floor tiles, corner trees, side props. Grows with every reset.
+	PlotDecor.yard(make, folder, plotCFrame, theme, resets)
 
 	folder.Parent = parent
 end
