@@ -39,6 +39,7 @@ local EggPerks = require(Shared.EggPerks)
 local LaunchPerks = require(Shared.LaunchPerks)
 local Profiles = require(script.Parent.Profiles)
 local Kit = require(script.Parent.KitParts)
+local CoinYard = require(Shared.CoinYard)
 local RareHatch = require(script.Parent.RareHatch)
 
 local Robux = {}
@@ -442,8 +443,14 @@ local function nearHut(player: Player): boolean
 end
 
 local function nearStand(player: Player): boolean
-	local stand = hatchStand()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	-- the coin yard's egg stand also sells eggs (server/CoinYardService)
+	local yard = Workspace:FindFirstChild(CoinYard.FolderName)
+	local yardStand = yard and yard:FindFirstChild(CoinYard.StandName)
+	if yardStand and yardStand:IsA("BasePart") and root and root:IsA("BasePart") and (root.Position - yardStand.Position).Magnitude <= 14 + SHRINE_SLACK then
+		return true
+	end
+	local stand = hatchStand()
 	if not (stand and root and root:IsA("BasePart")) then
 		return false
 	end

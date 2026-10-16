@@ -138,6 +138,9 @@ elseif isMatch then
 end
 Economy.start()
 if not isMatch then
+	require(script.Parent.CoinYardService).start() -- coin yard east of the park + battle ring in the clearing
+end
+if not isMatch then
 	Gallery.start(lobby)
 	LobbyBoards.build(lobby.Root)
 	require(script.Parent.WinnerBoard).start(lobby.Root) -- LAST WINNERS screen over the WHAT'S NEW board (memory only)

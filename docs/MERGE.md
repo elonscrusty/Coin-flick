@@ -11,3 +11,9 @@ Left out to keep the repo small: generated preview json under docs/, big referen
 Players walk over coins/floor pads to flip them for cash. Cash buys eggs and pets. Pets stay at the plots.
 Port from `coin/`: flip logic (`coin/src/server/Util/GameLogic.luau`), floor pads, rarity.
 Rules: server decides every flip; every egg shows its odds before buying; Robux ids/prices only from the owner.
+
+## Step 2 (built, offline-tested only, not seen in Studio)
+- `shared/CoinYard` (rules, odds, layout; tests/test_coin_yard.luau) + `server/CoinYardService` (builds the yard at x 180..280, two portal arches, 24 flip pads, egg stand, odds sign, battle ring in the clearing).
+- Flip cash = normal profile Cash. Base scales with the player's zone (`CoinYard.baseFor`), pet Coins boost applies.
+- Egg stand opens the Pet Shop; `RobuxService.nearStand` accepts it. Odds are shown in the shop and on the yard sign.
+- Battle ring = part with attribute `PvpPad` (PvpService opens the battle card).
