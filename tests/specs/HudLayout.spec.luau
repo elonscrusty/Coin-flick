@@ -116,7 +116,7 @@ describe("HUD layout", function()
 
 	it("longest HUD text still fits big enough to read", function()
 		local longest = {
-			info = "💵 $999K per heads  •  🍀 80%  •  🪙 25/25",
+			info = "Heads = $999K  •  🍀 80% luck  •  🪙 25/25",
 			boost = "🌟 Mega coin 999/999  •  tap it together!",
 			shout = "⭐ SomeLongName20Char flipped a GIANT coin! +$999K ⭐",
 			toast = "Fill your table first! (24/25 coins)",

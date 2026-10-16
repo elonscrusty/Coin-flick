@@ -8,6 +8,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local GuiService = game:GetService("GuiService")
+local TextService = game:GetService("TextService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -16,6 +17,7 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
+local HudText = require(ReplicatedStorage.Shared.Util.HudText)
 local ClientNet = require(script.Parent.Parent.ClientNet)
 local CameraView = require(script.Parent.CameraView)
 local Sounds = require(script.Parent.Sounds)
@@ -81,6 +83,8 @@ local shopPanel: Frame
 local resetPanel: Frame
 local resetBody: TextLabel
 local resetButton: TextButton
+local resetFill: Frame
+local resetWord: TextLabel
 local resetPulse: Tween?
 type Card = { level: TextLabel, buy: TextButton, team: TextButton? }
 local shopCards: { [string]: Card } = {}
@@ -109,6 +113,19 @@ local toastToken = 0
 
 local function anyPanelOpen(): boolean
 	return shopPanel.Visible or resetPanel.Visible or topPanel.Visible
+end
+
+-- Info / boost strips: as wide as their words (so they hide less of the
+-- world), centered in their slot; hidden when empty or a panel is open.
+local function setStrip(l: TextLabel, text: string)
+	l.Text = text
+	local slot = if l == boostLabel then layout.boost else layout.info
+	local cap = l:FindFirstChildOfClass("UITextSizeConstraint")
+	local size = if cap then cap.MaxTextSize else 20
+	local textW = TextService:GetTextSize(text, size, UiStyle.FONT, Vector2.new(10000, 1000)).X
+	local w = math.min(slot.w, textW * 1.1 + 28)
+	place(l, { x = slot.x + (slot.w - w) / 2, y = slot.y, w = w, h = slot.h })
+	l.Visible = text ~= "" and not anyPanelOpen()
 end
 
 local function toast(text: string, color: Color3?)
@@ -183,6 +200,8 @@ local function openPanel(panel: Frame)
 	if cheatFrame then
 		cheatFrame.Visible = false
 	end
+	infoLabel.Visible = false
+	boostLabel.Visible = false
 	if scale then
 		scale.Scale = 0.6
 		TweenService:Create(scale, BOUNCY, { Scale = 1 }):Play()
@@ -197,6 +216,8 @@ local function closePanels()
 	if cheatFrame then
 		cheatFrame.Visible = true
 	end
+	setStrip(infoLabel, infoLabel.Text)
+	setStrip(boostLabel, boostLabel.Text)
 end
 
 local function makePanel(name: string, title: string): (Frame, Frame)
@@ -629,10 +650,27 @@ local function buildReset()
 	no.Parent = body
 end
 
-local function sideButton(text: string, color: Color3, onPress: () -> ()): TextButton
-	local b = button(text, color, onPress)
-	textLimit(b, 22)
-	return b
+-- Big icon on top, word underneath (the icon is the thing kids spot).
+local function sideButton(icon: string, word: string, color: Color3, onPress: () -> ()): (TextButton, TextLabel, TextLabel)
+	local b = button("", color, onPress)
+	local iconLabel = label({
+		Name = "Icon",
+		Text = icon,
+		Size = UDim2.fromScale(1, 0.6),
+		TextStrokeTransparency = 1,
+		ZIndex = 3,
+	})
+	iconLabel.Parent = b
+	local wordLabel = label({
+		Name = "Word",
+		Text = word,
+		Position = UDim2.fromScale(0, 0.62),
+		Size = UDim2.fromScale(1, 0.38),
+		ZIndex = 3,
+	})
+	textLimit(wordLabel, 22)
+	wordLabel.Parent = b
+	return b, iconLabel, wordLabel
 end
 
 local function buildCheats(parent: ScreenGui)
@@ -681,8 +719,7 @@ render = function(s: Snapshot)
 	if s.hatPoints > oldHats then
 		popScale(hatScale, 1.15)
 	end
-	infoLabel.Text =
-		`💵 ${Format.short(s.cashPerHeads)} per heads  •  🍀 {Format.percent(s.headsChance)}  •  🪙 {s.coinCount}/{Config.MAX_COINS}`
+	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance, s.coinCount, Config.MAX_COINS))
 
 	for id, card in shopCards do
 		local level = s.upgrades[id :: Types.UpgradeId]
@@ -800,8 +837,11 @@ render = function(s: Snapshot)
 
 	resetBody.Text =
 		`You LOSE: cash and upgrades\nYou KEEP: helper guys and 🎩\nYou GET: cash x{s.resetBonus} forever + a new table!`
-	resetButton.BackgroundColor3 = if s.tableFull then ORANGE else Color3.fromRGB(205, 150, 90)
-	resetButton.Text = if s.tableFull then "🔄\nRESET!" else `🔄\n{s.coinCount}/{Config.MAX_COINS}`
+	-- Not full: a gold bar fills up inside the button (progress, not "off").
+	resetButton.BackgroundColor3 = if s.tableFull then ORANGE else Color3.fromRGB(120, 95, 70)
+	resetFill.Visible = not s.tableFull
+	resetFill.Size = UDim2.fromScale(math.clamp(s.coinCount / Config.MAX_COINS, 0, 1), 1)
+	resetWord.Text = HudText.reset(s.coinCount, Config.MAX_COINS, s.tableFull)
 	-- Glow the RESET button's outline when the table is full. (Pulsing the
 	-- outline, not the size, so the press-pop animation can't cancel it.)
 	local outline = resetButton:FindFirstChildOfClass("UIStroke")
@@ -840,10 +880,10 @@ local function applyLayout()
 	place(topFrame, layout.top)
 	setMaxText(cashLabel, layout.top.h * 0.62)
 	setMaxText(hatLabel, layout.top.h * 0.62)
-	place(infoLabel, layout.info)
 	setMaxText(infoLabel, layout.info.h * 0.72)
-	place(boostLabel, layout.boost)
+	setStrip(infoLabel, infoLabel.Text)
 	setMaxText(boostLabel, layout.boost.h * 0.72)
+	setStrip(boostLabel, boostLabel.Text)
 	place(shoutLabel, layout.shout)
 	setMaxText(shoutLabel, layout.shout.h * 0.42)
 	place(comboLabel, layout.combo)
@@ -858,7 +898,10 @@ local function applyLayout()
 	for i, b in sideButtons do
 		local r = layout.sideButtons[i]
 		place(b, { x = r.x - layout.side.x, y = r.y - layout.side.y, w = r.w, h = r.h })
-		setMaxText(b, r.h * 0.3)
+		local word = b:FindFirstChild("Word")
+		if word and word:IsA("GuiObject") then
+			setMaxText(word, r.h * 0.24)
+		end
 	end
 
 	if cheatFrame then
@@ -1003,12 +1046,12 @@ function Hud.init()
 	side.Name = "Side"
 	side.BackgroundTransparency = 1
 	sideFrame = side
-	local shopButton = sideButton("🛒\nSHOP", GREEN, function()
+	local shopButton = sideButton("🛒", "SHOP", GREEN, function()
 		Sounds.play("Tap", 0.4)
 		closePanels()
 		openPanel(shopPanel)
 	end)
-	resetButton = sideButton("🔄\nRESET", GREY, function()
+	local resetB, _resetIcon, resetW = sideButton("🔄", "RESET", GREY, function()
 		Sounds.play("Tap", 0.4)
 		local s = State.get()
 		if s and s.tableFull then
@@ -1019,15 +1062,28 @@ function Hud.init()
 			toast(`Fill your table first! ({count}/{Config.MAX_COINS} coins)`)
 		end
 	end)
-	local topButton = sideButton("🏆\nTOP", PURPLE, function()
+	resetButton, resetWord = resetB, resetW
+	-- Gold tank that fills with coins; the button glows when it's full.
+	resetFill = Instance.new("Frame")
+	resetFill.Name = "Fill"
+	resetFill.BackgroundColor3 = UiStyle.GOLD
+	resetFill.BackgroundTransparency = 0.15
+	resetFill.Size = UDim2.fromScale(0, 1)
+	resetFill.ZIndex = 2
+	corner(resetFill, 0.2)
+	resetFill.Parent = resetButton
+	local topButton = sideButton("🏆", "TOP", PURPLE, function()
 		Sounds.play("Tap", 0.4)
 		closePanels()
 		openPanel(topPanel)
 	end)
-	local viewButton: TextButton
-	viewButton = sideButton("🔍\nZOOM", BLUE, function()
+	local viewIcon: TextLabel
+	local viewWord: TextLabel
+	local viewButton
+	viewButton, viewIcon, viewWord = sideButton("🔍", "ZOOM", BLUE, function()
 		local tableView = CameraView.toggle()
-		viewButton.Text = if tableView then "🏃\nWALK" else "🔍\nZOOM"
+		viewIcon.Text = if tableView then "🏃" else "🔍"
+		viewWord.Text = if tableView then "WALK" else "ZOOM"
 	end)
 	sideButtons = { shopButton, resetButton, topButton, viewButton }
 	for i, b in sideButtons do
@@ -1061,22 +1117,19 @@ function Hud.start()
 			showCombo(ev.combo)
 		end
 	end)
-	local megaText = ""
+	local mega: Types.MegaState = { taps = 0, goal = 1, boostLeft = 0 }
 	ClientNet.event("MegaState").OnClientEvent:Connect(function(state: Types.MegaState)
 		boostEnds = os.clock() + state.boostLeft
-		megaText = `🌟 Mega coin {state.taps}/{state.goal}  •  tap it together!`
+		mega = state
 	end)
 	task.spawn(function()
 		while true do
-			local left = math.ceil(boostEnds - os.clock())
-			if left > 0 then
-				boostLabel.Text = `⚡ MEGA BOOST: 2x CASH  {left // 60}:{string.format("%02d", left % 60)}`
-				boostLabel.TextColor3 = Color3.fromRGB(255, 220, 60)
-			else
-				boostLabel.Text = megaText
-				boostLabel.TextColor3 = WHITE
+			local left = boostEnds - os.clock()
+			local text = HudText.boost(mega.taps, mega.goal, left)
+			boostLabel.TextColor3 = if left > 0 then UiStyle.GOLD else WHITE
+			if text ~= boostLabel.Text then
+				setStrip(boostLabel, text)
 			end
-			boostLabel.Visible = boostLabel.Text ~= ""
 			task.wait(0.25)
 		end
 	end)
