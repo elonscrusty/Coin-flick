@@ -34,11 +34,12 @@ local Panels = {}
 local player = Players.LocalPlayer
 
 local cardHeight = 66 -- smaller on short (phone landscape) screens, set by setLayout
-local CARD_MIN, CARD_MAX = 50, 88
+local CARD_MIN, CARD_MAX = 44, 88
 local lastBoxH = 300 -- panel height in panel units (before its UIScale), from setLayout
 local SCROLLBAR = 10
 local ICON_TILE = Color3.fromRGB(150, 200, 250) -- light blue: white chef hat and yellow duck both show
-local HEADER_H = 26 -- caption row above the CREW and HATS lists
+local HEADER_H = 26 -- caption row above the CREW and HATS lists (dropped on short panels)
+local headerShown = HEADER_H
 local ARROW_STRIP = 20 -- empty strip under a list that holds the "more below" arrow
 local TAB_COLORS: { [string]: Color3 } = {
 	upgrades = Kit.GOLD,
@@ -103,6 +104,7 @@ local boardRows: { { frame: Frame, medal: TextLabel, name: TextLabel, value: Tex
 local myRow: TextLabel
 local boardList: ScrollingFrame
 local boardInvite: Frame
+local boardWanted, boardReal = 0, 0
 
 local resetLines: { TextLabel } = {}
 local resetYes: TextButton
@@ -287,13 +289,17 @@ local function showBanner(
 	bannerIconHost.Visible = icon ~= nil
 	-- The picture is a square tile at the left; the words start right after it.
 	local h = banner.Size.Y.Offset
-	local tile = math.max(0, h - 16)
+	local w = banner.Size.X.Offset
+	local tile = math.max(0, math.min(h - 16, math.floor(w * 0.3)))
 	local left = if icon then tile + 16 else 10
 	bannerIconHost.Size = UDim2.fromOffset(tile, tile)
-	bannerTitle.Position = UDim2.new(0, left, 0.06, 0)
-	bannerTitle.Size = UDim2.new(1, -left - 8, 0.44, 0)
-	bannerText.Position = UDim2.new(0, left, 0.52, 0)
-	bannerText.Size = UDim2.new(1, -left - 8, 0.42, 0)
+	bannerIconHost.Position = UDim2.fromOffset(8, math.floor((h - tile) / 2))
+	local titleH, textH = PanelView.bannerRows(h)
+	local top = math.floor((h - titleH - textH) / 2)
+	bannerTitle.Position = UDim2.fromOffset(left, top)
+	bannerTitle.Size = UDim2.new(1, -left - 8, 0, titleH)
+	bannerText.Position = UDim2.fromOffset(left, top + titleH)
+	bannerText.Size = UDim2.new(1, -left - 8, 0, textH)
 	if icon then
 		icon.Size = UDim2.fromScale(1, 1)
 		icon.ZIndex = 27
@@ -348,7 +354,7 @@ local function shout(notice: Types.Notice)
 	local name = if def then def.name else "RARE"
 	showBanner(
 		`{name} COIN!`,
-		PanelView.shoutText(notice.text, player.DisplayName, notice.ownerId == player.UserId),
+		PanelView.shoutLine(notice.text, player.DisplayName, notice.ownerId == player.UserId),
 		if def then def.color else Kit.GOLD,
 		notice.rarity == "rainbow",
 		if notice.everyone == false then 1.8 else 2.8,
@@ -435,6 +441,8 @@ end
 
 -- A scroll list with room for its scrollbar (rows never get cut on the right),
 -- padding top and bottom, and a fade + arrow when more rows are below.
+local listFades: { [ScrollingFrame]: Frame } = {}
+
 local function scrollList(parent: Frame, top: number, bottom: number?): ScrollingFrame
 	local list = Instance.new("ScrollingFrame")
 	list.Position = UDim2.fromOffset(0, top)
@@ -457,8 +465,8 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(0, 8)
 	pad.PaddingBottom = UDim.new(0, 0) -- rows end flush, so nothing scrolls when they all fit
-	pad.PaddingLeft = UDim.new(0, 4)
-	pad.PaddingRight = UDim.new(0, 6)
+	pad.PaddingLeft = UDim.new(0, 0)
+	pad.PaddingRight = UDim.new(0, 0)
 	pad.Parent = list
 	list.Parent = parent
 
@@ -482,6 +490,8 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 		return fade
 	end
 	local fadeTop = edgeFade("MoreAbove", true)
+	listFades[list] = fadeTop
+	list:SetAttribute("Bottom", bottom or 0)
 	local fadeBottom = edgeFade("MoreBelow", false)
 	local arrow = Kit.label({
 		Name = "MoreArrow",
@@ -511,12 +521,12 @@ end
 -- A row of tabs, each in its own color: bright when picked, pale when not.
 local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> ()): { [string]: TextButton }
 	local row = Instance.new("Frame")
-	row.Size = UDim2.new(1, 0, 0, 38)
+	row.Size = UDim2.new(1, -SCROLLBAR, 0, 38) -- same width as the rows below (they reserve the scrollbar)
 	row.BackgroundTransparency = 1
 	row.ZIndex = 6
 	local listLayout = Instance.new("UIListLayout")
 	listLayout.FillDirection = Enum.FillDirection.Horizontal
-	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	listLayout.Padding = UDim.new(0, 6)
 	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	listLayout.Parent = row
@@ -529,7 +539,7 @@ local function tabRow(parent: Frame, tabs: { { string } }, onPick: (string) -> (
 		end)
 		b.Name = `Tab_{key}`
 		b.LayoutOrder = i
-		b.Size = UDim2.new(1 / #tabs, -6, 1, 0)
+		b.Size = UDim2.new(1 / #tabs, -(6 * (#tabs - 1)) / #tabs, 1, 0)
 		b.ZIndex = 7
 		Kit.textLimit(b, 22)
 		b.Parent = row
@@ -557,8 +567,8 @@ end
 -- Sizes everything inside a card from its height, so text grows with the row.
 local function layoutCard(ui: CardUi, h: number)
 	local pad = math.round(h * 0.08)
-	local titleH = math.round(h * 0.38)
-	local lineH = math.round(h * 0.32)
+	local titleH = math.round(h * 0.42)
+	local lineH = math.round(h * 0.34)
 	ui.frame.Size = UDim2.new(1, 0, 0, h)
 	local iconBox = ui.frame:FindFirstChild("IconBox")
 	if iconBox and iconBox:IsA("GuiObject") then
@@ -573,11 +583,11 @@ local function layoutCard(ui: CardUi, h: number)
 	ui.badge.Size = UDim2.fromOffset(66, math.max(20, math.round(h * 0.3)))
 	local titleLimit = ui.title:FindFirstChildOfClass("UITextSizeConstraint")
 	if titleLimit then
-		titleLimit.MaxTextSize = math.max(16, math.round(h * 0.36))
+		titleLimit.MaxTextSize = math.max(16, math.round(h * 0.4))
 	end
 	local lineLimit = ui.line:FindFirstChildOfClass("UITextSizeConstraint")
 	if lineLimit then
-		lineLimit.MaxTextSize = math.max(14, math.round(h * 0.28))
+		lineLimit.MaxTextSize = math.max(14, math.round(h * 0.3))
 	end
 end
 
@@ -810,7 +820,7 @@ local function pickShopTab(key: string)
 		list.Visible = k == key
 	end
 	for k, header in shopHeaders do
-		header.Visible = k == key
+		header.Visible = k == key and headerShown > 0
 	end
 end
 
@@ -952,6 +962,13 @@ local function renderBoard()
 	local s = State.get()
 	local mine = if s then PanelView.myValue(boardShown, s) else nil
 	local rows = PanelView.boardRows(boardShown, boards[boardShown], player.DisplayName, mine)
+	boardWanted = #rows
+	boardReal = 0
+	for _, view in rows do
+		if not view.empty then
+			boardReal += 1
+		end
+	end
 	for i, ui in boardRows do
 		ui.frame.Visible = rows[i] ~= nil
 	end
@@ -1178,14 +1195,34 @@ end
 -- screen change. Hud.applyLayout calls this.
 -- Rows fill the list exactly (no half-cut row at the bottom): pick how many fit,
 -- then stretch them to share the height. Text scales with the row.
+local function setListTop(list: ScrollingFrame, top: number)
+	local bottom = list:GetAttribute("Bottom")
+	local below = if typeof(bottom) == "number" then bottom else 0
+	list.Position = UDim2.fromOffset(0, top)
+	list.Size = UDim2.new(1, 0, 1, -top - below - ARROW_STRIP)
+	local fade = listFades[list]
+	if fade then
+		fade.Position = UDim2.fromOffset(0, top)
+	end
+end
+
 local function fitCards()
 	local bodyH = lastBoxH - 62
+	-- On a short (phone) panel the one-line captions go, so a second row fits.
+	headerShown = if lastBoxH < 290 then 0 else HEADER_H
+	for key, caption in shopHeaders do
+		caption.Visible = caption.Visible and headerShown > 0
+		local list = shopLists[key]
+		if list then
+			setListTop(list, 44 + headerShown)
+		end
+	end
 	for group, byId in cards do
 		local count = 0
 		for _ in byId do
 			count += 1
 		end
-		local header = if group == "helpers" or group == "hats" then HEADER_H else 0
+		local header = if group == "helpers" or group == "hats" then headerShown else 0
 		local avail = bodyH - 44 - header - ARROW_STRIP - 4 -- a few px spare so no row is ever clipped
 		local _, h = PanelView.fitRows(avail, count, CARD_MIN, CARD_MAX, 8, 8)
 		for _, ui in byId do
@@ -1201,25 +1238,18 @@ function fitBoard()
 	if not boardList then
 		return
 	end
-	local rowsShown = 0
-	for _, ui in boardRows do
-		if ui.frame.Visible then
-			rowsShown += 1
-		end
-	end
 	local full = lastBoxH - 62 - 44 - 34 - ARROW_STRIP - 4
-	local _, rowH, content = PanelView.fitRows(full, rowsShown, 34, 62, 8, 8)
-	for _, ui in boardRows do
+	local shown, rowH, invite = PanelView.boardLayout(full, boardReal, boardWanted)
+	for i, ui in boardRows do
+		ui.frame.Visible = i <= shown -- open seats go first when space is short
 		ui.frame.Size = UDim2.new(1, 0, 0, rowH)
 		ui.medal.Size = UDim2.fromOffset(rowH - 6, rowH - 6)
 		ui.name.Position = UDim2.fromOffset(rowH + 6, 5)
 		ui.name.Size = UDim2.new(0.65, -(rowH + 10), 1, -10)
 	end
-	-- Friendly card in the space the rows leave (fewer players than the list is tall).
-	local spare = full - content - 8
-	boardInvite.Visible = spare >= 52
-	boardInvite.Size = UDim2.new(1, 0, 0, math.min(spare, 130))
-	boardList.Size = UDim2.fromOffset(0, full) + UDim2.fromScale(1, 0)
+	boardInvite.Visible = invite >= PanelView.INVITE_MIN
+	boardInvite.Size = UDim2.new(1, 0, 0, math.max(invite, 0))
+	boardList.Size = UDim2.new(1, 0, 0, full)
 	myRow.Position = UDim2.fromOffset(0, 44 + full + ARROW_STRIP + 4)
 end
 
@@ -1335,11 +1365,14 @@ function Panels.init()
 		Size = UDim2.fromScale(0.9, 0.44),
 		ZIndex = 26,
 	})
-	bannerTitle.TextYAlignment = Enum.TextYAlignment.Bottom
-	bannerTitle.TextWrapped = false
+	bannerTitle.TextYAlignment = Enum.TextYAlignment.Center
 	Kit.outline(bannerTitle, 3)
 	Kit.textLimit(bannerTitle, 30)
-	bannerTitle.TextWrapped = false
+	local titleLimit = bannerTitle:FindFirstChildOfClass("UITextSizeConstraint")
+	if titleLimit then
+		titleLimit.MinTextSize = PanelView.BANNER_TITLE_MIN_FONT
+	end
+	bannerTitle.TextWrapped = true
 	bannerTitle.Parent = banner
 	bannerText = Kit.label({
 		Name = "Text",
@@ -1347,9 +1380,10 @@ function Panels.init()
 		Size = UDim2.fromScale(0.9, 0.42),
 		ZIndex = 26,
 	})
-	bannerText.TextYAlignment = Enum.TextYAlignment.Top
+	bannerText.TextYAlignment = Enum.TextYAlignment.Center
 	Kit.outline(bannerText, 2)
 	Kit.textLimit(bannerText, 20)
+	bannerText.TextTruncate = Enum.TextTruncate.AtEnd
 	bannerText.TextWrapped = true
 	bannerText.Parent = banner
 	banner.Parent = popGui
@@ -1446,7 +1480,7 @@ function Panels.start()
 		elseif notice.kind == "shout" then
 			shout(notice)
 		elseif notice.kind == "mega" then
-			showBanner("MEGA FLIP!", PanelView.megaBody(notice.text), Kit.GOLD, false, 2.8, nil)
+			showBanner("MEGA FLIP!", PanelView.megaLine(notice.text), Kit.GOLD, false, 2.8, nil)
 			screenFlash()
 			confetti(36)
 		elseif notice.kind == "bought" then
@@ -1463,7 +1497,7 @@ function Panels.start()
 			Panels.toast(notice.text)
 		elseif notice.kind == "offline" then
 			Sounds.play("Gift", 0.7)
-			showBanner(PanelView.AWAY_TITLE, notice.text, Kit.TEAL, false, 3.2, nil)
+			showBanner(PanelView.AWAY_TITLE, PanelView.awayLine(notice.text), Kit.TEAL, false, 3.2, nil)
 		else
 			Panels.toast(notice.text)
 		end
