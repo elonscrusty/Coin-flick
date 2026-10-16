@@ -32,6 +32,7 @@ HudLayout.MIN_TEXT = 14 -- px, smallest readable text
 HudLayout.MIN_TOUCH = 44 -- px, smallest thumb-friendly button
 HudLayout.GAP = 6
 HudLayout.CHEATS = 6 -- Studio test buttons (Hud.buildCheats)
+HudLayout.CARD_GAP = 8 -- air between the combo card and the buttons
 HudLayout.MSG_MARGIN = 10 -- px of air around the message spot
 
 -- Roblox top bar: menu/chat on the left, more buttons on the right.
@@ -114,21 +115,22 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 
 	-- Right band, top to bottom: mega count chip, 2x boost timer chip, combo
 	-- card, then the 2x2 side buttons above the jump button.
-	local availH = jumpTop - 12 - y0
-	local chipH = clamp(24 * s, 26, 30)
-	local comboH = clamp(46 * s, 48, 58)
+	local yr = TOPBAR_H + 4 -- the right band starts just under Roblox's top buttons
+	local availH = jumpTop - 12 - yr
+	local chipH = clamp(22 * s, 26, 28)
+	local comboH = clamp(44 * s, 48, 52)
 	local rgap = math.max(4, gap * 0.6) -- tighter gaps in the packed right band
-	local btn = math.min(64 * s, 84, (availH - 2 * chipH - comboH - 4 * rgap) / 2)
+	local btn = math.min(64 * s, 84, (availH - 2 * chipH - comboH - 3 * rgap - HudLayout.CARD_GAP) / 2)
 	btn = math.max(btn, HudLayout.MIN_TOUCH)
 	local sideW = btn * 2 + rgap
 	local sideH = btn * 2 + rgap
 	local sideX = w - 12 - sideW
 	local chipW = math.max(sideW, 112)
 	local chipX = w - 12 - chipW
-	local mega = rect(chipX, y0, chipW, chipH)
+	local mega = rect(chipX, yr, chipW, chipH)
 	local boost = rect(chipX, mega.y + mega.h + rgap, chipW, chipH)
 	local combo = rect(sideX, boost.y + boost.h + rgap, sideW, comboH)
-	local sideY = combo.y + combo.h + rgap
+	local sideY = combo.y + combo.h + HudLayout.CARD_GAP
 	local side = rect(sideX, sideY, sideW, sideH)
 	local sideButtons = {
 		rect(sideX, sideY, btn, btn),

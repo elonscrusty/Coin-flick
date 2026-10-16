@@ -21,8 +21,10 @@ end
 
 -- Two short labelled lines (the info card is narrow). The coin count lives in
 -- the RESET button's bar, so it is not repeated here.
-function HudText.info(cashPerHeads: number, headsChance: number): string
-	return `Heads = ${HudText.pay(cashPerHeads)}\nLuck {Format.percent(headsChance)}`
+-- `boostMult` is 2 while the server-wide 2x boost runs, so the card shows what
+-- a heads really pays right now.
+function HudText.info(cashPerHeads: number, headsChance: number, boostMult: number?): string
+	return `Heads = ${HudText.pay(cashPerHeads * (boostMult or 1))}\nLuck {Format.percent(headsChance)}`
 end
 
 -- Right-band chips. The mega count stays up after a mega flip (progress

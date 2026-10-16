@@ -168,6 +168,18 @@ describe("HUD layout", function()
 		end
 	end)
 
+	it("combo card has 8px of air above the buttons; RESET bar is big enough to read", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(l.side.y - (l.combo.y + l.combo.h)).toBeAtLeast(8)
+			-- Hud.init: the bar is half the RESET button, 18px tall at least
+			expect(l.sideButtons[2].h * 0.5).toBeAtLeast(18)
+			-- chip text: white with a thin outline on a deep color (see Hud.strip)
+			expect(fittedTextSize(l.boost, "⚡ 2x  9:59", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+			expect(fittedTextSize(l.mega, "🌟 999/999", 0.04)).toBeAtLeast(HudLayout.MIN_TEXT)
+		end
+	end)
+
 	it("pills have a gap, and the combo card is big enough to read", function()
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)

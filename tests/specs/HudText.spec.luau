@@ -1,7 +1,25 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HudText = require(ReplicatedStorage.Shared.Util.HudText)
+local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local ProfileSchema = require(ReplicatedStorage.Shared.Util.ProfileSchema)
 
 describe("HUD words", function()
+	it("the Heads card shows exactly what a normal heads pays (after resets, big coins, 2x)", function()
+		for resets = 0, 5 do
+			for big = 0, 4 do
+				local p = ProfileSchema.default()
+				p.resets = resets
+				p.upgrades.bigCoins = big
+				local shown = Economy.cashPerHeads(p)
+				local _, paid = Economy.resolveFlip(p, 0, 1, 1)
+				expect(HudText.pay(shown)).toBe(HudText.pay(paid))
+				local _, paid2 = Economy.resolveFlip(p, 0, 1, 2)
+				expect(HudText.pay(shown * 2)).toBe(HudText.pay(paid2))
+				expect(HudText.info(shown, 0.5, 2)).toBe(`Heads = ${HudText.pay(paid2)}\nLuck 50%`)
+			end
+		end
+	end)
+
 	it("heads pay shows a decimal only when it is not whole", function()
 		expect(HudText.pay(1)).toBe("1")
 		expect(HudText.pay(1.5)).toBe("1.5")

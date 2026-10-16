@@ -207,14 +207,14 @@ render = function(s: Snapshot)
 	if s.hatPoints > oldHats then
 		popScale(hatScale, 1.15)
 	end
-	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance))
+	setStrip(infoLabel, HudText.info(s.cashPerHeads, s.headsChance, if boostEnds > os.clock() then 2 else 1))
 
 	-- One button shape in every state: the word on top, a big bar with the
 	-- count inside. Full just turns the bar bright and the word to RESET!.
 	local full = s.tableFull
 	resetFill.Size =
 		UDim2.fromScale(if s.coinCount <= 0 then 0 else math.clamp(s.coinCount / Config.MAX_COINS, 0.12, 1), 1)
-	resetFill.BackgroundColor3 = if full then Color3.fromRGB(255, 240, 90) else UiStyle.GOLD
+	resetFill.BackgroundColor3 = if full then Color3.fromRGB(255, 245, 120) else Color3.fromRGB(255, 205, 40)
 	resetCount.Text = HudText.resetCount(s.coinCount, Config.MAX_COINS)
 	resetWord.Text = HudText.reset(full)
 	-- Glow the RESET button's outline when the table is full. (Pulsing the
@@ -367,6 +367,10 @@ function Hud.init()
 		l.BackgroundTransparency = 0
 		corner(l, 0.4)
 		stroke(l, 3)
+		local outline = l:FindFirstChild("TextOutline")
+		if outline and outline:IsA("UIStroke") then
+			outline.Thickness = 1.5 -- thin, so the letters stay open
+		end
 		local pad = Instance.new("UIPadding")
 		pad.PaddingLeft = UDim.new(0, 8)
 		pad.PaddingRight = UDim.new(0, 8)
@@ -377,7 +381,7 @@ function Hud.init()
 		return l
 	end
 	infoLabel = strip("Info", "Tap a coin to flip it!", WHITE, INK, gui)
-	boostLabel = strip("Boost", "", INK, UiStyle.GOLD, pillGui)
+	boostLabel = strip("Boost", "", WHITE, Color3.fromRGB(232, 96, 20), pillGui)
 	boostLabel.Visible = false
 	megaLabel = strip("Mega", "", WHITE, PURPLE, pillGui)
 	megaLabel.Visible = false
@@ -430,23 +434,23 @@ function Hud.init()
 	-- The word sits on top; a roomy gold bar with the coin count fills the bottom.
 	resetBar = Instance.new("Frame")
 	resetBar.Name = "Bar"
-	resetBar.Position = UDim2.fromScale(0.06, 0.48)
-	resetBar.Size = UDim2.fromScale(0.88, 0.46)
-	resetBar.BackgroundColor3 = INK
+	resetBar.Position = UDim2.fromScale(0.06, 0.46)
+	resetBar.Size = UDim2.fromScale(0.88, 0.5)
+	resetBar.BackgroundColor3 = Color3.fromRGB(24, 28, 52) -- dark track
 	resetBar.BackgroundTransparency = 0
 	resetBar.ZIndex = 2
 	corner(resetBar, 0.5)
-	stroke(resetBar, 2)
+	stroke(resetBar, 2).Color = WHITE
 	resetBar.Parent = resetButton
 	resetFill = Instance.new("Frame")
 	resetFill.Name = "Fill"
-	resetFill.BackgroundColor3 = UiStyle.GOLD
+	resetFill.BackgroundColor3 = Color3.fromRGB(255, 205, 40)
 	resetFill.Size = UDim2.fromScale(0, 1)
 	resetFill.ZIndex = 3
 	corner(resetFill, 0.5)
 	resetFill.Parent = resetBar
 	resetCount = label({ Name = "Count", Size = UDim2.fromScale(1, 1), ZIndex = 4 })
-	textLimit(resetCount, 20)
+	textLimit(resetCount, 26)
 	resetCount.Parent = resetBar
 	local topButton = sideButton("🏆", "TOP", PURPLE, function()
 		Sounds.play("Tap", 0.4)
@@ -522,6 +526,11 @@ function Hud.start()
 			local text = HudText.boost(left)
 			if text ~= boostLabel.Text then
 				setStrip(boostLabel, text)
+				local snap = State.get()
+				if snap then
+					-- the Heads card doubles while the boost runs
+					setStrip(infoLabel, HudText.info(snap.cashPerHeads, snap.headsChance, if left > 0 then 2 else 1))
+				end
 			end
 			local megaText = HudText.mega(mega.taps, mega.goal)
 			if megaText ~= megaLabel.Text then
