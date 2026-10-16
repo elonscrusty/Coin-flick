@@ -11,7 +11,8 @@ export type Layout = {
 	-- Always on screen
 	top: Rect, -- cash + hat pills
 	info: Rect, -- "$x per heads • ..." strip
-	boost: Rect, -- mega coin / boost strip
+	mega: Rect, -- mega coin count chip (stays after the flip)
+	boost: Rect, -- 2x boost timer chip
 	side: Rect, -- 2x2 grid: SHOP RESET / TOP ZOOM
 	sideButtons: { Rect },
 	-- Pop in for a moment
@@ -31,6 +32,7 @@ HudLayout.MIN_TEXT = 14 -- px, smallest readable text
 HudLayout.MIN_TOUCH = 44 -- px, smallest thumb-friendly button
 HudLayout.GAP = 6
 HudLayout.CHEATS = 6 -- Studio test buttons (Hud.buildCheats)
+HudLayout.MSG_MARGIN = 10 -- px of air around the message spot
 
 -- Roblox top bar: menu/chat on the left, more buttons on the right.
 local TOPBAR_H = 58
@@ -98,39 +100,44 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local top = rect(x0, y0, colW, pillH)
 	local infoH = clamp(40 * s, 38, 64)
 	local info = rect(x0, top.y + top.h + gap, colW, infoH)
-	local msgTop = info.y + info.h + gap
-	local msgBottom = if touch then stickTop - 8 else math.min(h - 12, msgTop + 140 * s)
+	local margin = HudLayout.MSG_MARGIN
+	local msgTop = info.y + info.h + margin
+	local msgBottom = if touch then stickTop - margin else math.min(h - 12, msgTop + 140 * s)
 	local msgH = clamp(msgBottom - msgTop, 56, 120 * s)
 	local msg = rect(x0, msgTop, colW, msgH)
 	local shout = rect(msg.x, msg.y, msg.w, msg.h)
 	local toast = rect(msg.x, msg.y, msg.w, msg.h)
 
-	-- Right band, top to bottom: boost / mega chip, combo card, then the 2x2
-	-- side buttons above the jump button.
+	-- Right band, top to bottom: mega count chip, 2x boost timer chip, combo
+	-- card, then the 2x2 side buttons above the jump button.
 	local availH = jumpTop - 12 - y0
-	local boostH = clamp(22 * s, 22, 30)
-	local comboH = clamp(50 * s, 48, 72)
-	local btn = math.min(64 * s, 84, (availH - boostH - comboH - 3 * gap) / 2)
+	local chipH = clamp(20 * s, 22, 24)
+	local comboH = clamp(46 * s, 48, 58)
+	local rgap = math.max(4, gap * 0.6) -- tighter gaps in the packed right band
+	local btn = math.min(64 * s, 84, (availH - 2 * chipH - comboH - 4 * rgap) / 2)
 	btn = math.max(btn, HudLayout.MIN_TOUCH)
-	local sideW = btn * 2 + gap
-	local sideH = btn * 2 + gap
+	local sideW = btn * 2 + rgap
+	local sideH = btn * 2 + rgap
 	local sideX = w - 12 - sideW
-	local boost = rect(sideX, y0, sideW, boostH)
-	local combo = rect(sideX, boost.y + boost.h + gap, sideW, comboH)
-	local sideY = combo.y + combo.h + gap
+	local chipW = math.max(sideW, 112)
+	local chipX = w - 12 - chipW
+	local mega = rect(chipX, y0, chipW, chipH)
+	local boost = rect(chipX, mega.y + mega.h + rgap, chipW, chipH)
+	local combo = rect(sideX, boost.y + boost.h + rgap, sideW, comboH)
+	local sideY = combo.y + combo.h + rgap
 	local side = rect(sideX, sideY, sideW, sideH)
 	local sideButtons = {
 		rect(sideX, sideY, btn, btn),
-		rect(sideX + btn + gap, sideY, btn, btn),
-		rect(sideX, sideY + btn + gap, btn, btn),
-		rect(sideX + btn + gap, sideY + btn + gap, btn, btn),
+		rect(sideX + btn + rgap, sideY, btn, btn),
+		rect(sideX, sideY + btn + rgap, btn, btn),
+		rect(sideX + btn + rgap, sideY + btn + rgap, btn, btn),
 	}
 
 	-- Studio test buttons: a column under the boost strip if it fits above the
 	-- thumbstick, else a row along the bottom between the thumbstick and jump.
 	local cheatH = 30
 	local n = HudLayout.CHEATS
-	local colTop = msg.y + msg.h + gap
+	local colTop = msg.y + msg.h + margin
 	local cheats: Rect
 	if colTop + n * cheatH + (n - 1) * gap <= stickTop - 8 then
 		cheats = rect(x0, colTop, 72, n * cheatH + (n - 1) * gap)
@@ -152,7 +159,7 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	-- leaves room for the pop-in.
 	local panelLeft = x0 + colW + 10
 	local panelTop = TOPBAR_H + gap + h * 0.02
-	local rawW = side.x - 10 - panelLeft
+	local rawW = math.min(side.x, mega.x) - 10 - panelLeft
 	local panel = rect(panelLeft + rawW * 0.02, panelTop, rawW * 0.96, h * 0.96 - panelTop)
 
 	return {
@@ -161,6 +168,7 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 		panel = panel,
 		top = top,
 		info = info,
+		mega = mega,
 		boost = boost,
 		side = side,
 		sideButtons = sideButtons,

@@ -27,6 +27,7 @@ local function pieces(l)
 	return {
 		top = l.top,
 		info = l.info,
+		mega = l.mega,
 		boost = l.boost,
 		side = l.side,
 		shout = l.shout,
@@ -107,7 +108,7 @@ describe("HUD layout", function()
 			local p = l.panel
 			-- UIScale 1.04 at the peak of the pop-in
 			local pop = { x = p.x - p.w * 0.02, y = p.y - p.h * 0.02, w = p.w * 1.04, h = p.h * 1.04 }
-			for _, other in { "top", "info", "boost", "combo", "side" } do
+			for _, other in { "top", "info", "mega", "boost", "combo", "side" } do
 				if HudLayout.overlaps(pop, l[other]) then
 					error(`{sc.name}: panel pop-in touches {other}`)
 				end
@@ -124,12 +125,36 @@ describe("HUD layout", function()
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
 			for _, msg in { l.shout, l.toast } do
 				expect(msg.h).toBeAtLeast(56)
-				for _, other in { "top", "info", "boost", "combo", "side" } do
+				for _, other in { "top", "info", "mega", "boost", "combo", "side" } do
 					if HudLayout.overlaps(msg, l[other]) then
 						error(`{sc.name}: message spot sits on {other}`)
 					end
 				end
 			end
+		end
+	end)
+
+	it("message spot has 10px of air from the cards above and the test buttons below", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			local m = l.shout
+			expect(m.y - (l.info.y + l.info.h)).toBeAtLeast(10)
+			if l.cheats.x < m.x + m.w and l.cheats.x + l.cheats.w > m.x then
+				local gapBelow = l.cheats.y - (m.y + m.h)
+				if gapBelow > -m.h then
+					expect(gapBelow).toBeAtLeast(10)
+				end
+			end
+			expect(l.toast.y).toBe(m.y)
+		end
+	end)
+
+	it("mega count chip and boost timer chip stack without touching", function()
+		for _, sc in HudLayout.SCREENS do
+			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
+			expect(HudLayout.overlaps(l.mega, l.boost)).toBeFalsy()
+			expect(l.boost.y).toBeAtLeast(l.mega.y + l.mega.h)
+			expect(l.combo.y).toBeAtLeast(l.boost.y + l.boost.h)
 		end
 	end)
 
@@ -215,7 +240,7 @@ describe("HUD layout", function()
 		for _, sc in HudLayout.SCREENS do
 			local l = HudLayout.compute(sc.w, sc.h, sc.touch)
 			for key, text in longest do
-				local rect = if key == "mega" then l.boost else l[key]
+				local rect = if key == "mega" then l.mega else l[key]
 				local size = if key == "info"
 					then fittedLines(rect, text)
 					else fittedTextSize(rect, text, nil, if key == "shout" or key == "toast" then 3 else 1)
