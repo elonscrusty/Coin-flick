@@ -401,11 +401,7 @@ local function onFlipped(ev: FlipEvent)
 		restReflectance = restReflectance,
 		restMarks = restMarks,
 		dressed = false,
-		grow = CoinLook.growFor(
-			rare and rare.grow or 1,
-			coin:GetAttribute("CoinIndex") :: number? or 1,
-			restSize.Y
-		),
+		grow = CoinLook.growFor(rare and rare.grow or 1, coin:GetAttribute("CoinIndex") :: number? or 1, restSize.Y),
 	}
 	trailOn(coin, true)
 	if mine then
