@@ -91,7 +91,7 @@ describe("GameLogic shop", function()
 		local p = ProfileSchema.default()
 		p.cash = 500
 		for i = 1, 200 do
-			GameLogic.buyUpgrade(p, Config.UPGRADE_ORDER[(i % 4) + 1])
+			GameLogic.buyUpgrade(p, Config.UPGRADE_ORDER[(i % #Config.UPGRADE_ORDER) + 1])
 			GameLogic.unlockHelper(p, "buddy")
 			GameLogic.levelHelper(p, "buddy")
 			expect(p.cash).toBeAtLeast(0)
