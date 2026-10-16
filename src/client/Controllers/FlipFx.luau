@@ -184,7 +184,7 @@ local function onLanded(anim: Anim)
 end
 
 -- Rare coins wear their CoinLook in the air: color (rainbow cycles), shine,
--- recolored marks, a sparkle trail and a glow. They grow evenly (never squished).
+-- recolored marks, a sparkle trail and an outline. They grow evenly (never squished).
 local function setMarks(anim: Anim, text: Color3?, rim: Color3?)
 	for inst, restColor in anim.restMarks do
 		if inst:IsA("TextLabel") then
@@ -193,6 +193,17 @@ local function setMarks(anim: Anim, text: Color3?, rim: Color3?)
 			inst.Color = rim or restColor
 		end
 	end
+end
+
+local function sparkleColors(colors: { Color3 }): ColorSequence
+	local keys = {}
+	for i, c in colors do
+		table.insert(keys, ColorSequenceKeypoint.new(if #colors == 1 then 0 else (i - 1) / (#colors - 1), c))
+	end
+	if #keys == 1 then
+		table.insert(keys, ColorSequenceKeypoint.new(1, colors[1]))
+	end
+	return ColorSequence.new(keys)
 end
 
 -- Paint every rainbow color across both faces (behind the marks).
@@ -241,7 +252,8 @@ local function dressRare(anim: Anim, now: number, t: number)
 		end
 		local sparkle = coin:FindFirstChild("Sparkle")
 		if sparkle and sparkle:IsA("ParticleEmitter") then
-			sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[2])
+			sparkle.Color = sparkleColors(look.sparkle)
+			sparkle.LightEmission = CoinLook.SPARKLE_LIGHT
 			sparkle.Size = NumberSequence.new({
 				NumberSequenceKeypoint.new(0, look.sparkleSize),
 				NumberSequenceKeypoint.new(1, 0),
@@ -249,14 +261,16 @@ local function dressRare(anim: Anim, now: number, t: number)
 			sparkle.Rate = look.trail
 			sparkle.Enabled = look.trail > 0
 		end
-		if look.glow > 0 and not coin:FindFirstChild("RareGlow") then
-			local glow = Instance.new("PointLight")
-			glow.Name = "RareGlow"
-			glow.Color = look.color
-			glow.Brightness = look.glow
-			glow.Range = 6 + anim.restSize.Y * rare.grow
-			glow.Shadows = false
-			glow.Parent = coin
+		-- Outline hugs the coin only. (A PointLight here lit the whole table pale yellow.)
+		if look.outline and not coin:FindFirstChild("RareOutline") then
+			local outline = Instance.new("Highlight")
+			outline.Name = "RareOutline"
+			outline.Adornee = coin
+			outline.FillTransparency = 1
+			outline.OutlineColor = look.outline
+			outline.OutlineTransparency = 0
+			outline.DepthMode = Enum.HighlightDepthMode.Occluded
+			outline.Parent = coin
 		end
 	end
 	coin.Color = if look.rainbow then CoinLook.rainbowColor(now) else look.color
@@ -288,13 +302,13 @@ local function undressRare(anim: Anim)
 		sparkle.Enabled = false
 		sparkle.Rate = 0
 		-- Particles already thrown keep their colors; new ones use the plain look.
-		sparkle.Color = ColorSequence.new(normal.sparkle[1], normal.sparkle[2])
+		sparkle.Color = sparkleColors(normal.sparkle)
 		sparkle.Size =
 			NumberSequence.new({ NumberSequenceKeypoint.new(0, normal.sparkleSize), NumberSequenceKeypoint.new(1, 0) })
 	end
-	local glow = coin:FindFirstChild("RareGlow")
-	if glow then
-		glow:Destroy()
+	local outline = coin:FindFirstChild("RareOutline")
+	if outline then
+		outline:Destroy()
 	end
 	for _, gui in coin:GetChildren() do
 		local disc = gui:FindFirstChild("RainbowFace")

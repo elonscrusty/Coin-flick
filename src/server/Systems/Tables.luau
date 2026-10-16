@@ -133,8 +133,8 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	sparkle.SpreadAngle = Vector2.new(180, 180)
 	sparkle.Size =
 		NumberSequence.new({ NumberSequenceKeypoint.new(0, look.sparkleSize), NumberSequenceKeypoint.new(1, 0) })
-	sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[2])
-	sparkle.LightEmission = 1
+	sparkle.Color = ColorSequence.new(look.sparkle[1], look.sparkle[#look.sparkle])
+	sparkle.LightEmission = CoinLook.SPARKLE_LIGHT
 	sparkle.Parent = coin
 
 	local hitbox = World.makePart({

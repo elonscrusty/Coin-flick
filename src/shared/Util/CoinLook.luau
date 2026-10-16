@@ -13,19 +13,23 @@ export type Look = {
 	reflectance: number,
 	text: Color3, -- "$" and hat marks on the faces
 	rim: Color3, -- painted ring around each face
-	sparkle: { Color3 }, -- start and end color of sparkles
+	sparkle: { Color3 }, -- sparkle colors, first to last
 	sparkleSize: number,
 	landBurst: number, -- sparkles thrown when the coin lands on heads
-	trail: number, -- sparkles per second while in the air (0 = none)
-	glow: number, -- PointLight brightness while in the air (0 = none)
+	trail: number, -- sparkles per second while 
+	outline: Color3?, -- dark outline drawn around the coin in the air (stays on the coin, never lights the table)
 	rainbow: boolean, -- color cycles through the rainbow while in the air
 }
 
 local CoinLook = {}
 
+-- Sparkles add light on top of what is behind them. Full strength (1) turned the
+-- yellow table pale; this keeps them bright but lets the table color through.
+CoinLook.SPARKLE_LIGHT = 0.35
+
 -- Warm coin gold. Rare GOLD is a brighter lemon gold so the two never look alike.
 CoinLook.NORMAL = table.freeze({
-	color = Color3.fromRGB(240, 172, 40),
+	color = Color3.fromRGB(245, 180, 20),
 	material = "SmoothPlastic",
 	reflectance = 0.15,
 	text = Color3.fromRGB(110, 55, 0),
@@ -34,7 +38,6 @@ CoinLook.NORMAL = table.freeze({
 	sparkleSize = 0.6,
 	landBurst = 14,
 	trail = 0,
-	glow = 0,
 	rainbow = false,
 } :: Look)
 
@@ -49,11 +52,10 @@ local RARE: { [string]: Look } = {
 		sparkleSize = 0.7,
 		landBurst = 30,
 		trail = 10,
-		glow = 0,
 		rainbow = false,
 	} :: Look),
 	gold = table.freeze({
-		color = Color3.fromRGB(255, 232, 40),
+		color = Color3.fromRGB(255, 240, 70),
 		material = "Foil",
 		reflectance = 0.3,
 		text = Color3.fromRGB(150, 70, 0),
@@ -62,7 +64,7 @@ local RARE: { [string]: Look } = {
 		sparkleSize = 0.9,
 		landBurst = 45,
 		trail = 25,
-		glow = 2,
+		outline = Color3.fromRGB(120, 55, 0),
 		rainbow = false,
 	} :: Look),
 	rainbow = table.freeze({
@@ -75,20 +77,25 @@ local RARE: { [string]: Look } = {
 		sparkleSize = 1.0,
 		landBurst = 80,
 		trail = 45,
-		glow = 3,
+		outline = Color3.fromRGB(255, 255, 255),
 		rainbow = true,
 	} :: Look),
 	giant = table.freeze({
-		color = Color3.fromRGB(255, 100, 25),
+		color = Color3.fromRGB(205, 130, 0), -- deep gold, a huge shiny coin (not a lava ball)
 		material = "Foil",
-		reflectance = 0.25,
-		text = Color3.fromRGB(90, 25, 0),
-		rim = Color3.fromRGB(190, 50, 10),
-		sparkle = { Color3.fromRGB(255, 200, 40), Color3.fromRGB(255, 90, 30) },
-		sparkleSize = 1.6,
+		reflectance = 0.5, -- white shine
+		text = Color3.fromRGB(60, 20, 0),
+		rim = Color3.fromRGB(255, 238, 160),
+		sparkle = {
+			Color3.fromRGB(255, 255, 255),
+			Color3.fromRGB(255, 225, 80),
+			Color3.fromRGB(255, 130, 220),
+			Color3.fromRGB(110, 225, 255),
+		},
+		sparkleSize = 1.2,
 		landBurst = 120,
 		trail = 60,
-		glow = 4,
+		outline = Color3.fromRGB(90, 40, 0),
 		rainbow = false,
 	} :: Look),
 }
