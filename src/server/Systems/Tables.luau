@@ -12,7 +12,6 @@ local Types = require(ReplicatedStorage.Shared.Types)
 local CoinLook = require(ReplicatedStorage.Shared.Util.CoinLook)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local FlipArc = require(ReplicatedStorage.Shared.Util.FlipArc)
-local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
 local Net = require(script.Parent.Net)
@@ -485,11 +484,10 @@ end
 
 -- "Welcome back" money from helpers who worked while you were away.
 function Tables.offlineNotice(player: Player, cash: number)
-	local notice: Types.Notice = {
-		kind = "offline",
-		text = `Your helpers earned ${Format.short(cash)} while you were away!`,
-	}
-	Net.event("Notice"):FireClient(player, notice)
+	local notice = GameLogic.offlineNotice(cash)
+	if notice then
+		Net.event("Notice"):FireClient(player, notice)
+	end
 end
 
 -- Studio QA: make this player's next flip a given rare coin.

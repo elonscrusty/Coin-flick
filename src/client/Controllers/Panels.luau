@@ -34,8 +34,10 @@ local Panels = {}
 local player = Players.LocalPlayer
 
 local cardHeight = 66 -- smaller on short (phone landscape) screens, set by setLayout
-local CARD_TALL, CARD_SHORT = 66, 54
+local CARD_MIN, CARD_MAX = 50, 88
+local lastBoxH = 300 -- panel height in panel units (before its UIScale), from setLayout
 local SCROLLBAR = 10
+local ICON_TILE = Color3.fromRGB(150, 200, 250) -- light blue: white chef hat and yellow duck both show
 local ARROW_STRIP = 20 -- empty strip under a list that holds the "more below" arrow
 local TAB_COLORS: { [string]: Color3 } = {
 	upgrades = Kit.GOLD,
@@ -76,6 +78,7 @@ local popGui: ScreenGui
 local backdrop: TextButton
 local toastRing: UIStroke
 local confirmFrame: Frame
+local confirmDim: TextButton
 local bannerIconHost: Frame
 local confirmText: TextLabel
 local confirmYes: () -> () = function() end
@@ -96,6 +99,7 @@ local boardShown = "flips"
 local boardTabs: { [string]: TextButton } = {}
 local boardRows: { { frame: Frame, medal: TextLabel, name: TextLabel, value: TextLabel } } = {}
 local myRow: TextLabel
+local boardList: ScrollingFrame
 
 local resetLines: { TextLabel } = {}
 local resetYes: TextButton
@@ -125,6 +129,7 @@ local function setOpen(name: string?)
 	backdrop.Visible = name ~= nil
 	if confirmFrame then
 		confirmFrame.Visible = false
+		confirmDim.Visible = false
 	end
 	-- Panels may reach over the thumbstick, so hide Roblox's touch controls while one is open.
 	GuiService.TouchControlsEnabled = name == nil
@@ -180,6 +185,7 @@ function Panels.confirm(text: string, onYes: () -> ())
 		confirmFrame.Position = UDim2.fromOffset(open.Position.X.Offset, open.Position.Y.Offset)
 	end
 	confirmFrame.Visible = true
+	confirmDim.Visible = true
 end
 
 -- Toasts and banners -------------------------------------------------------------
@@ -335,7 +341,7 @@ local function shout(notice: Types.Notice)
 	local name = if def then def.name else "RARE"
 	showBanner(
 		`{name} COIN!`,
-		notice.text,
+		PanelView.shoutText(notice.text, player.DisplayName, notice.ownerId == player.UserId),
 		if def then def.color else Kit.GOLD,
 		notice.rarity == "rainbow",
 		if notice.everyone == false then 1.8 else 2.8,
@@ -443,7 +449,7 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 	listLayout.Parent = list
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(0, 8)
-	pad.PaddingBottom = UDim.new(0, 28) -- the last row can scroll clear of the fade
+	pad.PaddingBottom = UDim.new(0, 8)
 	pad.PaddingLeft = UDim.new(0, 4)
 	pad.PaddingRight = UDim.new(0, 6)
 	pad.Parent = list
@@ -541,6 +547,33 @@ local function paintTabs(buttons: { [string]: TextButton }, picked: string)
 	end
 end
 
+-- Sizes everything inside a card from its height, so text grows with the row.
+local function layoutCard(ui: CardUi, h: number)
+	local pad = math.round(h * 0.08)
+	local titleH = math.round(h * 0.38)
+	local lineH = math.round(h * 0.32)
+	ui.frame.Size = UDim2.new(1, 0, 0, h)
+	local iconBox = ui.frame:FindFirstChild("IconBox")
+	if iconBox and iconBox:IsA("GuiObject") then
+		iconBox.Size = UDim2.fromOffset(h - 10, h - 10)
+	end
+	ui.title.Position = UDim2.fromOffset(h + 2, pad)
+	ui.title.Size = UDim2.new(ui.title.Size.X.Scale, ui.title.Size.X.Offset, 0, titleH)
+	ui.title:SetAttribute("BaseWidth", -(h + 2) - 8)
+	ui.title:SetAttribute("BaseHeight", titleH)
+	ui.line.Position = UDim2.new(0, h + 2, 1, -(pad + lineH))
+	ui.line.Size = UDim2.new(ui.line.Size.X.Scale, ui.line.Size.X.Offset, 0, lineH)
+	ui.badge.Size = UDim2.fromOffset(66, math.max(20, math.round(h * 0.3)))
+	local titleLimit = ui.title:FindFirstChildOfClass("UITextSizeConstraint")
+	if titleLimit then
+		titleLimit.MaxTextSize = math.max(16, math.round(h * 0.36))
+	end
+	local lineLimit = ui.line:FindFirstChildOfClass("UITextSizeConstraint")
+	if lineLimit then
+		lineLimit.MaxTextSize = math.max(14, math.round(h * 0.28))
+	end
+end
+
 local function newCard(
 	list: ScrollingFrame,
 	id: string,
@@ -563,7 +596,7 @@ local function newCard(
 	iconBox.Name = "IconBox"
 	iconBox.Position = UDim2.fromOffset(5, 5)
 	iconBox.Size = UDim2.fromOffset(cardHeight - 10, cardHeight - 10)
-	iconBox.BackgroundColor3 = Color3.fromRGB(255, 236, 190)
+	iconBox.BackgroundColor3 = ICON_TILE
 	iconBox.ZIndex = 7
 	Kit.corner(iconBox, 0.25)
 	iconBox.Parent = frame
@@ -698,6 +731,7 @@ local function newCard(
 		outline = outline,
 		view = nil,
 	}
+	layoutCard(ui, cardHeight)
 	-- Remember which card was pressed, so its purchase can pop it.
 	buy.Activated:Connect(function()
 		lastPressed = ui
@@ -716,7 +750,13 @@ local function paintCard(ui: CardUi, view: PanelView.Card)
 	local base = ui.title:GetAttribute("BaseWidth")
 	local baseScale = ui.title:GetAttribute("BaseScale")
 	if typeof(base) == "number" and typeof(baseScale) == "number" then
-		ui.title.Size = UDim2.new(baseScale, base - (if view.badge then 74 else 0), 0, 22)
+		local titleH = ui.title:GetAttribute("BaseHeight")
+		ui.title.Size = UDim2.new(
+			baseScale,
+			base - (if view.badge then 74 else 0),
+			0,
+			if typeof(titleH) == "number" then titleH else 22
+		)
 	end
 	if view.badge then
 		ui.badge.Text = view.badge
@@ -894,6 +934,8 @@ end
 
 -- Top 10 ---------------------------------------------------------------------------
 
+local fitBoard: () -> ()
+
 local function renderBoard()
 	local s = State.get()
 	local mine = if s then PanelView.myValue(boardShown, s) else nil
@@ -914,6 +956,7 @@ local function renderBoard()
 		ui.frame.BackgroundColor3 = if view.me then Color3.fromRGB(200, 250, 200) else Kit.CARD
 	end
 	paintTabs(boardTabs, boardShown)
+	fitBoard()
 	if s and myRow then
 		local unit = PanelView.BOARD_UNITS[boardShown]
 		myRow.Text = `YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}`
@@ -928,6 +971,7 @@ local function buildTop()
 		renderBoard()
 	end)
 	local list = scrollList(body, 44, 34)
+	boardList = list
 	for i = 1, Config.LEADERBOARD_SIZE do
 		local frame = Instance.new("Frame")
 		frame.Name = `Row{i}`
@@ -976,8 +1020,8 @@ local function buildTop()
 	end
 	myRow = Kit.label({
 		Name = "You",
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
+		AnchorPoint = Vector2.new(0, 0),
+		Position = UDim2.fromOffset(0, 300), -- set by fitBoard
 		Size = UDim2.new(1, 0, 0, 30),
 		BackgroundColor3 = Kit.GREEN,
 		BackgroundTransparency = 0,
@@ -1087,6 +1131,53 @@ end
 
 -- Puts panels, toast and banner in the HUD's free slots (HudLayout), on every
 -- screen change. Hud.applyLayout calls this.
+-- Rows fill the list exactly (no half-cut row at the bottom): pick how many fit,
+-- then stretch them to share the height. Text scales with the row.
+local function fitCards()
+	local bodyH = lastBoxH - 62
+	for group, byId in cards do
+		local count = 0
+		for _ in byId do
+			count += 1
+		end
+		local header = if group == "helpers" or group == "hats" then 30 else 0
+		local avail = bodyH - 44 - ARROW_STRIP - header
+		local fits = math.clamp(math.floor(avail / (CARD_MIN + 8)), 1, math.max(1, count))
+		local h = math.clamp(math.floor(avail / fits - 8), CARD_MIN, CARD_MAX)
+		for _, ui in byId do
+			layoutCard(ui, h)
+		end
+		cardHeight = h
+	end
+end
+
+-- The top 10 rows are sized like the shop rows; the list is only as tall as its
+-- rows and the YOU bar sits right under it.
+function fitBoard()
+	if not boardList then
+		return
+	end
+	local rowsShown = 0
+	for _, ui in boardRows do
+		if ui.frame.Visible then
+			rowsShown += 1
+		end
+	end
+	local full = lastBoxH - 62 - 44 - 34 - ARROW_STRIP
+	local fits = math.clamp(math.floor(full / 42), 1, math.max(1, rowsShown))
+	local rowH = math.clamp(math.floor(full / fits - 8), 34, 62)
+	for _, ui in boardRows do
+		ui.frame.Size = UDim2.new(1, 0, 0, rowH)
+		ui.medal.Size = UDim2.fromOffset(rowH - 6, rowH - 6)
+		ui.name.Position = UDim2.fromOffset(rowH + 6, 5)
+		ui.name.Size = UDim2.new(0.65, -(rowH + 10), 1, -10)
+	end
+	local content = 8 + rowsShown * rowH + math.max(0, rowsShown - 1) * 8 + 8
+	local listH = math.min(full, content)
+	boardList.Size = UDim2.new(1, 0, 0, listH)
+	myRow.Position = UDim2.new(0, 0, 0, 44 + listH + ARROW_STRIP + 4)
+end
+
 function Panels.setLayout(l: HudLayout.Layout)
 	layout = l
 	local box = l.panel
@@ -1100,22 +1191,9 @@ function Panels.setLayout(l: HudLayout.Layout)
 	local boxW, boxH = box.w / fit, box.h / fit
 	local wide = Vector2.new(boxW, boxH)
 	local small = Vector2.new(math.min(480, boxW), math.min(340, boxH))
-	local newHeight = if boxH < 330 then CARD_SHORT else CARD_TALL
-	if newHeight ~= cardHeight then
-		cardHeight = newHeight
-		for _, group in cards do
-			for _, ui in group do
-				ui.frame.Size = UDim2.new(1, 0, 0, cardHeight)
-				local iconBox = ui.frame:FindFirstChild("IconBox")
-				if iconBox and iconBox:IsA("GuiObject") then
-					iconBox.Size = UDim2.fromOffset(cardHeight - 10, cardHeight - 10)
-				end
-				ui.title.Position = UDim2.fromOffset(cardHeight + 2, 4)
-				ui.title:SetAttribute("BaseWidth", -(cardHeight + 2) - 8)
-				ui.line.Position = UDim2.new(0, cardHeight + 2, 1, -28)
-			end
-		end
-	end
+	lastBoxH = boxH
+	fitCards()
+	fitBoard()
 	for name, panel in panels do
 		local size = if name == "reset" then small else wide
 		panel.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1129,7 +1207,7 @@ function Panels.setLayout(l: HudLayout.Layout)
 	end
 	if banner then
 		banner.Position = UDim2.fromOffset(l.shout.x + l.shout.w / 2, l.shout.y + l.shout.h / 2)
-		banner.Size = UDim2.fromOffset(l.shout.w, l.shout.h)
+		banner.Size = UDim2.fromOffset(l.shout.w - 8, l.shout.h - 8) -- small margin to the pills and buttons around it
 	end
 	if toastLabel and toastLabel.Visible then
 		local pos, size = toastPlace()
@@ -1200,9 +1278,9 @@ function Panels.init()
 	bannerIconHost = Instance.new("Frame")
 	bannerIconHost.Name = "Icon"
 	bannerIconHost.Position = UDim2.fromScale(0.04, 0.12)
-	bannerIconHost.Size = UDim2.fromScale(0.2, 0.76)
+	bannerIconHost.Size = UDim2.fromScale(0.76, 0.76)
 	bannerIconHost.SizeConstraint = Enum.SizeConstraint.RelativeYY
-	bannerIconHost.BackgroundColor3 = Color3.fromRGB(255, 236, 190)
+	bannerIconHost.BackgroundColor3 = ICON_TILE
 	bannerIconHost.Visible = false
 	bannerIconHost.ZIndex = 26
 	Kit.corner(bannerIconHost, 0.25)
@@ -1213,6 +1291,7 @@ function Panels.init()
 		Size = UDim2.fromScale(0.9, 0.44),
 		ZIndex = 26,
 	})
+	bannerTitle.TextYAlignment = Enum.TextYAlignment.Bottom
 	Kit.outline(bannerTitle, 3)
 	Kit.textLimit(bannerTitle, 30)
 	bannerTitle.TextWrapped = true
@@ -1223,16 +1302,33 @@ function Panels.init()
 		Size = UDim2.fromScale(0.9, 0.42),
 		ZIndex = 26,
 	})
+	bannerText.TextYAlignment = Enum.TextYAlignment.Top
 	Kit.outline(bannerText, 2)
 	Kit.textLimit(bannerText, 20)
 	bannerText.TextWrapped = true
 	bannerText.Parent = banner
 	banner.Parent = popGui
 
+	confirmDim = Instance.new("TextButton")
+	confirmDim.Name = "ConfirmDim"
+	confirmDim.Text = ""
+	confirmDim.AutoButtonColor = false
+	confirmDim.BackgroundColor3 = Color3.new(0, 0, 0)
+	confirmDim.BackgroundTransparency = 0.4
+	confirmDim.Position = UDim2.fromOffset(0, -80)
+	confirmDim.Size = UDim2.new(1, 0, 1, 160)
+	confirmDim.Visible = false
+	confirmDim.ZIndex = 39
+	confirmDim.Activated:Connect(function()
+		confirmDim.Visible = false
+		confirmFrame.Visible = false
+	end)
+	confirmDim.Parent = popGui
+
 	confirmFrame = Instance.new("Frame")
 	confirmFrame.Name = "Confirm"
 	confirmFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-	confirmFrame.Size = UDim2.fromOffset(300, 130)
+	confirmFrame.Size = UDim2.fromOffset(380, 190)
 	confirmFrame.BackgroundColor3 = Kit.PANEL
 	confirmFrame.Visible = false
 	confirmFrame.ZIndex = 40
@@ -1240,33 +1336,35 @@ function Panels.init()
 	Kit.stroke(confirmFrame, 4)
 	confirmText = Kit.label({
 		Name = "Question",
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.new(1, -24, 0, 56),
+		Position = UDim2.fromOffset(14, 10),
+		Size = UDim2.new(1, -28, 0, 80),
 		TextColor3 = Kit.INK,
 		TextStrokeTransparency = 1,
 		TextWrapped = true,
 		ZIndex = 41,
 	})
-	Kit.textLimit(confirmText, 26)
+	Kit.textLimit(confirmText, 30)
 	confirmText.Parent = confirmFrame
 	local yes = Kit.button("YES", Kit.GREEN, function()
 		confirmFrame.Visible = false
+		confirmDim.Visible = false
 		local run = confirmYes
 		confirmYes = function() end
 		run()
 	end)
-	yes.Position = UDim2.new(0, 12, 1, -58)
-	yes.Size = UDim2.new(0.5, -18, 0, 46)
+	yes.Position = UDim2.new(0, 14, 1, -74)
+	yes.Size = UDim2.new(0.5, -21, 0, 62)
 	yes.ZIndex = 41
-	Kit.textLimit(yes, 26)
+	Kit.textLimit(yes, 34)
 	yes.Parent = confirmFrame
 	local no = Kit.button("NO", Kit.RED, function()
 		confirmFrame.Visible = false
+		confirmDim.Visible = false
 	end)
-	no.Position = UDim2.new(0.5, 6, 1, -58)
-	no.Size = UDim2.new(0.5, -18, 0, 46)
+	no.Position = UDim2.new(0.5, 7, 1, -74)
+	no.Size = UDim2.new(0.5, -21, 0, 62)
 	no.ZIndex = 41
-	Kit.textLimit(no, 26)
+	Kit.textLimit(no, 34)
 	no.Parent = confirmFrame
 	confirmFrame.Parent = popGui
 

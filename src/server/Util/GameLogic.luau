@@ -308,4 +308,12 @@ function GameLogic.shoutNotice(displayName: string, userId: number, outcome: Fli
 	}
 end
 
+-- "Welcome back" notice for helper earnings, or nil when it would read $0.
+function GameLogic.offlineNotice(cash: number): Types.Notice?
+	if math.floor(cash) < 1 then
+		return nil
+	end
+	return { kind = "offline", text = `Your helpers earned ${Format.short(math.floor(cash))} while you were away!` }
+end
+
 return GameLogic

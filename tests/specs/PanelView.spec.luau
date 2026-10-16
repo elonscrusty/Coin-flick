@@ -309,3 +309,14 @@ describe("One banner style", function()
 		expect(utf8.len(PanelView.AWAY_TITLE)).toBeAtMost(PanelView.BANNER_TITLE_MAX)
 	end)
 end)
+
+describe("Round 5", function()
+	it("your own rare flip says You", function()
+		expect(PanelView.shoutText("MrCarter flipped a RAINBOW coin! +$5", "MrCarter", true)).toBe(
+			"You flipped a RAINBOW coin! +$5"
+		)
+		expect(PanelView.shoutText("MrCarter flipped a RAINBOW coin! +$5", "MrCarter", false)).toBe(
+			"MrCarter flipped a RAINBOW coin! +$5"
+		)
+	end)
+end)
