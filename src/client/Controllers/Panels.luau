@@ -32,7 +32,8 @@ local Panels = {}
 
 local player = Players.LocalPlayer
 
-local CARD_HEIGHT = 66
+local cardHeight = 66 -- smaller on short (phone landscape) screens, set by setLayout
+local CARD_TALL, CARD_SHORT = 66, 54
 local SCROLLBAR = 10
 local ARROW_STRIP = 20 -- empty strip under a list that holds the "more below" arrow
 local TAB_COLORS: { [string]: Color3 } = {
@@ -71,6 +72,7 @@ type CardUi = {
 local panelGui: ScreenGui
 local popGui: ScreenGui
 local backdrop: TextButton
+local toastRing: UIStroke
 local panels: { [string]: Frame } = {}
 local openName: string? = nil
 local openListeners: { (boolean) -> () } = {}
@@ -157,15 +159,28 @@ end
 
 -- Toasts and banners -------------------------------------------------------------
 
+-- Where the toast rests: its HUD slot, or (panel open) centred on the panel's bottom edge.
+local function toastPlace(): (UDim2, UDim2)
+	local open = if openName then panels[openName] else nil
+	if open then
+		local slot = layout.toastLow
+		local w = math.min(slot.w, open.Size.X.Offset - 24)
+		return UDim2.fromOffset(open.Position.X.Offset, slot.y + slot.h / 2 - 6), UDim2.fromOffset(w, slot.h - 8)
+	end
+	local slot = layout.toast
+	return UDim2.fromOffset(slot.x + slot.w / 2, slot.y + slot.h / 2), UDim2.fromOffset(slot.w, slot.h)
+end
+
 function Panels.toast(text: string, color: Color3?)
 	toastToken += 1
 	local token = toastToken
 	toastLabel.Text = text
 	toastLabel.TextColor3 = color or Kit.WHITE
-	-- Under an open panel, else low in the middle (between thumbstick and jump).
-	local slot = if openName then layout.toastLow else layout.toast
-	local restPos = UDim2.fromOffset(slot.x + slot.w / 2, slot.y + slot.h / 2)
-	toastLabel.Size = UDim2.fromOffset(slot.w, slot.h)
+	toastLabel.BackgroundColor3 = Color3.fromRGB(45, 30, 70)
+	toastRing.Color = color or Kit.WHITE
+	toastRing.Transparency = 0
+	local restPos, size = toastPlace()
+	toastLabel.Size = size
 	toastLabel.Position = restPos + UDim2.fromOffset(0, 6)
 	toastLabel.Visible = true
 	toastLabel.TextTransparency = 0
@@ -181,6 +196,7 @@ function Panels.toast(text: string, color: Color3?)
 		end
 		local fade = TweenService:Create(toastLabel, Kit.COUNT, { TextTransparency = 1, BackgroundTransparency = 1 })
 		fade:Play()
+		TweenService:Create(toastRing, Kit.COUNT, { Transparency = 1 }):Play()
 		if stroke then
 			TweenService:Create(stroke, Kit.COUNT, { Transparency = 1 }):Play()
 		end
@@ -480,7 +496,7 @@ local function newCard(
 ): CardUi
 	local frame = Instance.new("Frame")
 	frame.Name = id
-	frame.Size = UDim2.new(1, 0, 0, CARD_HEIGHT)
+	frame.Size = UDim2.new(1, 0, 0, cardHeight)
 	frame.BackgroundColor3 = Kit.CARD
 	frame.ZIndex = 6
 	Kit.corner(frame, 0.18)
@@ -491,7 +507,7 @@ local function newCard(
 	local iconBox = Instance.new("Frame")
 	iconBox.Name = "IconBox"
 	iconBox.Position = UDim2.fromOffset(5, 5)
-	iconBox.Size = UDim2.fromOffset(CARD_HEIGHT - 10, CARD_HEIGHT - 10)
+	iconBox.Size = UDim2.fromOffset(cardHeight - 10, cardHeight - 10)
 	iconBox.BackgroundColor3 = Color3.fromRGB(255, 236, 190)
 	iconBox.ZIndex = 7
 	Kit.corner(iconBox, 0.25)
@@ -505,13 +521,13 @@ local function newCard(
 	-- Buttons on the right; the text area fills the rest.
 	local buyWidth = 0.3
 	local teamWidth = if withTeam then 0.22 else 0
-	local textLeft = CARD_HEIGHT + 2
+	local textLeft = cardHeight + 2
 	local textRight = buyWidth + teamWidth
 
 	local title = Kit.label({
 		Name = "Title",
-		Size = UDim2.new(1 - textRight, -textLeft - 8, 0, 26),
-		Position = UDim2.fromOffset(textLeft, 6),
+		Size = UDim2.new(1 - textRight, -textLeft - 8, 0, 22),
+		Position = UDim2.fromOffset(textLeft, 4),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Kit.INK,
 		TextStrokeTransparency = 1,
@@ -542,7 +558,7 @@ local function newCard(
 	local line = Kit.label({
 		Name = "Line",
 		Size = UDim2.new(1 - textRight, -textLeft - 8, 0, 22),
-		Position = UDim2.fromOffset(textLeft, CARD_HEIGHT - 32),
+		Position = UDim2.new(0, textLeft, 1, -28),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Kit.MUTED,
 		TextStrokeTransparency = 1,
@@ -608,7 +624,7 @@ local function paintCard(ui: CardUi, view: PanelView.Card)
 	local base = ui.title:GetAttribute("BaseWidth")
 	local baseScale = ui.title:GetAttribute("BaseScale")
 	if typeof(base) == "number" and typeof(baseScale) == "number" then
-		ui.title.Size = UDim2.new(baseScale, base - (if view.badge then 74 else 0), 0, 26)
+		ui.title.Size = UDim2.new(baseScale, base - (if view.badge then 74 else 0), 0, 22)
 	end
 	if view.badge then
 		ui.badge.Text = view.badge
@@ -982,15 +998,34 @@ end
 function Panels.setLayout(l: HudLayout.Layout)
 	layout = l
 	local box = l.panel
-	local below = l.top.y + l.top.h + 6
-	backdrop.Position = UDim2.fromOffset(0, below)
-	backdrop.Size = UDim2.new(1, 0, 1, 80 - below) -- reaches under the bottom inset too, not over the cash bars
-	local wide = Vector2.new(math.min(600, box.w), math.min(470, box.h))
-	local small = Vector2.new(math.min(480, box.w), math.min(340, box.h))
+	-- The dim covers the whole screen (insets too); the pills sit in a gui above it.
+	backdrop.Position = UDim2.fromOffset(0, -80)
+	backdrop.Size = UDim2.new(1, 0, 1, 160)
+	-- Use the full height down to where the low toast sits (the toast shows over
+	-- the panel's bottom edge while a panel is open), so phones get more rows.
+	local boxH = l.toastLow.y + l.toastLow.h - box.y
+	local wide = Vector2.new(math.min(600, box.w), math.min(470, boxH))
+	local small = Vector2.new(math.min(480, box.w), math.min(340, boxH))
+	local newHeight = if boxH < 380 then CARD_SHORT else CARD_TALL
+	if newHeight ~= cardHeight then
+		cardHeight = newHeight
+		for _, group in cards do
+			for _, ui in group do
+				ui.frame.Size = UDim2.new(1, 0, 0, cardHeight)
+				local iconBox = ui.frame:FindFirstChild("IconBox")
+				if iconBox and iconBox:IsA("GuiObject") then
+					iconBox.Size = UDim2.fromOffset(cardHeight - 10, cardHeight - 10)
+				end
+				ui.title.Position = UDim2.fromOffset(cardHeight + 2, 4)
+				ui.title:SetAttribute("BaseWidth", -(cardHeight + 2) - 8)
+				ui.line.Position = UDim2.new(0, cardHeight + 2, 1, -28)
+			end
+		end
+	end
 	for name, panel in panels do
 		local size = if name == "reset" then small else wide
 		panel.AnchorPoint = Vector2.new(0.5, 0.5)
-		panel.Position = UDim2.fromOffset(box.x + box.w / 2, box.y + box.h / 2)
+		panel.Position = UDim2.fromOffset(box.x + box.w / 2, box.y + boxH / 2)
 		panel.Size = UDim2.fromOffset(size.X, size.Y)
 	end
 	if banner then
@@ -998,9 +1033,9 @@ function Panels.setLayout(l: HudLayout.Layout)
 		banner.Size = UDim2.fromOffset(l.shout.w, l.shout.h)
 	end
 	if toastLabel and toastLabel.Visible then
-		local slot = if openName then l.toastLow else l.toast
-		toastLabel.Size = UDim2.fromOffset(slot.w, slot.h)
-		toastLabel.Position = UDim2.fromOffset(slot.x + slot.w / 2, slot.y + slot.h / 2)
+		local pos, size = toastPlace()
+		toastLabel.Size = size
+		toastLabel.Position = pos
 	end
 end
 
@@ -1042,7 +1077,7 @@ function Panels.init()
 		ZIndex = 20,
 	})
 	Kit.corner(toastLabel, 0.5)
-	Kit.outline(toastLabel, 2)
+	toastRing = Kit.stroke(toastLabel, 3, Kit.WHITE)
 	Kit.padding(toastLabel, UDim.new(0, 16), UDim.new(0.14, 0))
 	Kit.textLimit(toastLabel, 26)
 	toastLabel.TextWrapped = true
@@ -1065,8 +1100,8 @@ function Panels.init()
 	bannerScale.Parent = banner
 	bannerTitle = Kit.label({
 		Name = "Title",
-		Position = UDim2.fromScale(0.04, 0.06),
-		Size = UDim2.fromScale(0.92, 0.52),
+		Position = UDim2.fromScale(0.05, 0.05),
+		Size = UDim2.fromScale(0.9, 0.38),
 		ZIndex = 26,
 	})
 	Kit.outline(bannerTitle, 3)
@@ -1075,8 +1110,8 @@ function Panels.init()
 	bannerTitle.Parent = banner
 	bannerText = Kit.label({
 		Name = "Text",
-		Position = UDim2.fromScale(0.04, 0.6),
-		Size = UDim2.fromScale(0.92, 0.32),
+		Position = UDim2.fromScale(0.05, 0.45),
+		Size = UDim2.fromScale(0.9, 0.5),
 		ZIndex = 26,
 	})
 	Kit.outline(bannerText, 2)

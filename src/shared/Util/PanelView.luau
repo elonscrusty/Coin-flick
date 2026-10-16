@@ -51,6 +51,7 @@ local PanelView = {}
 -- Longest card line we allow (characters). Longer text gets squeezed tiny on
 -- phones, so the tests hold every line to this.
 PanelView.MAX_LINE = 28
+PanelView.MIN_BOARD_ROWS = 5 -- the top 10 always shows at least this many rows
 
 PanelView.TAB_ORDER = { "upgrades", "helpers", "hats", "robux" }
 PanelView.TAB_LABEL = {
@@ -130,7 +131,7 @@ function PanelView.helperCards(s: Snapshot): { Card }
 			card = {
 				id = def.id,
 				title = def.name,
-				line = `Flips every {string.format("%.1f", def.interval)}s • x{def.mult}`,
+				line = `Needs {def.resets} reset{if def.resets == 1 then "" else "s"}, then {PanelView.money(def.cost)}`,
 				button = `🔒 {def.resets} RESET{if def.resets == 1 then "" else "S"}`,
 				look = "locked",
 				order = 100 + i,
@@ -314,11 +315,16 @@ function PanelView.boardRows(key: string, rows: { Types.LeaderRow }?, myName: st
 			empty = false,
 		})
 	end
-	if #out == 0 then
-		table.insert(
-			out,
-			{ rank = "1", name = "No one yet. Be first!", value = "", medal = "gold", me = false, empty = true }
-		)
+	-- Open seats stay as styled placeholders (never a blank cream panel).
+	for i = #out + 1, PanelView.MIN_BOARD_ROWS do
+		table.insert(out, {
+			rank = tostring(i),
+			name = if #out == 0 then "Be the first!" else "Open seat",
+			value = "",
+			medal = MEDALS[i] or "none",
+			me = false,
+			empty = true,
+		})
 	end
 	return out
 end
