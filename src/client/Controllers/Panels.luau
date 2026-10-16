@@ -17,6 +17,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local HudLayout = require(ReplicatedStorage.Shared.Util.HudLayout)
 local Economy = require(ReplicatedStorage.Shared.Util.Economy)
+local EventText = require(ReplicatedStorage.Shared.Util.EventText)
 local PanelView = require(ReplicatedStorage.Shared.Util.PanelView)
 local Types = require(ReplicatedStorage.Shared.Types)
 local ClientNet = require(script.Parent.Parent.ClientNet)
@@ -848,6 +849,13 @@ local function pickShopTab(key: string)
 	end
 end
 
+-- Jump to a shop tab ("daily" = GIFTS) once the shop is open (the HUD's gift chip).
+function Panels.openShopTab(key: string)
+	if shopTabs[key] then
+		pickShopTab(key)
+	end
+end
+
 local function buildShop()
 	local panel, body = makePanel("Shop", "SHOP", Kit.GREEN, Vector2.new(4000, 4000))
 	panels.shop = panel
@@ -1548,6 +1556,19 @@ function Panels.start()
 			Panels.toast(notice.text)
 		elseif notice.kind == "offline" then
 			HudPopups.welcomeBack(notice.text) -- the big "Welcome back" card (HUD side)
+		elseif EventText.banner(notice.kind, notice.text) then
+			-- weekend / coin rain / play gift / badge: one banner look for all
+			local title, line = EventText.banner(notice.kind, notice.text)
+			Sounds.play("Gift", 0.7)
+			showBanner(
+				title or "",
+				line or notice.text,
+				if notice.kind == "badge" then Kit.PURPLE else Kit.TEAL,
+				false,
+				3,
+				nil
+			)
+			confetti(16)
 		else
 			Panels.toast(notice.text)
 		end

@@ -45,6 +45,20 @@ export type BookState = {
 	paid: { [string]: boolean }, -- rarity id -> first-find prize paid; "all" = full book prize
 }
 
+-- Play-time gifts, saved in the profile.
+export type PlayState = {
+	day: number, -- the UTC day `seconds` and `claimed` belong to (0 = never)
+	seconds: number, -- seconds played today (only counts while in the game)
+	claimed: { boolean }, -- per gift slot, claimed today
+	owed: { boolean }, -- per gift slot: reached on an earlier day, still waiting to be claimed
+}
+
+-- Weekly board baseline: flips you had when this week (Monday UTC) began for you.
+export type WeekState = {
+	week: number, -- week number (Monday-based, since 1970)
+	base: number, -- stats.flips at the start of that week
+}
+
 -- One coin pet you own.
 export type PetOwned = {
 	level: number, -- 1 to PetConfig.MAX_LEVEL
@@ -76,6 +90,9 @@ export type Profile = {
 	ladderSkin: string, -- worn streak-ladder coin look id, "" = none (earned, never bought)
 	challenges: ChallengeState,
 	book: BookState,
+	play: PlayState,
+	badges: { [string]: boolean }, -- badge ids earned
+	week: WeekState,
 	pets: { [string]: PetOwned }, -- coin pets you own (the free puppy is always there)
 	petActive: string, -- the pet out flipping for you, "" = none
 	petProgress: PetProgress,
@@ -163,6 +180,33 @@ export type DailyView = {
 		}
 	},
 	claimable: number, -- done jobs not claimed + 1 if the gift is ready (red dot)
+}
+
+-- Server -> one client: play-time gifts to draw.
+export type PlayGiftView = {
+	seconds: number, -- played today
+	gifts: { { slot: number, minutes: number, cash: number, hats: number, state: string, left: number } },
+	-- state: "waiting" | "ready" | "claimed"; left = seconds until ready (0 when ready or claimed)
+	claimable: number,
+}
+
+-- Server -> one client: every badge and whether it is earned.
+export type BadgeView = {
+	badges: { { id: string, name: string, text: string, earned: boolean } },
+	earned: number,
+}
+
+-- Server -> all: weekend events right now.
+export type EventView = {
+	weekend: boolean,
+	luckMult: number, -- 1 when no event
+	rain: boolean, -- coin rain is falling right now
+	cashMult: number, -- extra cash multiplier from the rain (1 when none)
+	endsAt: number, -- unix time the weekend ends (0 when no weekend)
+	startsAt: number, -- unix time the next weekend starts (0 during a weekend)
+	rainEndsAt: number, -- unix time the current rain stops (0 when dry)
+	nextRainAt: number, -- unix time of the next rain (0 when no weekend)
+	weekEndsAt: number, -- unix time the weekly board resets (next Monday 00:00 UTC)
 }
 
 export type LeaderRow = { name: string, value: number }

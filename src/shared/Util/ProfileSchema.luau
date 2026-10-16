@@ -5,9 +5,12 @@
 local Config = require(script.Parent.Parent.Config)
 local PetConfig = require(script.Parent.Parent.PetConfig)
 local Types = require(script.Parent.Parent.Types)
+local Badges = require(script.Parent.Badges)
 local Daily = require(script.Parent.Daily)
 local Goals = require(script.Parent.Goals)
 local Economy = require(script.Parent.Economy)
+local PlayGifts = require(script.Parent.PlayGifts)
+local WeeklyBoard = require(script.Parent.WeeklyBoard)
 local deepCopy = require(script.Parent.DeepCopy)
 
 type Profile = Types.Profile
@@ -44,6 +47,9 @@ local DEFAULT: Profile = {
 	ladderSkin = "",
 	challenges = Goals.emptyChallenges(),
 	book = Goals.emptyBook(),
+	play = PlayGifts.empty(),
+	badges = {},
+	week = WeeklyBoard.empty(),
 	pets = { puppy = { level = 1, xp = 0 } },
 	petActive = "puppy",
 	petProgress = { megaBeats = 0 },
@@ -230,6 +236,9 @@ local function reconcile(data: { [string]: any }): Profile
 		ladderSkin = "",
 		challenges = Goals.sanitizeChallenges(data.challenges),
 		book = Goals.sanitizeBook(data.book),
+		play = PlayGifts.sanitize(data.play),
+		badges = Badges.sanitize(data.badges),
+		week = WeeklyBoard.sanitize(data.week),
 		pets = pets,
 		petActive = if typeof(data.petActive) == "string" and (pets[data.petActive] or data.petActive == "")
 			then data.petActive

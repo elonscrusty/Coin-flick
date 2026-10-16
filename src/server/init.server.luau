@@ -19,6 +19,9 @@ local ORDER = {
 	"Leaderboards",
 	"Daily",
 	"Goals",
+	"PlayGifts",
+	"Badges",
+	"Events",
 	"Friends",
 	"Cheats",
 }
