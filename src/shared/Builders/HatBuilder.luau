@@ -6,14 +6,12 @@ type Make = (props: { [string]: any }) -> Part
 
 local HatBuilder = {}
 
-local UP = CFrame.Angles(0, 0, math.pi / 2) -- turns a cylinder upright
-
 local function cyl(model: Model, make: Make, height: number, diameter: number, y: number, color: Color3)
 	local part = make({
 		Name = "Piece",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(height, diameter, diameter),
-		CFrame = CFrame.new(0, y + height / 2, 0) * UP,
+		CFrame = CFrame.new(0, y + height / 2, 0) * CFrame.Angles(0, 0, math.pi / 2), -- upright cylinder
 		Color = color,
 	})
 	part.Parent = model
@@ -48,18 +46,49 @@ local RED = Color3.fromRGB(240, 70, 70)
 local BLUE = Color3.fromRGB(70, 160, 255)
 local GOLD = Color3.fromRGB(255, 200, 40)
 
+export type Disc = { y: number, height: number, diameter: number, color: Color3 }
+
+-- A cone built from thin discs that shrink smoothly (a stack of 3 big steps
+-- reads as a cake). Colors alternate in stripes of `stripe` discs.
+function HatBuilder.cone(
+	steps: number,
+	baseDiameter: number,
+	tipDiameter: number,
+	height: number,
+	colors: { Color3 },
+	stripe: number
+): { Disc }
+	local discs: { Disc } = {}
+	local each = height / steps
+	for i = 0, steps - 1 do
+		local t = i / (steps - 1)
+		table.insert(discs, {
+			y = i * each,
+			height = each * 1.02,
+			diameter = baseDiameter + (tipDiameter - baseDiameter) * t,
+			color = colors[(i // stripe) % #colors + 1],
+		})
+	end
+	return discs
+end
+
+local function discs(m: Model, make: Make, list: { Disc }, y0: number)
+	for _, d in list do
+		cyl(m, make, d.height, d.diameter, y0 + d.y, d.color)
+	end
+end
+
+local PARTY = HatBuilder.cone(8, 1.0, 0.1, 1.3, { PINK, YELLOW }, 2)
+local TRAFFIC_CONE = HatBuilder.cone(7, 0.95, 0.22, 0.95, { ORANGE, ORANGE, WHITE, WHITE, ORANGE, ORANGE, ORANGE }, 1)
+
 local BUILDERS: { [string]: (Model, Make) -> () } = {
 	party = function(m, make)
-		cyl(m, make, 0.35, 1.0, 0, PINK)
-		cyl(m, make, 0.35, 0.72, 0.35, YELLOW)
-		cyl(m, make, 0.35, 0.45, 0.7, PINK)
-		ball(m, make, 0.35, Vector3.new(0, 1.18, 0), YELLOW)
+		discs(m, make, PARTY, 0)
+		ball(m, make, 0.3, Vector3.new(0, 1.38, 0), YELLOW)
 	end,
 	cone = function(m, make)
 		block(m, make, Vector3.new(1.3, 0.12, 1.3), CFrame.new(0, 0.06, 0), ORANGE)
-		cyl(m, make, 0.4, 0.95, 0.12, ORANGE)
-		cyl(m, make, 0.25, 0.72, 0.52, WHITE)
-		cyl(m, make, 0.4, 0.5, 0.77, ORANGE)
+		discs(m, make, TRAFFIC_CONE, 0.12)
 	end,
 	cowboy = function(m, make)
 		cyl(m, make, 0.12, 2.1, 0, BROWN)

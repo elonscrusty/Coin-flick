@@ -34,6 +34,7 @@ local player = Players.LocalPlayer
 
 local CARD_HEIGHT = 66
 local SCROLLBAR = 10
+local ARROW_STRIP = 20 -- empty strip under a list that holds the "more below" arrow
 local TAB_COLORS: { [string]: Color3 } = {
 	upgrades = Kit.GOLD,
 	helpers = Kit.BLUE,
@@ -225,7 +226,7 @@ local function showBanner(title: string, text: string, color: Color3, rainbow: b
 	bannerText.Text = text
 	bannerStroke.Color = color
 	banner.Visible = true
-	banner.BackgroundTransparency = 0.1
+	banner.BackgroundTransparency = 0.25
 	bannerTitle.TextTransparency = 0
 	bannerText.TextTransparency = 0
 	bannerScale.Scale = 0.3
@@ -257,8 +258,8 @@ end
 
 local function screenFlash()
 	flash.Visible = true
-	flash.BackgroundTransparency = 0.35
-	local t = TweenService:Create(flash, TweenInfo.new(0.35), { BackgroundTransparency = 1 })
+	flash.BackgroundTransparency = 0.88 -- a soft glint, never a wash over the coins
+	local t = TweenService:Create(flash, TweenInfo.new(0.25), { BackgroundTransparency = 1 })
 	t:Play()
 	t.Completed:Connect(function()
 		flash.Visible = false
@@ -268,7 +269,7 @@ end
 local function shout(notice: Types.Notice)
 	local def = notice.rarity and Economy.rarityDef(notice.rarity)
 	local name = if def then def.name else "RARE"
-	showBanner(`{name} COIN!`, notice.text, if def then def.color else Kit.GOLD, notice.rarity == "rainbow", 3.5)
+	showBanner(`{name} COIN!`, notice.text, if def then def.color else Kit.GOLD, notice.rarity == "rainbow", 2.8)
 	if notice.rarity == "giant" then
 		confetti(30)
 	end
@@ -353,7 +354,7 @@ end
 local function scrollList(parent: Frame, top: number, bottom: number?): ScrollingFrame
 	local list = Instance.new("ScrollingFrame")
 	list.Position = UDim2.fromOffset(0, top)
-	list.Size = UDim2.new(1, 0, 1, -top - (bottom or 0))
+	list.Size = UDim2.new(1, 0, 1, -top - (bottom or 0) - ARROW_STRIP)
 	list.BackgroundTransparency = 1
 	list.BorderSizePixel = 0
 	list.ScrollBarThickness = SCROLLBAR
@@ -377,32 +378,44 @@ local function scrollList(parent: Frame, top: number, bottom: number?): Scrollin
 	pad.Parent = list
 	list.Parent = parent
 
-	local fade = Instance.new("Frame")
-	fade.Name = "MoreBelow"
-	fade.AnchorPoint = Vector2.new(0, 1)
-	fade.Position = UDim2.new(0, 0, 1, -(bottom or 0))
-	fade.Size = UDim2.new(1, -SCROLLBAR, 0, 30)
-	fade.BackgroundColor3 = Kit.PANEL
-	fade.BorderSizePixel = 0
-	fade.ZIndex = 9
-	local gradient = Instance.new("UIGradient")
-	gradient.Rotation = 90
-	gradient.Transparency = NumberSequence.new(1, 0)
-	gradient.Parent = fade
+	-- Soft fades at the top and bottom edge of the list say "more this way";
+	-- the arrow sits in its own strip under the list, never on a row.
+	local function edgeFade(name: string, atTop: boolean): Frame
+		local fade = Instance.new("Frame")
+		fade.Name = name
+		fade.AnchorPoint = Vector2.new(0, if atTop then 0 else 1)
+		fade.Position = if atTop then UDim2.fromOffset(0, top) else UDim2.new(0, 0, 1, -((bottom or 0) + ARROW_STRIP))
+		fade.Size = UDim2.new(1, -SCROLLBAR, 0, 16)
+		fade.BackgroundColor3 = Kit.PANEL
+		fade.BorderSizePixel = 0
+		fade.ZIndex = 9
+		fade.Visible = false
+		local gradient = Instance.new("UIGradient")
+		gradient.Rotation = 90
+		gradient.Transparency = if atTop then NumberSequence.new(0, 1) else NumberSequence.new(1, 0)
+		gradient.Parent = fade
+		fade.Parent = parent
+		return fade
+	end
+	local fadeTop = edgeFade("MoreAbove", true)
+	local fadeBottom = edgeFade("MoreBelow", false)
 	local arrow = Kit.label({
+		Name = "MoreArrow",
 		Text = "▼",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.fromScale(0.5, 1),
-		Size = UDim2.fromOffset(28, 22),
+		Position = UDim2.new(0.5, 0, 1, -(bottom or 0)),
+		Size = UDim2.fromOffset(30, ARROW_STRIP),
 		TextColor3 = Kit.ORANGE,
+		Visible = false,
 		ZIndex = 10,
 	})
-	Kit.outline(arrow, 2)
-	arrow.Parent = fade
-	fade.Parent = parent
+	arrow.Parent = parent
 	local function update()
 		local maxY = list.AbsoluteCanvasSize.Y - list.AbsoluteWindowSize.Y
-		fade.Visible = list.Visible and maxY > 4 and list.CanvasPosition.Y < maxY - 4
+		local shown = list.Visible and maxY > 4
+		fadeTop.Visible = shown and list.CanvasPosition.Y > 4
+		fadeBottom.Visible = shown and list.CanvasPosition.Y < maxY - 4
+		arrow.Visible = fadeBottom.Visible
 	end
 	list:GetPropertyChangedSignal("CanvasPosition"):Connect(update)
 	list:GetPropertyChangedSignal("AbsoluteCanvasSize"):Connect(update)
@@ -774,7 +787,12 @@ end
 -- Top 10 ---------------------------------------------------------------------------
 
 local function renderBoard()
-	local rows = PanelView.boardRows(boardShown, boards[boardShown], player.DisplayName)
+	local s = State.get()
+	local mine = if s then PanelView.myValue(boardShown, s) else nil
+	local rows = PanelView.boardRows(boardShown, boards[boardShown], player.DisplayName, mine)
+	for i, ui in boardRows do
+		ui.frame.Visible = rows[i] ~= nil
+	end
 	for i, view in rows do
 		local ui = boardRows[i]
 		if not ui then
@@ -788,11 +806,10 @@ local function renderBoard()
 		ui.frame.BackgroundColor3 = if view.me then Color3.fromRGB(200, 250, 200) else Kit.CARD
 	end
 	paintTabs(boardTabs, boardShown)
-	local s = State.get()
 	if s and myRow then
 		local unit = PanelView.BOARD_UNITS[boardShown]
 		myRow.Text =
-			`YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}  •  board updates every minute`
+			`YOU: {PanelView.myValue(boardShown, s)}{if unit ~= "" then " " .. unit else ""}  •  board updates slowly`
 	end
 end
 
@@ -965,6 +982,9 @@ end
 function Panels.setLayout(l: HudLayout.Layout)
 	layout = l
 	local box = l.panel
+	local below = l.top.y + l.top.h + 6
+	backdrop.Position = UDim2.fromOffset(0, below)
+	backdrop.Size = UDim2.new(1, 0, 1, 80 - below) -- reaches under the bottom inset too, not over the cash bars
 	local wide = Vector2.new(math.min(600, box.w), math.min(470, box.h))
 	local small = Vector2.new(math.min(480, box.w), math.min(340, box.h))
 	for name, panel in panels do
@@ -975,7 +995,7 @@ function Panels.setLayout(l: HudLayout.Layout)
 	end
 	if banner then
 		banner.Position = UDim2.fromOffset(l.shout.x + l.shout.w / 2, l.shout.y + l.shout.h / 2)
-		banner.Size = UDim2.fromOffset(math.min(620, l.shout.w), math.max(64, l.shout.h))
+		banner.Size = UDim2.fromOffset(math.min(520, l.shout.w), math.clamp(l.shout.h, 56, 72))
 	end
 	if toastLabel and toastLabel.Visible then
 		local slot = if openName then l.toastLow else l.toast
@@ -1098,12 +1118,12 @@ function Panels.start()
 		if notice.kind == "reset" then
 			Sounds.play("Reset", 0.8)
 			CameraView.shake(0.35, 0.5)
-			showBanner("NEW TABLE!", notice.text, Kit.ORANGE, false, 3)
+			showBanner("NEW TABLE!", notice.text, Kit.ORANGE, false, 2.4)
 			confetti(24)
 		elseif notice.kind == "shout" then
 			shout(notice)
 		elseif notice.kind == "mega" then
-			showBanner("MEGA FLIP!", notice.text, Kit.GOLD, false, 3.5)
+			showBanner("MEGA FLIP!", PanelView.megaBody(notice.text), Kit.GOLD, false, 2.8)
 			screenFlash()
 			confetti(36)
 		elseif notice.kind == "bought" then

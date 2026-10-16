@@ -303,7 +303,7 @@ return table.freeze({
 	MAX_HELPERS = 1, -- helper slots everyone starts with
 	HELPER_SLOT_RESETS = table.freeze({ 1, 3 }), -- each of these resets opens one more slot
 	HELPER_MAX_LEVEL = 10,
-	HELPER_LEVEL_COST = 0.5, -- level 2 costs half the unlock price...
+	HELPER_LEVEL_COST = 1.0, -- level 2 costs the unlock price (an upgrade never looks cheaper than the hire)...
 	HELPER_LEVEL_GROWTH = 1.9, -- ...and each level after costs 1.9x more
 	HELPER_LEVEL_SPEED = 0.93, -- each level flips 7% faster
 	HELPER_LEVEL_CASH = 0.2, -- and +20% cash
