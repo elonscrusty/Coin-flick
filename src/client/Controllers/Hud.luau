@@ -113,7 +113,7 @@ local function showCombo(combo: number)
 		card.Transparency = 0
 	end
 	comboLabel.Visible = true
-	popScale(comboScale, 1 + math.min(0.6, combo * 0.03))
+	popScale(comboScale, 1 + math.min(HudLayout.COMBO_POP_MAX - 1, combo * 0.03))
 	if combo % 5 == 0 then
 		Sounds.play("Combo", 0.5, 1 + math.min(1, combo / 20))
 	end
@@ -272,6 +272,20 @@ local function applyLayout()
 		local word = b:FindFirstChild("Word")
 		if word and word:IsA("GuiObject") then
 			setMaxText(word, r.h * 0.24)
+		end
+		if b == resetButton then
+			-- Real pixels, undoing the button's own padding (children are
+			-- placed inside it), so the bar is never a sliver.
+			local parts = HudLayout.resetParts(r.w, r.h)
+			local pad = b:FindFirstChildOfClass("UIPadding")
+			local padL = if pad then pad.PaddingLeft.Scale * r.w + pad.PaddingLeft.Offset else 0
+			local padT = if pad then pad.PaddingTop.Scale * r.h + pad.PaddingTop.Offset else 0
+			resetBar.Position = UDim2.fromOffset(parts.bar.x - padL, parts.bar.y - padT)
+			resetBar.Size = UDim2.fromOffset(parts.bar.w, parts.bar.h)
+			resetWord.Position = UDim2.fromOffset(parts.word.x - padL, parts.word.y - padT)
+			resetWord.Size = UDim2.fromOffset(parts.word.w, parts.word.h)
+			setMaxText(resetWord, parts.word.h)
+			setMaxText(resetCount, parts.bar.h * 0.8)
 		end
 	end
 
