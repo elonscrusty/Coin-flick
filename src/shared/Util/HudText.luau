@@ -19,9 +19,10 @@ function HudText.pay(cashPerHeads: number): string
 	return string.format("%d.%d", tenths // 10, tenths % 10)
 end
 
--- Two short lines (the info card is narrow): pay, then luck and coin count.
-function HudText.info(cashPerHeads: number, headsChance: number, coins: number, maxCoins: number): string
-	return `Heads = ${HudText.pay(cashPerHeads)}\n🍀 {Format.percent(headsChance)}  🪙 {coins}/{maxCoins}`
+-- Two short labelled lines (the info card is narrow). The coin count lives in
+-- the RESET button's bar, so it is not repeated here.
+function HudText.info(cashPerHeads: number, headsChance: number): string
+	return `Heads = ${HudText.pay(cashPerHeads)}\nLuck {Format.percent(headsChance)}`
 end
 
 -- Boost strip: the 2x timer while it runs, the mega coin count once someone
@@ -29,9 +30,9 @@ end
 function HudText.boost(taps: number, goal: number, boostLeft: number): string
 	local left = math.ceil(boostLeft)
 	if left > 0 then
-		return `⚡ 2x CASH  {left // 60}:{string.format("%02d", left % 60)}`
+		return `⚡ 2x  {left // 60}:{string.format("%02d", left % 60)}`
 	elseif taps > 0 then
-		return `🌟 Mega {taps}/{goal}`
+		return `🌟 {taps}/{goal}`
 	end
 	return ""
 end

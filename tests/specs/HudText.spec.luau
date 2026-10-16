@@ -12,18 +12,18 @@ describe("HUD words", function()
 		expect(HudText.pay(123456)).toBe("123K")
 	end)
 
-	it("info card is two short lines", function()
-		expect(HudText.info(1, 0.5, 3, 25)).toBe("Heads = $1\n🍀 50%  🪙 3/25")
-		-- x1.5 after a reset: the bar says $1.5, matching the popup
-		expect(HudText.info(1.5, 0.5, 3, 25)).toBe("Heads = $1.5\n🍀 50%  🪙 3/25")
-		expect(HudText.info(123456, 0.62, 10, 25)).toBe("Heads = $123K\n🍀 62%  🪙 10/25")
+	it("info card is two labelled lines", function()
+		expect(HudText.info(1, 0.5)).toBe("Heads = $1\nLuck 50%")
+		-- x1.5 after a reset: the card says $1.5, matching the popup
+		expect(HudText.info(1.5, 0.5)).toBe("Heads = $1.5\nLuck 50%")
+		expect(HudText.info(123456, 0.62)).toBe("Heads = $123K\nLuck 62%")
 	end)
 
 	it("boost strip hides when nothing is going on", function()
 		expect(HudText.boost(0, 90, 0)).toBe("")
-		expect(HudText.boost(5, 90, 0)).toBe("🌟 Mega 5/90")
-		expect(HudText.boost(5, 90, 61.2)).toBe("⚡ 2x CASH  1:02")
-		expect(HudText.boost(0, 90, 9)).toBe("⚡ 2x CASH  0:09")
+		expect(HudText.boost(5, 90, 0)).toBe("🌟 5/90")
+		expect(HudText.boost(5, 90, 61.2)).toBe("⚡ 2x  1:02")
+		expect(HudText.boost(0, 90, 9)).toBe("⚡ 2x  0:09")
 	end)
 
 	it("reset button says RESET, then RESET! when ready; bar counts coins", function()
