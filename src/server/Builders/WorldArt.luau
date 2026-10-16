@@ -84,7 +84,7 @@ end
 -- Sky ---------------------------------------------------------------------------------------------
 
 function WorldArt.cloud(make: PartMaker, parent: Instance, item: SkyLayout.Item)
-	local real = Meshes.clone("CF_Cloud", CFrame.new(item.x, item.y, item.z), nil, item.scale)
+	local real = Meshes.clone("CF_Cloud", CFrame.new(item.x, item.y, item.z), nil, 6.54, true, item.scale)
 	if real then
 		real.Parent = parent
 		bobbing(real, 1.5 * item.scale, 0.25 + item.spin * 0.2, 0, item.phase)
@@ -123,6 +123,8 @@ function WorldArt.balloon(make: PartMaker, parent: Instance, item: SkyLayout.Ite
 		"CF_Balloon",
 		CFrame.new(item.x, item.y, item.z),
 		{ Envelope = SkyLayout.BALLOONS[item.color] },
+		6.4,
+		true,
 		item.scale
 	)
 	if real then
@@ -167,7 +169,8 @@ function WorldArt.balloon(make: PartMaker, parent: Instance, item: SkyLayout.Ite
 end
 
 function WorldArt.island(make: PartMaker, parent: Instance, item: SkyLayout.Item)
-	local real = Meshes.clone("CF_Island", CFrame.new(item.x, item.y + 0.6 * item.scale, item.z), nil, item.scale)
+	local real =
+		Meshes.clone("CF_Island", CFrame.new(item.x, item.y + 0.6 * item.scale, item.z), nil, 12.8, true, item.scale)
 	if real then
 		real.Parent = parent
 		bobbing(real, 2.5 * item.scale, 0.3, item.spin * 0.25, item.phase)
@@ -257,7 +260,7 @@ end
 -- Plaza ---------------------------------------------------------------------------------------------
 
 local function fountain(make: PartMaker, parent: Instance, at: Vector3)
-	local real = Meshes.clone("CF_Fountain", CFrame.new(at))
+	local real = Meshes.clone("CF_Fountain", CFrame.new(at), nil, nil, true)
 	if real then
 		real.Parent = parent
 		return
@@ -301,7 +304,7 @@ end
 
 -- Coloured rings on the sandy plaza, and four fountains.
 function WorldArt.plaza(make: PartMaker, parent: Instance)
-	local tile = Meshes.clone("CF_PlazaTile", CFrame.new(0, 0.2, 0))
+	local tile = Meshes.clone("CF_PlazaTile", CFrame.new(0, 0.2, 0), nil, nil, true)
 	for i, ring in SkyLayout.PLAZA_RINGS do
 		if tile then
 			break

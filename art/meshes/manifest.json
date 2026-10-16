@@ -61,6 +61,40 @@
    }
   }
  },
+ "CF_Buddy": {
+  "file": "CF_Buddy.fbx",
+  "faces": 394,
+  "pieces": {
+   "Body": {
+    "color": "#5ac8ff",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ff5a5a",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
  "CF_Bush": {
   "file": "CF_Bush.fbx",
   "faces": 235,
@@ -93,6 +127,44 @@
    }
   }
  },
+ "CF_Chompy": {
+  "file": "CF_Chompy.fbx",
+  "faces": 516,
+  "pieces": {
+   "Body": {
+    "color": "#ff963c",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ff78be",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Mouth": {
+    "color": "#b02848",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
  "CF_Cloud": {
   "file": "CF_Cloud.fbx",
   "faces": 280,
@@ -109,7 +181,7 @@
  },
  "CF_Coin": {
   "file": "CF_Coin.fbx",
-  "faces": 570,
+  "faces": 968,
   "pieces": {
    "Rim": {
     "color": "#e89a00",
@@ -249,6 +321,164 @@
    }
   }
  },
+ "CF_GiftBox": {
+  "file": "CF_GiftBox.fbx",
+  "faces": 148,
+  "pieces": {
+   "Box": {
+    "color": "#ff5fa8",
+    "material": "SmoothPlastic"
+   },
+   "Lid": {
+    "color": "#ff86bf",
+    "material": "SmoothPlastic"
+   },
+   "Ribbon": {
+    "color": "#ffe14a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatChef": {
+  "file": "CF_HatChef.fbx",
+  "faces": 166,
+  "pieces": {
+   "White": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#cdd7eb",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatCone": {
+  "file": "CF_HatCone.fbx",
+  "faces": 50,
+  "pieces": {
+   "Base": {
+    "color": "#e15f14",
+    "material": "SmoothPlastic"
+   },
+   "Cone": {
+    "color": "#ff821e",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatCowboy": {
+  "file": "CF_HatCowboy.fbx",
+  "faces": 162,
+  "pieces": {
+   "Felt": {
+    "color": "#96603a",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatCrown": {
+  "file": "CF_HatCrown.fbx",
+  "faces": 179,
+  "pieces": {
+   "Gold": {
+    "color": "#ffc828",
+    "material": "SmoothPlastic"
+   },
+   "Gem": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   },
+   "GemB": {
+    "color": "#46a0ff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatDuck": {
+  "file": "CF_HatDuck.fbx",
+  "faces": 136,
+  "pieces": {
+   "Body": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Beak": {
+    "color": "#ff821e",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#232330",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatParty": {
+  "file": "CF_HatParty.fbx",
+  "faces": 74,
+  "pieces": {
+   "Cone": {
+    "color": "#ff6ebe",
+    "material": "SmoothPlastic"
+   },
+   "Brim": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Stripe": {
+    "color": "#46a0ff",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatPropeller": {
+  "file": "CF_HatPropeller.fbx",
+  "faces": 80,
+  "pieces": {
+   "Cap": {
+    "color": "#46a0ff",
+    "material": "SmoothPlastic"
+   },
+   "Stripe": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Pin": {
+    "color": "#232330",
+    "material": "SmoothPlastic"
+   },
+   "Blade": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   },
+   "BladeB": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_HatTop": {
+  "file": "CF_HatTop.fbx",
+  "faces": 188,
+  "pieces": {
+   "Felt": {
+    "color": "#232330",
+    "material": "SmoothPlastic"
+   },
+   "Band": {
+    "color": "#f04646",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
  "CF_Island": {
   "file": "CF_Island.fbx",
   "faces": 644,
@@ -287,6 +517,48 @@
    }
   }
  },
+ "CF_King": {
+  "file": "CF_King.fbx",
+  "faces": 392,
+  "pieces": {
+   "Body": {
+    "color": "#a064f0",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ffc828",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Cape": {
+    "color": "#e8384f",
+    "material": "SmoothPlastic"
+   },
+   "Trim": {
+    "color": "#fff5dc",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
  "CF_Lamp": {
   "file": "CF_Lamp.fbx",
   "faces": 79,
@@ -301,6 +573,28 @@
    },
    "Cap": {
     "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_MegaCoin": {
+  "file": "CF_MegaCoin.fbx",
+  "faces": 1062,
+  "pieces": {
+   "Rim": {
+    "color": "#e89a00",
+    "material": "SmoothPlastic"
+   },
+   "Face": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   },
+   "Mark": {
+    "color": "#8a4a00",
+    "material": "SmoothPlastic"
+   },
+   "Gem": {
+    "color": "#ff5fb0",
     "material": "SmoothPlastic"
    }
   }
@@ -387,7 +681,7 @@
  },
  "CF_Table": {
   "file": "CF_Table.fbx",
-  "faces": 944,
+  "faces": 1116,
   "pieces": {
    "Top": {
     "color": "#d6965a",
@@ -539,6 +833,40 @@
    }
   }
  },
+ "CF_Twinkle": {
+  "file": "CF_Twinkle.fbx",
+  "faces": 342,
+  "pieces": {
+   "Body": {
+    "color": "#ff82c8",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#96e1ff",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
  "CF_Umbrella": {
   "file": "CF_Umbrella.fbx",
   "faces": 63,
@@ -556,6 +884,40 @@
     "material": "SmoothPlastic"
    },
    "Cap": {
+    "color": "#ffd23a",
+    "material": "SmoothPlastic"
+   }
+  }
+ },
+ "CF_Zippy": {
+  "file": "CF_Zippy.fbx",
+  "faces": 325,
+  "pieces": {
+   "Body": {
+    "color": "#6edc5a",
+    "material": "SmoothPlastic"
+   },
+   "Head": {
+    "color": "#ffdcb4",
+    "material": "SmoothPlastic"
+   },
+   "Feet": {
+    "color": "#ffffff",
+    "material": "SmoothPlastic"
+   },
+   "Eye": {
+    "color": "#1c1c28",
+    "material": "SmoothPlastic"
+   },
+   "Cheek": {
+    "color": "#ff8fa8",
+    "material": "SmoothPlastic"
+   },
+   "Cap": {
+    "color": "#ffdc3c",
+    "material": "SmoothPlastic"
+   },
+   "Extra": {
     "color": "#ffd23a",
     "material": "SmoothPlastic"
    }

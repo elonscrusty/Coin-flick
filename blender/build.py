@@ -13,8 +13,10 @@ sys.path.insert(0, os.path.dirname(__file__))
 import cfkit  # noqa: E402
 from models import MODELS  # noqa: E402
 from models_world import MODELS as WORLD_MODELS  # noqa: E402
+from models_coin import MODELS as COIN_MODELS  # noqa: E402
 
-MODELS = {**MODELS, **WORLD_MODELS}  # the world tree replaces the sample CF_Tree
+MODELS.update(COIN_MODELS)
+MODELS.update(WORLD_MODELS)  # the world tree replaces the sample CF_Tree
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

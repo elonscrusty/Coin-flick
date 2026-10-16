@@ -1,60 +1,52 @@
 --!strict
--- Real 3D models made in Blender (art/meshes, ids in MeshIds, colours in MeshCatalog).
--- Meshes.clone(name, cframe, tints) gives a ready Model, or nil while a model has no id (0) or failed to load:
--- every caller keeps its old Part code as the fallback, so nothing breaks before the owner uploads the models.
--- Each imported MeshPart is repainted from the catalog by its slot (the last word of its name); `tints`
--- overrides single slots, e.g. { Leaf = theme.foliage }. `scale` resizes the whole model about its origin.
--- Assumes the imported model's pivot is the Blender origin (floor centre). UNVERIFIED until a Studio check.
+-- Loads the Blender models (docs/MODELING.md) once at boot and hands out painted copies.
+-- A model with id 0 (not uploaded yet) or one that fails to load gives nil: every caller keeps its Part stand-in.
 
 local InsertService = game:GetService("InsertService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MeshCatalog = require(ReplicatedStorage.Shared.MeshCatalog)
 local MeshIds = require(ReplicatedStorage.Shared.MeshIds) :: { [string]: number }
+local MeshPaint = require(ReplicatedStorage.Shared.Util.MeshPaint)
+
+local LOAD_TIMEOUT = 15
 
 local Meshes = {}
 
-local LOAD_WAIT = 12 -- seconds the world waits for all models at boot
-
 local templates: { [string]: Model } = {}
 
-local function slotOf(name: string): string
-	return string.match(name, "(%w+)$") or name
-end
-
 local function load(name: string, id: number)
-	local ok, result = pcall(function()
-		return InsertService:LoadAsset(id)
-	end)
-	if not ok or not result then
-		warn(`Meshes: could not load {name} ({id})`)
+	local ok, container = pcall(InsertService.LoadAsset, InsertService, id)
+	if not ok or typeof(container) ~= "Instance" then
+		warn(`CoinFlick: model {name} ({id}) did not load, using the Part stand-in`)
+		return
+	end
+	local parts = 0
+	for _, d in container:GetDescendants() do
+		if d:IsA("BasePart") then
+			parts += 1
+		end
+	end
+	if parts == 0 then
+		warn(`CoinFlick: model {name} has no parts, using the Part stand-in`)
+		container:Destroy()
 		return
 	end
 	local model = Instance.new("Model")
 	model.Name = name
-	for _, part in result:GetDescendants() do
-		if part:IsA("MeshPart") then
-			local copy = part:Clone()
-			copy.Anchored = true
-			copy.CanCollide = false
-			copy.CanQuery = false
-			copy.CanTouch = false
-			copy.Parent = model
+	for _, d in container:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Parent = model
 		end
 	end
-	result:Destroy()
-	if #model:GetChildren() == 0 then
-		warn(`Meshes: {name} has no mesh parts`)
-		model:Destroy()
-		return
-	end
+	container:Destroy()
 	templates[name] = model
 end
 
 function Meshes.init()
 	local pending = 0
 	for name, id in MeshIds do
-		if id ~= 0 and MeshCatalog[name] then
+		if id > 0 and MeshCatalog[name] then
 			pending += 1
 			task.spawn(function()
 				load(name, id)
@@ -62,42 +54,86 @@ function Meshes.init()
 			end)
 		end
 	end
-	local started = os.clock()
-	while pending > 0 and os.clock() - started < LOAD_WAIT do
-		task.wait(0.1)
+	local waited = 0
+	while pending > 0 and waited < LOAD_TIMEOUT do
+		waited += task.wait(0.1)
 	end
 end
 
 function Meshes.has(name: string): boolean
-	local template: Model? = templates[name]
-	return template ~= nil
+	return templates[name] and true or false
 end
 
-function Meshes.clone(name: string, cf: CFrame, tints: { [string]: Color3 }?, scale: number?): Model?
+-- A painted copy placed at `cf` (the pivot: floor centre, or the middle for coins), or nil while the model is
+-- not available. `lift` raises the pivot above the floor (helpers hop around their body centre).
+-- `anchored` keeps it fixed in the world (table, helpers, scenery: no welds then); otherwise weld it to something
+-- (coins, hats). `scale` resizes the whole model about its pivot.
+function Meshes.clone(
+	name: string,
+	cf: CFrame,
+	tints: MeshPaint.Tints?,
+	lift: number?,
+	anchored: boolean?,
+	scale: number?
+): Model?
 	local template = templates[name]
-	local catalog = MeshCatalog[name]
-	if not template or not catalog then
+	if not template then
 		return nil
 	end
 	local model = template:Clone()
-	for _, part in model:GetChildren() do
-		if part:IsA("MeshPart") then
-			local slot = slotOf(part.Name)
-			local look = catalog[slot]
-			if look then
-				part.Color = (tints and tints[slot]) or look.color
-				local material = (Enum.Material :: any)[look.material]
-				if material then
-					part.Material = material
-				end
-			end
+	local box, size = model:GetBoundingBox()
+	local pivot = box
+	if not MeshPaint.isCentered(name) then
+		pivot = box * CFrame.new(0, -size.Y / 2 + (lift or 0), 0)
+	end
+	model.WorldPivot = pivot
+	local primary: BasePart? = nil
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Anchored = true -- welded below, then freed
+			part.CanCollide = false
+			part.CanQuery = false
+			part.CanTouch = false
+			part.Massless = true
+			primary = primary or part
+		end
+	end
+	if not primary then
+		model:Destroy()
+		return nil
+	end
+	model.PrimaryPart = primary
+	MeshPaint.paint(model, name, tints)
+	for _, part in model:GetDescendants() do
+		if anchored ~= true and part:IsA("BasePart") and part ~= primary then
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = primary
+			weld.Part1 = part
+			weld.Parent = part
 		end
 	end
 	if scale and scale ~= 1 then
 		model:ScaleTo(scale)
 	end
 	model:PivotTo(cf)
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Anchored = anchored == true
+		end
+	end
 	return model
+end
+
+-- Weld a model to a part so it travels with it (parts moved by CFrame, like the coins).
+function Meshes.attach(model: Model, to: BasePart)
+	local primary = model.PrimaryPart
+	if primary then
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = to
+		weld.Part1 = primary
+		weld.Parent = primary
+	end
+	model.Parent = to
 end
 
 return Meshes

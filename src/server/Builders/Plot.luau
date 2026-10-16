@@ -143,7 +143,7 @@ function Plot.build(
 			local pieces = math.ceil(spacing / 4)
 			for i = 0, posts do
 				local p = from:Lerp(to, i / posts)
-				local post = Meshes.clone("CF_FencePost", plotCFrame * CFrame.new(p), tints)
+				local post = Meshes.clone("CF_FencePost", plotCFrame * CFrame.new(p), tints, nil, true)
 				if post then
 					post.Parent = folder
 				end
@@ -154,6 +154,8 @@ function Plot.build(
 							"CF_FenceSection",
 							plotCFrame * CFrame.fromMatrix(at, dir, Vector3.yAxis),
 							tints,
+							nil,
+							true,
 							spacing / pieces / 4
 						)
 						if section then
@@ -203,7 +205,8 @@ function Plot.build(
 		})
 		pillar.Parent = folder
 		if pillarModels then
-			local model = Meshes.clone("CF_ArchPillar", plotCFrame * CFrame.new(x, 0, -half), { Band = theme.border })
+			local model =
+				Meshes.clone("CF_ArchPillar", plotCFrame * CFrame.new(x, 0, -half), { Band = theme.border }, nil, true)
 			if model then
 				model.Parent = folder
 				continue

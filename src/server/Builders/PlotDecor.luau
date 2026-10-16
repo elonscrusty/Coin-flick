@@ -679,7 +679,7 @@ local function withModels(
 			pieces[kind] = function(make, parent, base, s, theme)
 				-- required here: Meshes reads Enum values the offline tests lack
 				local Meshes = require(script.Parent.Parent.Systems.Meshes)
-				local model = Meshes.clone(entry.name, base, entry.tints(theme), s)
+				local model = Meshes.clone(entry.name, base, entry.tints(theme), nil, true, s)
 				if model then
 					model.Parent = parent
 				else

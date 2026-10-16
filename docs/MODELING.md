@@ -32,3 +32,12 @@ cloud, balloon, plaza floor. Build one: `blender/build.py --only CF_Bench`.
   fountain, plaza), `World` (FREE PLOT trophy). `Meshes.clone(name, cf, tints, scale)` scales about the model origin.
 - Sky pieces (island, cloud, balloon) are tagged `SkyBob` and bob via client SkyFx; no brown anywhere in the sky.
 - Not wired yet (built only): `CF_TreePine`, `CF_Crystals`.
+## Models in the game (coin side)
+- `CF_Coin` (3 wide, top = heads), `CF_Table`, `CF_MegaCoin`, `CF_GiftBox` (not wired yet), helpers `CF_Buddy CF_Zippy CF_Chompy CF_Twinkle CF_King`
+  (front = -Y in Blender, pieces `Body` and `Cap` take the helper colours), hats `CF_HatParty CF_HatCone CF_HatCowboy CF_HatChef
+  CF_HatPropeller CF_HatDuck CF_HatTop CF_HatCrown` (origin = head top). Game id -> model name lives in `shared/Util/MeshPaint`.
+- Wiring (all fall back to the Part code while the id is 0): `Tables.makeCoin` puts the coin model on the invisible coin part as child `Visual`
+  (the part still does the rest pose, flips and attributes; FlipFx repaints and scales `Visual` for rare coins); `buildTable` swaps Top/Rim/Legs
+  for `TableMesh`; `makeHelper` returns the helper model (pivot one stud above its feet, the client hops it by pivot); `Hats.dress` uses the hat model.
+- Not yet checked in Studio (ids are 0 until the PC uploads): the FBX front direction (helpers/hats should face -Z in Roblox; if they face
+  backwards rotate the model in `Meshes.clone`), and that `Model:ScaleTo` on the welded coin copy behaves.

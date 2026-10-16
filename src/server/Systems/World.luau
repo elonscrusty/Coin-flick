@@ -141,7 +141,7 @@ local function buildFreeMarker(slot: number, parent: Instance): Model
 	end
 	-- a gold coin trophy on a pedestal in the middle, so a free yard shines from far away
 	local Meshes = require(script.Parent.Meshes) -- here: it reads Enum values the offline tests lack
-	local trophy = Meshes.clone("CF_FreeStatue", base)
+	local trophy = Meshes.clone("CF_FreeStatue", base, nil, nil, true)
 	if trophy then
 		trophy.Parent = model
 	else
