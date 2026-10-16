@@ -21,6 +21,9 @@ return table.freeze({
 		"ChooseSkin", -- client -> server: (skinId: string, "" = classic)
 		"BuyRobux", -- client -> server: (item: string) server opens the Roblox buy window
 		"Leaderboards", -- server -> client: (Leaderboards)
+		"DailyState", -- server -> client: (DailyView)
+		"ClaimGift", -- client -> server: ()
+		"ClaimJob", -- client -> server: (slot: number)
 	}),
 	-- Only created when running in Roblox Studio. Never exists in a live game.
 	StudioOnly = table.freeze({

@@ -13,6 +13,7 @@ local Economy = require(ReplicatedStorage.Shared.Util.Economy)
 local Format = require(ReplicatedStorage.Shared.Util.Format)
 local TableLayout = require(ReplicatedStorage.Shared.Util.TableLayout)
 local Boosts = require(script.Parent.Boosts)
+local Daily = require(script.Parent.Daily)
 local Net = require(script.Parent.Net)
 local PlayerData = require(script.Parent.PlayerData)
 local World = require(script.Parent.World)
@@ -298,6 +299,10 @@ local function flip(
 		Boosts.cashMult(player, now) * (helperMult or 1),
 		combo
 	)
+	Daily.bump(player, "flip", 1)
+	if outcome.result == HEADS then
+		Daily.bump(player, "heads", 1)
+	end
 
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,

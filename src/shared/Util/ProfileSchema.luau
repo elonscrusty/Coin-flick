@@ -4,6 +4,7 @@
 
 local Config = require(script.Parent.Parent.Config)
 local Types = require(script.Parent.Parent.Types)
+local Daily = require(script.Parent.Daily)
 local Economy = require(script.Parent.Economy)
 local deepCopy = require(script.Parent.DeepCopy)
 
@@ -11,10 +12,10 @@ type Profile = Types.Profile
 
 local ProfileSchema = {}
 
-ProfileSchema.CURRENT_VERSION = 2
+ProfileSchema.CURRENT_VERSION = 3
 
 local DEFAULT: Profile = {
-	version = 2,
+	version = 3,
 	cash = 0,
 	hatPoints = 0,
 	upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0 },
@@ -28,6 +29,7 @@ local DEFAULT: Profile = {
 	skin = "",
 	helperSlots = 0,
 	receipts = {},
+	daily = Daily.empty(),
 }
 
 function ProfileSchema.default(): Profile
@@ -44,6 +46,10 @@ local MIGRATIONS: { [number]: (any) -> any } = {
 			data.team = { "buddy" }
 		end
 		data.helpers = nil
+		return data
+	end,
+	-- v2 -> v3 added `daily`; reconcile() fills it with a fresh one.
+	[2] = function(data)
 		return data
 	end,
 }
@@ -172,6 +178,7 @@ local function reconcile(data: { [string]: any }): Profile
 		skin = if isSkinId(data.skin) then data.skin else "",
 		helperSlots = math.min(Config.MAX_EXTRA_HELPER_SLOTS, cleanInt(data.helperSlots, 0)),
 		receipts = cleanReceipts(data.receipts),
+		daily = Daily.sanitize(data.daily),
 	}
 	profile.team = cleanTeam(data.team, crew, Economy.maxHelpers(profile))
 	return profile

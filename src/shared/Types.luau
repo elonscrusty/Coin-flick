@@ -19,6 +19,15 @@ export type Stats = {
 	rares: number,
 }
 
+-- Daily gift + jobs, saved in the profile. Days are whole UTC days since 1970.
+export type DailyState = {
+	day: number, -- the day progress / claimed belong to (0 = never)
+	progress: { number }, -- per job slot 1..3
+	claimed: { boolean }, -- per job slot 1..3
+	giftDay: number, -- last day the gift was claimed (0 = never)
+	giftClaims: number, -- total gifts claimed; picks which of the 7 gift days is next
+}
+
 -- Saved player data. Plain JSON-friendly values only.
 export type Profile = {
 	version: number,
@@ -35,6 +44,7 @@ export type Profile = {
 	skin: string, -- chosen coin skin id, "" = classic gold
 	helperSlots: number, -- extra helper slots bought with Robux
 	receipts: { string }, -- recent Robux purchase ids, so one is never granted twice
+	daily: DailyState,
 }
 
 export type FlipResult = "heads" | "skull"
@@ -84,6 +94,22 @@ export type MegaState = {
 	taps: number,
 	goal: number,
 	boostLeft: number, -- seconds of server-wide 2x cash left
+}
+
+-- Server -> one client: today's gift and jobs (DailyState turned into something to draw).
+export type DailyView = {
+	day: number,
+	nextReset: number, -- unix time the jobs and gift turn over (UTC midnight)
+	gift: {
+		ready: boolean,
+		dayIndex: number, -- 1..7, the gift day ready now (or claimed today)
+		flips: number, -- reward: heads worth of cash...
+		cash: number, -- ...as cash at your current cash per heads
+		hats: number,
+		cycle: { { flips: number, hats: number } }, -- all 7 days, for the calendar
+	},
+	jobs: { { text: string, kind: string, goal: number, progress: number, cash: number, hats: number, done: boolean, claimed: boolean } },
+	claimable: number, -- done jobs not claimed + 1 if the gift is ready (red dot)
 }
 
 export type LeaderRow = { name: string, value: number }
