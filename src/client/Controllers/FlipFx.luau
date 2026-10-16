@@ -347,7 +347,7 @@ local function dressRare(anim: Anim, now: number, t: number)
 	if ridge and ridge:IsA("BasePart") then
 		local thickness, diameter = CoinLook.ridge(coin.Size.X, coin.Size.Y)
 		ridge.Size = Vector3.new(thickness, diameter, diameter)
-		ridge.Color = if look.rainbow then CoinLook.darker(CoinLook.rainbowColor(now + 0.5), 0.55) else look.rim
+		ridge.Color = if look.rainbow then CoinLook.rainbowRidge(now) else look.rim
 	end
 end
 

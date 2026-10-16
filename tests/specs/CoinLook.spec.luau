@@ -410,8 +410,9 @@ describe("CoinLook round 7: right face up for every rarity, rainbow ridge, same 
 		expect(math.min(r.rim.R, r.rim.G, r.rim.B) * 255).toBeAtMost(120)
 		expect(CoinLook.distance(r.outline :: Color3, Color3.fromRGB(255, 255, 255))).toBeAtLeast(150)
 		for i = 0, 10 do
-			local ridge = CoinLook.darker(CoinLook.rainbowColor(i * 0.2 + 0.5), 0.55)
+			local ridge = CoinLook.rainbowRidge(i * 0.2)
 			expect(CoinLook.distance(ridge, Color3.fromRGB(255, 255, 255))).toBeAtLeast(100)
+			expect(math.max(ridge.R, ridge.G, ridge.B) - math.min(ridge.R, ridge.G, ridge.B)).toBeAtLeast(0.9) -- vivid, never brown or grey
 		end
 	end)
 
@@ -532,5 +533,50 @@ describe("CoinLook round 11: art pass", function()
 		expect(Config.COIN_THICKNESS).toBeAtLeast(0.8)
 		expect(CoinLook.NORMAL.landBurst).toBeAtLeast(20)
 		expect(CoinLook.RARE.giant.landBurst).toBeAtLeast(150)
+	end)
+end)
+
+describe("CoinLook round 12: plain coin is bright gold, rainbow is vivid", function()
+	local function hueOf(c: Color3): number
+		local mx, mn = math.max(c.R, c.G, c.B), math.min(c.R, c.G, c.B)
+		local d = mx - mn
+		if d == 0 then
+			return 0
+		end
+		local h
+		if mx == c.R then
+			h = ((c.G - c.B) / d) % 6
+		elseif mx == c.G then
+			h = (c.B - c.R) / d + 2
+		else
+			h = (c.R - c.G) / d + 4
+		end
+		return h * 60
+	end
+
+	it("the plain coin and its rim are bright yellow gold, not brown", function()
+		local n = CoinLook.NORMAL
+		expect(math.max(n.color.R, n.color.G, n.color.B)).toBeAtLeast(0.95) -- bright
+		expect(hueOf(n.color)).toBeAtLeast(40)
+		expect(hueOf(n.color)).toBeAtMost(55) -- yellow, not orange-brown
+		expect(n.color.G).toBeAtLeast(0.78)
+		expect(n.reflectance).toBeAtLeast(0.25) -- clear shine
+		expect(n.rim.G).toBeAtLeast(0.85) -- light rim, not a dark brown band
+	end)
+
+	it("GOLD is a richer amber than the plain coin but still bright", function()
+		local g = CoinLook.RARE.gold
+		expect(g.color.R).toBeAtLeast(0.95)
+		expect(hueOf(g.color)).toBeAtMost(hueOf(CoinLook.NORMAL.color) - 8)
+		expect(g.color.G).toBeAtLeast(0.55)
+	end)
+
+	it("rainbow face and edge are vivid and always differ in hue", function()
+		for i = 0, 20 do
+			local face, edge = CoinLook.rainbowColor(i * 0.13), CoinLook.rainbowRidge(i * 0.13)
+			expect(math.max(face.R, face.G, face.B)).toBeAtLeast(0.95)
+			expect(math.max(face.R, face.G, face.B) - math.min(face.R, face.G, face.B)).toBeAtLeast(0.7)
+			expect(CoinLook.distance(face, edge)).toBeAtLeast(100)
+		end
 	end)
 end)
