@@ -98,7 +98,11 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	local colW = clamp(w * 0.25 - 14, 140, 260)
 	local pillH = clamp(34 * s, 32, 48)
 	local top = rect(x0, y0, colW, pillH)
-	local infoH = clamp(40 * s, 38, 64)
+	-- Tall as the room allows (a short phone gives some to the message spot).
+	local infoH = clamp(48 * s, 40, 70)
+	if touch then
+		infoH = clamp(math.min(infoH, stickTop - 10 - 56 - (top.y + top.h + gap) - 10), 40, 70)
+	end
 	local info = rect(x0, top.y + top.h + gap, colW, infoH)
 	local margin = HudLayout.MSG_MARGIN
 	local msgTop = info.y + info.h + margin
@@ -111,7 +115,7 @@ function HudLayout.compute(w: number, h: number, touch: boolean): Layout
 	-- Right band, top to bottom: mega count chip, 2x boost timer chip, combo
 	-- card, then the 2x2 side buttons above the jump button.
 	local availH = jumpTop - 12 - y0
-	local chipH = clamp(20 * s, 22, 24)
+	local chipH = clamp(24 * s, 26, 30)
 	local comboH = clamp(46 * s, 48, 58)
 	local rgap = math.max(4, gap * 0.6) -- tighter gaps in the packed right band
 	local btn = math.min(64 * s, 84, (availH - 2 * chipH - comboH - 4 * rgap) / 2)
