@@ -1,5 +1,5 @@
 --!strict
--- Cash shop (upgrades + helper) and the table RESET. Hats and Robux live in Hats and Robux.
+-- Cash shop (upgrades + helper guys) and the table RESET. Hats and Robux live in Hats and Robux.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -42,7 +42,7 @@ local function onBuyUpgrade(player: Player, rawId: unknown)
 	notify(player, "bought", `{Config.Upgrades[id].name} level {profile.upgrades[id :: Types.UpgradeId]}!`)
 end
 
-local function onBuyHelper(player: Player)
+local function onBuyHelper(player: Player, rawId: unknown)
 	if not buyLimiter:allow(player) then
 		return
 	end
@@ -50,10 +50,43 @@ local function onBuyHelper(player: Player)
 	if not profile then
 		return
 	end
-	if GameLogic.buyHelper(profile) then
+	if GameLogic.unlockHelper(profile, rawId) then
+		local def = Economy.helperDef(rawId)
 		Tables.refresh(player)
 		PlayerData.changed(player)
-		notify(player, "bought", "A helper guy joined your table!")
+		notify(player, "bought", `{if def then def.name else "A helper"} joined your crew!`)
+	end
+end
+
+local function onLevelHelper(player: Player, rawId: unknown)
+	if not buyLimiter:allow(player) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if profile and GameLogic.levelHelper(profile, rawId) then
+		local def = Economy.helperDef(rawId)
+		Tables.refresh(player) -- he grows a little
+		PlayerData.changed(player)
+		if def then
+			notify(player, "bought", `{def.name} is now level {profile.crew[def.id]}!`)
+		end
+	end
+end
+
+local function onTeamHelper(player: Player, rawId: unknown, on: unknown)
+	if not buyLimiter:allow(player) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile then
+		return
+	end
+	local ok, why = GameLogic.setTeam(profile, rawId, on)
+	if ok then
+		Tables.refresh(player)
+		PlayerData.changed(player)
+	elseif why == "no free slot" then
+		notify(player, "soon", "All helper spots are full. Take one off first!")
 	end
 end
 
@@ -80,6 +113,8 @@ end
 function Shop.init()
 	Net.event("BuyUpgrade").OnServerEvent:Connect(onBuyUpgrade)
 	Net.event("BuyHelper").OnServerEvent:Connect(onBuyHelper)
+	Net.event("LevelHelper").OnServerEvent:Connect(onLevelHelper)
+	Net.event("TeamHelper").OnServerEvent:Connect(onTeamHelper)
 	Net.event("ResetTable").OnServerEvent:Connect(onReset)
 	Players.PlayerRemoving:Connect(function(player: Player)
 		buyLimiter:remove(player)

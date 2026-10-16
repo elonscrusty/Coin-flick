@@ -24,16 +24,41 @@ function Economy.upgradeCost(id: string, level: number): number?
 	return math.floor(def.baseCost * def.growth ^ level + 0.5)
 end
 
--- Helper slots: the free ones plus any bought with Robux.
+-- Helper slots: the free one, one more at each slot reset, plus Robux slots.
 function Economy.maxHelpers(profile: Profile): number
-	return Config.MAX_HELPERS + math.min(profile.helperSlots, Config.MAX_EXTRA_HELPER_SLOTS)
+	local slots = Config.MAX_HELPERS
+	for _, needed in Config.HELPER_SLOT_RESETS do
+		if profile.resets >= needed then
+			slots += 1
+		end
+	end
+	return slots + math.min(profile.helperSlots, Config.MAX_EXTRA_HELPER_SLOTS)
 end
 
-function Economy.helperCost(owned: number, maxHelpers: number?): number?
-	if owned >= (maxHelpers or Config.MAX_HELPERS) then
+function Economy.helperDef(id: unknown): Config.HelperDef?
+	for _, def in Config.HelperTypes do
+		if def.id == id then
+			return def
+		end
+	end
+	return nil
+end
+
+-- Cash to go from `level` to `level + 1`, or nil at max level.
+function Economy.helperLevelCost(def: Config.HelperDef, level: number): number?
+	if level >= Config.HELPER_MAX_LEVEL then
 		return nil
 	end
-	return math.floor(Config.HELPER_COST * 4 ^ owned + 0.5)
+	return math.floor(def.cost * Config.HELPER_LEVEL_COST * Config.HELPER_LEVEL_GROWTH ^ (level - 1) + 0.5)
+end
+
+-- Seconds between this helper's flips.
+function Economy.helperInterval(def: Config.HelperDef, level: number): number
+	return def.interval * Config.HELPER_LEVEL_SPEED ^ (level - 1)
+end
+
+function Economy.helperCashMult(def: Config.HelperDef, level: number): number
+	return def.mult * (1 + Config.HELPER_LEVEL_CASH * (level - 1))
 end
 
 function Economy.coinCount(profile: Profile): number
@@ -170,13 +195,18 @@ function Economy.leaderboardValue(value: number): number
 	return math.min(math.floor(value), 2 ^ 53)
 end
 
--- Average cash per second all helpers make together.
+-- Average cash per second the whole team makes together.
 function Economy.helperCashPerSecond(profile: Profile): number
-	if profile.helpers <= 0 then
-		return 0
+	local perHeads = Economy.headsChance(profile.upgrades.luck) * Economy.cashPerHeads(profile)
+	local total = 0
+	for _, id in profile.team do
+		local def = Economy.helperDef(id)
+		local level = profile.crew[id]
+		if def and level then
+			total += perHeads * Economy.helperCashMult(def, level) / Economy.helperInterval(def, level)
+		end
 	end
-	local perFlip = Economy.headsChance(profile.upgrades.luck) * Economy.cashPerHeads(profile)
-	return profile.helpers * perFlip / Config.HELPER_FLIP_INTERVAL
+	return total
 end
 
 -- Cash earned by helpers while away. Clamped so clock tricks can't farm it.

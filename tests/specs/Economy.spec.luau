@@ -103,7 +103,8 @@ describe("Economy", function()
 
 	it("offline bonus is capped and ignores bad clocks", function()
 		local p = ProfileSchema.default()
-		p.helpers = 1
+		p.crew.buddy = 1
+		p.team = { "buddy" }
 		local capped = Economy.offlineEarnings(p, Config.OFFLINE_CAP_SECONDS)
 		expect(capped).toBeAtLeast(1)
 		expect(Economy.offlineEarnings(p, Config.OFFLINE_CAP_SECONDS * 50)).toBe(capped)
@@ -118,9 +119,15 @@ describe("Economy", function()
 		expect(Economy.tableLook(n)).toBe(1)
 	end)
 
-	it("only one helper slot in the first build", function()
-		expect(Economy.helperCost(0)).toBe(Config.HELPER_COST)
-		expect(Economy.helperCost(1)).toBeNil()
+	it("helper slots: 1 to start, more after resets 1 and 3", function()
+		local p = ProfileSchema.default()
+		expect(Economy.maxHelpers(p)).toBe(1)
+		p.resets = 1
+		expect(Economy.maxHelpers(p)).toBe(2)
+		p.resets = 3
+		expect(Economy.maxHelpers(p)).toBe(3)
+		p.resets = 50
+		expect(Economy.maxHelpers(p)).toBe(3)
 	end)
 end)
 

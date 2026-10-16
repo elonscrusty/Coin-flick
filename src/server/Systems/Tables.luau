@@ -30,7 +30,7 @@ type TableState = {
 	coins: { BasePart },
 	faces: { FlipResult },
 	busyUntil: { number },
-	nextHelperFlip: number,
+	helperNext: { [string]: number }, -- helper id -> when he flips next
 	nextAutoFlip: number,
 	combo: number, -- chain flips: taps in a row, each within COMBO_WINDOW
 	lastTapAt: number,
@@ -126,14 +126,14 @@ local function makeCoin(state: TableState, index: number, profile: Profile, skin
 	return coin
 end
 
-local function makeHelper(state: TableState, index: number): Model
+local function makeHelper(state: TableState, index: number, def: Config.HelperDef, level: number): Model
 	local helper = Instance.new("Model")
-	helper.Name = `Helper_{index}`
+	helper.Name = `Helper_{def.id}`
 	local body = World.makePart({
 		Name = "Body",
 		Shape = Enum.PartType.Ball,
-		Size = Vector3.new(2, 2, 2),
-		Color = Color3.fromRGB(90, 200, 255),
+		Size = Vector3.one * (2 + level * 0.06), -- grows a little with each level
+		Color = def.body,
 		CanCollide = false,
 		CanQuery = false,
 	})
@@ -159,7 +159,7 @@ local function makeHelper(state: TableState, index: number): Model
 		Name = "Cap",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.5, 1.5, 1.5),
-		Color = Color3.fromRGB(255, 90, 90),
+		Color = def.cap,
 		CanCollide = false,
 		CanQuery = false,
 	})
@@ -178,6 +178,7 @@ local function makeHelper(state: TableState, index: number): Model
 	helper:SetAttribute("OrbitCenter", state.center - Vector3.new(0, Config.TABLE_HEIGHT - 1, 0))
 	helper:SetAttribute("OrbitRadius", Config.TABLE_RADIUS + 2)
 	helper:SetAttribute("Phase", index * 2.1)
+	helper:SetAttribute("HelperId", def.id)
 	helper.Parent = state.model:FindFirstChild("Helpers")
 	CollectionService:AddTag(helper, "Helper")
 	return helper
@@ -246,8 +247,12 @@ local function buildTable(player: Player, state: TableState, profile: Profile)
 		state.busyUntil[i] = nil
 		state.faces[i] = nil
 	end
-	for i = 1, profile.helpers do
-		makeHelper(state, i)
+	for i, id in profile.team do
+		local def = Economy.helperDef(id)
+		local level = profile.crew[id]
+		if def and level then
+			makeHelper(state, i, def, level)
+		end
 	end
 	model:SetAttribute("Look", look.name)
 end
@@ -276,7 +281,9 @@ local function flip(
 	profile: Profile,
 	index: number,
 	byHelper: boolean,
-	combo: number
+	combo: number,
+	helperId: string?,
+	helperMult: number?
 )
 	local now = os.clock()
 	local duration = Economy.flipTime(profile.upgrades.speed)
@@ -284,7 +291,13 @@ local function flip(
 	local forced = forcedRarity[player]
 	forcedRarity[player] = nil
 	local rarityRoll = if forced then Economy.rarityRollFor(forced) else rng:NextNumber()
-	local outcome = GameLogic.applyFlip(profile, rng:NextNumber(), rarityRoll, Boosts.cashMult(player, now), combo)
+	local outcome = GameLogic.applyFlip(
+		profile,
+		rng:NextNumber(),
+		rarityRoll,
+		Boosts.cashMult(player, now) * (helperMult or 1),
+		combo
+	)
 
 	local event: Types.FlipEvent = {
 		ownerId = player.UserId,
@@ -294,6 +307,7 @@ local function flip(
 		hats = outcome.hats,
 		duration = duration,
 		byHelper = byHelper,
+		helper = helperId,
 		rarity = outcome.rarity,
 		combo = combo,
 	}
@@ -382,7 +396,7 @@ local function onLoaded(player: Player, profile: Profile, offlineCash: number)
 		coins = {},
 		faces = {},
 		busyUntil = {},
-		nextHelperFlip = os.clock() + Config.HELPER_FLIP_INTERVAL,
+		helperNext = {},
 		nextAutoFlip = os.clock() + Config.AUTO_FLIP_INTERVAL,
 		combo = 0,
 		lastTapAt = 0,
@@ -471,11 +485,22 @@ function Tables.start()
 			if not profile then
 				continue
 			end
-			if profile.helpers > 0 and now >= state.nextHelperFlip then
-				state.nextHelperFlip = now + Config.HELPER_FLIP_INTERVAL / profile.helpers
-				local index = randomReadyCoin(state, now)
-				if index then
-					flip(player, state, profile, index, true, 0)
+			for _, id in profile.team do
+				local def = Economy.helperDef(id)
+				local level = profile.crew[id]
+				if not def or not level then
+					continue
+				end
+				local due = state.helperNext[id]
+				if not due then
+					-- New on the team: first flip after one full wait.
+					state.helperNext[id] = now + Economy.helperInterval(def, level)
+				elseif now >= due then
+					state.helperNext[id] = now + Economy.helperInterval(def, level)
+					local index = randomReadyCoin(state, now)
+					if index then
+						flip(player, state, profile, index, true, 0, id, Economy.helperCashMult(def, level))
+					end
 				end
 			end
 			if Boosts.owns(player, "autoFlip") and now >= state.nextAutoFlip then

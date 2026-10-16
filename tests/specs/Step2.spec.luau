@@ -151,14 +151,17 @@ describe("Robux extras", function()
 		expect(GameLogic.grantProduct(p, "xyz", "mystery")).toBe("unknown")
 	end)
 
-	it("extra slots let you buy more helpers, up to the cap", function()
+	it("extra slots let more helpers work, up to the cap", function()
 		local p = ProfileSchema.default()
 		p.cash = 1e12
-		expect(GameLogic.buyHelper(p)).toBeTruthy()
-		expect(GameLogic.buyHelper(p)).toBeFalsy()
+		p.resets = 1
+		GameLogic.unlockHelper(p, "buddy")
+		GameLogic.unlockHelper(p, "zippy")
+		p.crew.chompy = 1
+		expect(GameLogic.setTeam(p, "chompy", true)).toBeFalsy()
 		GameLogic.grantProduct(p, "r1", "helperSlot")
-		expect(GameLogic.buyHelper(p)).toBeTruthy()
-		expect(p.helpers).toBe(2)
+		expect(GameLogic.setTeam(p, "chompy", true)).toBeTruthy()
+		expect(#p.team).toBe(3)
 		for i = 2, Config.MAX_EXTRA_HELPER_SLOTS + 2 do
 			GameLogic.grantProduct(p, `r{i}`, "helperSlot")
 		end

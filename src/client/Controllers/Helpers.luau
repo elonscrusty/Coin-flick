@@ -12,7 +12,7 @@ local ClientNet = require(script.Parent.Parent.ClientNet)
 local Helpers = {}
 
 local tracked: { [Model]: boolean } = {}
-local jumpAt: { [number]: number } = {} -- ownerId -> when their helper last flipped
+local jumpAt: { [string]: number } = {} -- "ownerId/helperId" -> when that helper last flipped
 local UP = Vector3.new(0, 1, 0)
 
 local function ownerOf(model: Model): number?
@@ -38,7 +38,8 @@ local function step()
 		local pos = center + Vector3.new(math.cos(angle) * radius, 0, math.sin(angle) * radius)
 		local hop = math.abs(math.sin(now * 8 + phase)) * 0.5
 		local owner = ownerOf(model)
-		local jumped = owner and jumpAt[owner]
+		local helperId = model:GetAttribute("HelperId")
+		local jumped = owner and jumpAt[`{owner}/{helperId}`]
 		if jumped and now - jumped < 0.45 then
 			hop += math.sin(math.pi * (now - jumped) / 0.45) * 2
 		end
@@ -65,8 +66,8 @@ function Helpers.init()
 		end
 	end)
 	ClientNet.event("Flipped").OnClientEvent:Connect(function(ev: Types.FlipEvent)
-		if ev.byHelper then
-			jumpAt[ev.ownerId] = os.clock()
+		if ev.byHelper and ev.helper then
+			jumpAt[`{ev.ownerId}/{ev.helper}`] = os.clock()
 		end
 	end)
 	RunService.RenderStepped:Connect(step)

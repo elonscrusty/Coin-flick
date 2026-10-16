@@ -25,7 +25,8 @@ export type Profile = {
 	cash: number,
 	hatPoints: number,
 	upgrades: Upgrades,
-	helpers: number,
+	crew: { [string]: number }, -- helper id -> level, for every helper you own
+	team: { string }, -- helper ids working at your table (up to your slots)
 	resets: number,
 	stats: Stats,
 	lastSeen: number, -- os.time() of the last save, for the offline bonus
@@ -49,6 +50,7 @@ export type FlipEvent = {
 	hats: number,
 	duration: number,
 	byHelper: boolean,
+	helper: string?, -- which helper flipped it
 	rarity: Rarity,
 	combo: number, -- 0 for helper/auto flips
 }
@@ -58,7 +60,8 @@ export type Snapshot = {
 	cash: number,
 	hatPoints: number,
 	upgrades: Upgrades,
-	helpers: number,
+	crew: { [string]: number },
+	team: { string },
 	resets: number,
 	flips: number,
 	biggestFlip: number,
@@ -72,6 +75,7 @@ export type Snapshot = {
 	hat: string,
 	skin: string,
 	maxHelpers: number,
+	helperSlots: number, -- extra slots bought with Robux
 	passes: { [string]: boolean }, -- "doubleCash", "autoFlip", and skin ids
 }
 

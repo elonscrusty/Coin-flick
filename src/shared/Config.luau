@@ -30,6 +30,20 @@ export type RarityDef = {
 	shout: boolean, -- tell the whole server
 }
 
+-- A helper guy you collect with cash and level up. Each one walks around
+-- your table and flips coins for you (and earns while you're away).
+export type HelperDef = {
+	id: string,
+	name: string,
+	icon: string,
+	cost: number, -- cash to unlock
+	resets: number, -- resets needed before you can unlock it
+	interval: number, -- seconds between flips at level 1
+	mult: number, -- cash multiplier on its heads at level 1
+	body: Color3,
+	cap: Color3,
+}
+
 -- A silly hat bought with hat points (🎩). Built from chunky parts on your head.
 export type HatDef = {
 	id: string,
@@ -156,6 +170,65 @@ local Rarities: { RarityDef } = {
 	},
 }
 
+-- In unlock order. All cute, nothing scary.
+local HelperTypes: { HelperDef } = {
+	{
+		id = "buddy",
+		name = "Buddy",
+		icon = "🙂",
+		cost = 150,
+		resets = 0,
+		interval = 2.5,
+		mult = 1,
+		body = Color3.fromRGB(90, 200, 255),
+		cap = Color3.fromRGB(255, 90, 90),
+	},
+	{
+		id = "zippy",
+		name = "Zippy",
+		icon = "⚡",
+		cost = 2000,
+		resets = 1,
+		interval = 1.5,
+		mult = 1,
+		body = Color3.fromRGB(110, 220, 90),
+		cap = Color3.fromRGB(255, 220, 60),
+	},
+	{
+		id = "chompy",
+		name = "Chompy",
+		icon = "🍩",
+		cost = 15000,
+		resets = 2,
+		interval = 2.5,
+		mult = 2,
+		body = Color3.fromRGB(255, 150, 60),
+		cap = Color3.fromRGB(255, 120, 190),
+	},
+	{
+		id = "twinkle",
+		name = "Twinkle",
+		icon = "✨",
+		cost = 100000,
+		resets = 3,
+		interval = 1.6,
+		mult = 1.6,
+		body = Color3.fromRGB(255, 130, 200),
+		cap = Color3.fromRGB(150, 225, 255),
+	},
+	{
+		id = "king",
+		name = "King Flip",
+		icon = "👑",
+		cost = 1000000,
+		resets = 5,
+		interval = 1.2,
+		mult = 3,
+		body = Color3.fromRGB(160, 100, 240),
+		cap = Color3.fromRGB(255, 200, 40),
+	},
+}
+
 -- Cheapest first. Everything is goofy, nothing scary.
 local Hats: { HatDef } = {
 	{ id = "party", name = "Party Hat", icon = "🥳", cost = 5 },
@@ -220,9 +293,13 @@ return table.freeze({
 	CASH_PER_BIG_LEVEL = 0.5,
 
 	-- Helpers
-	MAX_HELPERS = 1, -- first build: one helper slot
-	HELPER_COST = 150,
-	HELPER_FLIP_INTERVAL = 2.5,
+	MAX_HELPERS = 1, -- helper slots everyone starts with
+	HELPER_SLOT_RESETS = table.freeze({ 1, 3 }), -- each of these resets opens one more slot
+	HELPER_MAX_LEVEL = 10,
+	HELPER_LEVEL_COST = 0.5, -- level 2 costs half the unlock price...
+	HELPER_LEVEL_GROWTH = 1.9, -- ...and each level after costs 1.9x more
+	HELPER_LEVEL_SPEED = 0.93, -- each level flips 7% faster
+	HELPER_LEVEL_CASH = 0.2, -- and +20% cash
 	OFFLINE_RATE = 0.5, -- helpers earn half speed while you're away
 	OFFLINE_CAP_SECONDS = 2 * 60 * 60, -- and at most 2 hours of it
 
@@ -275,6 +352,7 @@ return table.freeze({
 	UPGRADE_ORDER = table.freeze({ "moreCoins", "bigCoins", "luck", "speed" }),
 	TableLooks = table.freeze(TableLooks),
 	Rarities = table.freeze(Rarities),
+	HelperTypes = table.freeze(HelperTypes),
 	Hats = table.freeze(Hats),
 	Skins = table.freeze(Skins),
 	LEADERBOARDS = table.freeze({ "flips", "biggestFlip", "resets" }),

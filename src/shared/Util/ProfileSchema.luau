@@ -4,20 +4,22 @@
 
 local Config = require(script.Parent.Parent.Config)
 local Types = require(script.Parent.Parent.Types)
+local Economy = require(script.Parent.Economy)
 local deepCopy = require(script.Parent.DeepCopy)
 
 type Profile = Types.Profile
 
 local ProfileSchema = {}
 
-ProfileSchema.CURRENT_VERSION = 1
+ProfileSchema.CURRENT_VERSION = 2
 
 local DEFAULT: Profile = {
-	version = 1,
+	version = 2,
 	cash = 0,
 	hatPoints = 0,
 	upgrades = { moreCoins = 0, bigCoins = 0, luck = 0, speed = 0 },
-	helpers = 0,
+	crew = {},
+	team = {},
 	resets = 0,
 	stats = { flips = 0, heads = 0, skulls = 0, biggestFlip = 0, bestCombo = 0, rares = 0 },
 	lastSeen = 0,
@@ -33,7 +35,18 @@ function ProfileSchema.default(): Profile
 end
 
 -- Step N turns a version-N profile into version N+1. Add new steps here.
-local MIGRATIONS: { [number]: (any) -> any } = {}
+local MIGRATIONS: { [number]: (any) -> any } = {
+	-- v1 had a plain helper count. Those helpers become Buddy, on the team.
+	[1] = function(data)
+		local count = data.helpers
+		if typeof(count) == "number" and count >= 1 then
+			data.crew = { buddy = 1 }
+			data.team = { "buddy" }
+		end
+		data.helpers = nil
+		return data
+	end,
+}
 
 local function cleanNumber(value: unknown, fallback: number): number
 	if typeof(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge then
@@ -53,6 +66,40 @@ local function isHatId(id: unknown): boolean
 		end
 	end
 	return false
+end
+
+local function isHelperId(id: unknown): boolean
+	for _, def in Config.HelperTypes do
+		if def.id == id then
+			return true
+		end
+	end
+	return false
+end
+
+local function cleanCrew(value: unknown): { [string]: number }
+	local crew: { [string]: number } = {}
+	if typeof(value) == "table" then
+		for id, level in value :: { [any]: any } do
+			if isHelperId(id) and typeof(level) == "number" and level == level then
+				crew[id] = math.clamp(math.floor(level), 1, Config.HELPER_MAX_LEVEL)
+			end
+		end
+	end
+	return crew
+end
+
+-- Owned helpers only, no repeats, never more than the slots.
+local function cleanTeam(value: unknown, crew: { [string]: number }, slots: number): { string }
+	local team: { string } = {}
+	if typeof(value) == "table" then
+		for _, id in value :: { any } do
+			if typeof(id) == "string" and crew[id] and not table.find(team, id) and #team < slots then
+				table.insert(team, id)
+			end
+		end
+	end
+	return team
 end
 
 local function isSkinId(id: unknown): boolean
@@ -97,7 +144,8 @@ local function reconcile(data: { [string]: any }): Profile
 	local up = if typeof(data.upgrades) == "table" then data.upgrades else {}
 	local st = if typeof(data.stats) == "table" then data.stats else {}
 	local hats = cleanHats(data.hats)
-	return {
+	local crew = cleanCrew(data.crew)
+	local profile: Profile = {
 		version = ProfileSchema.CURRENT_VERSION,
 		cash = cleanNumber(data.cash, d.cash),
 		hatPoints = cleanInt(data.hatPoints, d.hatPoints),
@@ -107,7 +155,8 @@ local function reconcile(data: { [string]: any }): Profile
 			luck = cleanInt(up.luck, 0),
 			speed = cleanInt(up.speed, 0),
 		},
-		helpers = cleanInt(data.helpers, d.helpers),
+		crew = crew,
+		team = {},
 		resets = cleanInt(data.resets, d.resets),
 		stats = {
 			flips = cleanInt(st.flips, 0),
@@ -124,6 +173,8 @@ local function reconcile(data: { [string]: any }): Profile
 		helperSlots = math.min(Config.MAX_EXTRA_HELPER_SLOTS, cleanInt(data.helperSlots, 0)),
 		receipts = cleanReceipts(data.receipts),
 	}
+	profile.team = cleanTeam(data.team, crew, Economy.maxHelpers(profile))
+	return profile
 end
 
 -- nil -> brand new player. A table -> migrated + cleaned. Anything else -> error.
@@ -156,5 +207,6 @@ end
 
 ProfileSchema.isHatId = isHatId
 ProfileSchema.isSkinId = isSkinId
+ProfileSchema.isHelperId = isHelperId
 
 return ProfileSchema

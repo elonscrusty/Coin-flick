@@ -6,7 +6,9 @@ return table.freeze({
 	Events = table.freeze({
 		"TapCoin", -- client -> server: (coinIndex: number)
 		"BuyUpgrade", -- client -> server: (upgradeId: string)
-		"BuyHelper", -- client -> server: ()
+		"BuyHelper", -- client -> server: (helperId: string) unlock a helper
+		"LevelHelper", -- client -> server: (helperId: string)
+		"TeamHelper", -- client -> server: (helperId: string, on: boolean)
 		"ResetTable", -- client -> server: ()
 		"State", -- server -> client: (Snapshot)
 		"Flipped", -- server -> all: (FlipEvent)

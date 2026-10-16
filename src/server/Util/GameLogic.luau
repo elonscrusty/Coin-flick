@@ -90,16 +90,66 @@ function GameLogic.buyUpgrade(profile: Profile, id: unknown): (boolean, string?)
 	return true, nil
 end
 
-function GameLogic.buyHelper(profile: Profile): (boolean, string?)
-	local cost = Economy.helperCost(profile.helpers, Economy.maxHelpers(profile))
+-- Unlock a new helper guy with cash. He joins the team if a slot is free.
+function GameLogic.unlockHelper(profile: Profile, id: unknown): (boolean, string?)
+	local def = Economy.helperDef(id)
+	if not def then
+		return false, "unknown helper"
+	end
+	if profile.crew[def.id] then
+		return false, "already owned"
+	end
+	if profile.resets < def.resets then
+		return false, "needs more resets"
+	end
+	if profile.cash < def.cost then
+		return false, "not enough cash"
+	end
+	profile.cash -= def.cost
+	profile.crew[def.id] = 1
+	if #profile.team < Economy.maxHelpers(profile) then
+		table.insert(profile.team, def.id)
+	end
+	return true, nil
+end
+
+function GameLogic.levelHelper(profile: Profile, id: unknown): (boolean, string?)
+	local def = Economy.helperDef(id)
+	local level = def and profile.crew[def.id]
+	if not def or not level then
+		return false, "not owned"
+	end
+	local cost = Economy.helperLevelCost(def, level)
 	if not cost then
-		return false, "no free helper slot"
+		return false, "maxed"
 	end
 	if profile.cash < cost then
 		return false, "not enough cash"
 	end
 	profile.cash -= cost
-	profile.helpers += 1
+	profile.crew[def.id] = level + 1
+	return true, nil
+end
+
+-- Put a helper you own on the team (needs a free slot), or take him off.
+function GameLogic.setTeam(profile: Profile, id: unknown, on: unknown): (boolean, string?)
+	if typeof(id) ~= "string" or not profile.crew[id] or typeof(on) ~= "boolean" then
+		return false, "not owned"
+	end
+	local at = table.find(profile.team, id)
+	if not on then
+		if at then
+			table.remove(profile.team, at)
+		end
+		return true, nil
+	end
+	if at then
+		return true, nil
+	end
+	if #profile.team >= Economy.maxHelpers(profile) then
+		return false, "no free slot"
+	end
+	table.insert(profile.team, id)
 	return true, nil
 end
 
@@ -215,7 +265,8 @@ function GameLogic.snapshot(profile: Profile, passes: { [string]: boolean }?): S
 		cash = profile.cash,
 		hatPoints = profile.hatPoints,
 		upgrades = table.clone(profile.upgrades),
-		helpers = profile.helpers,
+		crew = table.clone(profile.crew),
+		team = table.clone(profile.team),
 		resets = profile.resets,
 		flips = profile.stats.flips,
 		biggestFlip = profile.stats.biggestFlip,
@@ -229,6 +280,7 @@ function GameLogic.snapshot(profile: Profile, passes: { [string]: boolean }?): S
 		hat = profile.hat,
 		skin = profile.skin,
 		maxHelpers = Economy.maxHelpers(profile),
+		helperSlots = profile.helperSlots,
 		passes = if passes then table.clone(passes) else {},
 	}
 end

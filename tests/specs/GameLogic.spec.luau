@@ -76,22 +76,24 @@ describe("GameLogic shop", function()
 		expect(p.upgrades.moreCoins).toBe(Config.Upgrades.moreCoins.maxLevel)
 		expect(Economy.coinCount(p)).toBe(Config.MAX_COINS)
 	end)
-	it("helper: one slot, costs cash", function()
+	it("helper: Buddy costs cash and starts working", function()
 		local p = ProfileSchema.default()
-		p.cash = Config.HELPER_COST
-		expect(GameLogic.buyHelper(p)).toBeTruthy()
-		expect(p.helpers).toBe(1)
+		local buddy = Config.HelperTypes[1]
+		p.cash = buddy.cost
+		expect(GameLogic.unlockHelper(p, "buddy")).toBeTruthy()
+		expect(p.crew.buddy).toBe(1)
+		expect(p.team[1]).toBe("buddy")
 		expect(p.cash).toBe(0)
 		p.cash = 1e9
-		expect(GameLogic.buyHelper(p)).toBeFalsy()
-		expect(p.helpers).toBe(1)
+		expect(GameLogic.unlockHelper(p, "buddy")).toBeFalsy()
 	end)
 	it("cash never goes negative from any purchase sequence", function()
 		local p = ProfileSchema.default()
 		p.cash = 500
 		for i = 1, 200 do
 			GameLogic.buyUpgrade(p, Config.UPGRADE_ORDER[(i % 4) + 1])
-			GameLogic.buyHelper(p)
+			GameLogic.unlockHelper(p, "buddy")
+			GameLogic.levelHelper(p, "buddy")
 			expect(p.cash).toBeAtLeast(0)
 		end
 	end)
@@ -111,14 +113,16 @@ describe("GameLogic reset (prestige)", function()
 		GameLogic.fillTable(p)
 		p.upgrades.luck = 4
 		p.cash = 999
-		p.helpers = 1
+		p.crew.buddy = 3
+		p.team = { "buddy" }
 		p.hatPoints = 12
 		expect(GameLogic.reset(p)).toBeTruthy()
 		expect(p.resets).toBe(1)
 		expect(p.cash).toBe(0)
 		expect(p.upgrades.moreCoins).toBe(0)
 		expect(p.upgrades.luck).toBe(0)
-		expect(p.helpers).toBe(1)
+		expect(p.crew.buddy).toBe(3)
+		expect(p.team[1]).toBe("buddy")
 		expect(p.hatPoints).toBe(12)
 		expect(Economy.coinCount(p)).toBe(1)
 		expect(Economy.resetMultiplier(p.resets)).toBe(1 + Config.RESET_CASH_BONUS)
@@ -137,7 +141,7 @@ describe("GameLogic reset (prestige)", function()
 			for _, id in Config.UPGRADE_ORDER do
 				GameLogic.buyUpgrade(p, id)
 			end
-			GameLogic.buyHelper(p)
+			GameLogic.unlockHelper(p, "buddy")
 		end
 		expect(Economy.isTableFull(p)).toBeTruthy()
 		expect(GameLogic.reset(p)).toBeTruthy()
@@ -148,13 +152,15 @@ end)
 describe("GameLogic offline bonus", function()
 	it("first join gives nothing and stamps the time", function()
 		local p = ProfileSchema.default()
-		p.helpers = 1
+		p.crew.buddy = 1
+		p.team = { "buddy" }
 		expect(GameLogic.applyOffline(p, 1000)).toBe(0)
 		expect(p.lastSeen).toBe(1000)
 	end)
 	it("coming back later pays helpers' capped earnings", function()
 		local p = ProfileSchema.default()
-		p.helpers = 1
+		p.crew.buddy = 1
+		p.team = { "buddy" }
 		p.lastSeen = 1000
 		local earned = GameLogic.applyOffline(p, 1000 + 10 * 24 * 3600)
 		expect(earned).toBe(Economy.offlineEarnings(p, Config.OFFLINE_CAP_SECONDS))
@@ -162,7 +168,8 @@ describe("GameLogic offline bonus", function()
 	end)
 	it("a clock going backwards pays nothing", function()
 		local p = ProfileSchema.default()
-		p.helpers = 1
+		p.crew.buddy = 1
+		p.team = { "buddy" }
 		p.lastSeen = 5000
 		expect(GameLogic.applyOffline(p, 100)).toBe(0)
 	end)

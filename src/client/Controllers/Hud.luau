@@ -133,9 +133,10 @@ local resetPanel: Frame
 local resetBody: TextLabel
 local resetButton: TextButton
 local resetPulse: Tween?
-type Card = { level: TextLabel, buy: TextButton }
+type Card = { level: TextLabel, buy: TextButton, team: TextButton? }
 local shopCards: { [string]: Card } = {}
-local helperCard: Card
+local helperCards: { [string]: Card } = {}
+local helperSlotsLabel: TextLabel
 local hatCards: { [string]: Card } = {}
 local robuxCards: { [string]: Card } = {}
 local topPanel: Frame
@@ -276,7 +277,14 @@ local function makePanel(name: string, title: string): (Frame, Frame)
 	return panel, body
 end
 
-local function shopCard(parent: ScrollingFrame, order: number, icon: string, name: string, onBuy: () -> ())
+local function shopCard(
+	parent: ScrollingFrame,
+	order: number,
+	icon: string,
+	name: string,
+	onBuy: () -> (),
+	onTeam: (() -> ())?
+): Card
 	local card = Instance.new("Frame")
 	card.Name = name
 	card.LayoutOrder = order
@@ -296,7 +304,7 @@ local function shopCard(parent: ScrollingFrame, order: number, icon: string, nam
 
 	local title = label({
 		Text = name,
-		Size = UDim2.new(0.62, -76, 0.45, 0),
+		Size = UDim2.new(if onTeam then 0.4 else 0.62, -76, 0.45, 0),
 		Position = UDim2.fromOffset(70, 6),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = INK,
@@ -309,7 +317,7 @@ local function shopCard(parent: ScrollingFrame, order: number, icon: string, nam
 	local level = label({
 		Name = "Level",
 		Text = "",
-		Size = UDim2.new(0.62, -76, 0.38, 0),
+		Size = UDim2.new(if onTeam then 0.4 else 0.62, -76, 0.38, 0),
 		Position = UDim2.new(0, 70, 0.52, 0),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Color3.fromRGB(110, 100, 90),
@@ -323,13 +331,26 @@ local function shopCard(parent: ScrollingFrame, order: number, icon: string, nam
 	buy.Name = "Buy"
 	buy.AnchorPoint = Vector2.new(1, 0.5)
 	buy.Position = UDim2.new(1, -8, 0.5, 0)
-	buy.Size = UDim2.new(0.36, 0, 1, -16)
+	buy.Size = UDim2.new(if onTeam then 0.3 else 0.36, 0, 1, -16)
 	buy.ZIndex = 8
 	buy.Parent = card
 	textLimit(buy, 28)
 
+	local team: TextButton? = nil
+	if onTeam then
+		local t = button("", BLUE, onTeam)
+		t.Name = "Team"
+		t.AnchorPoint = Vector2.new(1, 0.5)
+		t.Position = UDim2.new(0.7, -16, 0.5, 0)
+		t.Size = UDim2.new(0.24, 0, 1, -16)
+		t.ZIndex = 8
+		t.Parent = card
+		textLimit(t, 22)
+		team = t
+	end
+
 	card.Parent = parent
-	return { level = level, buy = buy }
+	return { level = level, buy = buy, team = team }
 end
 
 local function scrollList(parent: Frame, top: number): ScrollingFrame
@@ -418,7 +439,7 @@ local function buildShop()
 	local tabs: { [string]: TextButton } = {}
 	tabs = tabRow(
 		body,
-		{ { "upgrades", "🪙 COINS" }, { "hats", "🎩 HATS" }, { "robux", "💎 EXTRAS" } },
+		{ { "upgrades", "🪙 COINS" }, { "helpers", "👷 CREW" }, { "hats", "🎩 HATS" }, { "robux", "💎 MORE" } },
 		function(key)
 			pickTab(tabs, lists, key)
 		end
@@ -433,10 +454,39 @@ local function buildShop()
 			buyRemote:FireServer(id)
 		end)
 	end
-	local helperRemote = ClientNet.event("BuyHelper")
-	helperCard = shopCard(list, 100, "👷", "Helper Guy", function()
-		helperRemote:FireServer()
-	end)
+
+	-- Helper guys: unlock with cash, level up, put on the team.
+	local crewList = scrollList(body, 52)
+	lists.helpers = crewList
+	helperSlotsLabel = label({
+		LayoutOrder = 0,
+		Size = UDim2.new(1, -10, 0, 28),
+		TextColor3 = INK,
+		TextStrokeTransparency = 1,
+		ZIndex = 7,
+	})
+	textLimit(helperSlotsLabel, 20)
+	helperSlotsLabel.Parent = crewList
+	local unlockRemote = ClientNet.event("BuyHelper")
+	local levelRemote = ClientNet.event("LevelHelper")
+	local teamRemote = ClientNet.event("TeamHelper")
+	for i, def in Config.HelperTypes do
+		helperCards[def.id] = shopCard(crewList, i, def.icon, def.name, function()
+			local s = State.get()
+			if s and s.crew[def.id] then
+				levelRemote:FireServer(def.id)
+			elseif s and s.resets < def.resets then
+				toast(`Reset {def.resets} times to meet {def.name}!`)
+			else
+				unlockRemote:FireServer(def.id)
+			end
+		end, function()
+			local s = State.get()
+			if s and s.crew[def.id] then
+				teamRemote:FireServer(def.id, not table.find(s.team, def.id))
+			end
+		end)
+	end
 
 	-- Hats: buy with 🎩, tap again to wear or take off.
 	local hatList = scrollList(body, 52)
@@ -666,14 +716,41 @@ render = function(s: Snapshot)
 			card.buy.BackgroundColor3 = BLUE
 		end
 	end
-	local helperCost = Economy.helperCost(s.helpers, s.maxHelpers)
-	helperCard.level.Text = `{s.helpers}/{s.maxHelpers}  •  Flips for you, even when you're away`
-	if helperCost then
-		helperCard.buy.Text = `${Format.short(helperCost)}`
-		helperCard.buy.BackgroundColor3 = if s.cash >= helperCost then GREEN else GREY
-	else
-		helperCard.buy.Text = "MAX"
-		helperCard.buy.BackgroundColor3 = BLUE
+	helperSlotsLabel.Text = `Helpers working: {#s.team}/{s.maxHelpers}  •  They flip even when you're away`
+	for _, def in Config.HelperTypes do
+		local card = helperCards[def.id]
+		local level = s.crew[def.id]
+		local team = card.team
+		if level then
+			local interval = Economy.helperInterval(def, level)
+			local mult = Economy.helperCashMult(def, level)
+			card.level.Text = `Lv {level}  •  flips every {string.format("%.1f", interval)}s  •  x{string.format(
+				"%.1f",
+				mult
+			)} cash`
+			local cost = Economy.helperLevelCost(def, level)
+			card.buy.Text = if cost then `⬆ ${Format.short(cost)}` else "MAX"
+			card.buy.BackgroundColor3 = if not cost then BLUE elseif s.cash >= cost then GREEN else GREY
+			if team then
+				local working = table.find(s.team, def.id) ~= nil
+				team.Visible = true
+				team.Text = if working then "WORKING" else "RESTING"
+				team.BackgroundColor3 = if working then ORANGE else GREY
+			end
+		else
+			if team then
+				team.Visible = false
+			end
+			if s.resets < def.resets then
+				card.level.Text = `Unlocks after {def.resets} reset{if def.resets == 1 then "" else "s"}`
+				card.buy.Text = "🔒"
+				card.buy.BackgroundColor3 = GREY
+			else
+				card.level.Text = `Flips every {string.format("%.1f", def.interval)}s  •  x{def.mult} cash`
+				card.buy.Text = `${Format.short(def.cost)}`
+				card.buy.BackgroundColor3 = if s.cash >= def.cost then GREEN else GREY
+			end
+		end
 	end
 
 	for _, def in Config.Hats do
@@ -721,11 +798,11 @@ render = function(s: Snapshot)
 		s.passes.autoFlip == true,
 		Config.Products.AutoFlipPassId
 	)
-	local slotsFull = s.maxHelpers >= Config.MAX_HELPERS + Config.MAX_EXTRA_HELPER_SLOTS
+	local slotsFull = s.helperSlots >= Config.MAX_EXTRA_HELPER_SLOTS
 	robuxButton(
 		robuxCards.helperSlot,
 		"helperSlot",
-		`Room for one more helper guy ({s.maxHelpers}/{Config.MAX_HELPERS + Config.MAX_EXTRA_HELPER_SLOTS})`,
+		`One more helper can work ({s.helperSlots}/{Config.MAX_EXTRA_HELPER_SLOTS} bought)`,
 		slotsFull,
 		Config.Products.ExtraHelperSlotProductId
 	)
